@@ -33,6 +33,7 @@
 | D24 | Testes e CI | Vitest (TDD) e Testing Library; um teste Playwright ponta a ponta com `.xlsx` gerado no próprio teste. GitHub Actions **só em push na `main`**. Sem deploy até decidir a hospedagem. |
 | D25 | Modo automático | Revisa a D5 e a D22: com qualquer planilha, cada aba ganha **KPIs e gráficos automáticos** a partir dos tipos de coluna, acima da tabela. Escopo "mais livre": contagens, período, média e total por coluna numérica, contagem por categoria e por mês, média por mês, e também comparação entre colunas numéricas quando os nomes sugerirem (meta × realizado, previsto × executado) com percentual de atingimento, e distribuição de status. Cada bloco leva o selo "automático". Painéis específicos registrados por aba continuam tendo prioridade. |
 | D26 | Animação | Biblioteca **Motion** (13.4.4, fixa). Regras de movimento herdadas do `lp_centraleng` (DESIGN.md "Movimento", feito com impeccable): tokens 150/250/400 ms, curvas standard `cubic-bezier(0.4,0,0.2,1)` e emphasized `cubic-bezier(0.2,0,0,1)`; entrada única escalonada (~110 ms); números contam até o valor (~1 s, valor final sempre no texto); barras e linhas crescem ao entrar; troca de aba em fade cruzado de 200 ms; mudança de filtro só transita valores; só transform e opacity; nada em loop; com movimento reduzido tudo aparece pronto. |
+| D27 | Deploy de teste | Revisa D11/D24 só para teste: projeto Vercel `g0mes/dash-asten`, publicado pela CLI depois do CI verde, **acesso aberto sem login** (coerente com o PRD sem autenticação; o app não guarda dados). Link: https://dash-asten.vercel.app (ver `docs/acesso-teste.md`). Deploy automático a cada push depende de instalar o app da Vercel no GitHub. A hospedagem definitiva continua com o Líder. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 1. Visão
@@ -107,7 +108,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 - Carregar todas as abas com conteúdo e preservar o nome de origem.
 - Ler cada aba conforme o **contrato da planilha-modelo**, que vive no código e é tipado. A planilha já chega validada (D18).
 - Normalizar texto, número, data e vazio. Mostrar ausente como ausente, nunca como zero.
-- Ter um dashboard fixo por aba conhecida e uma tabela de detalhe para as abas sem layout.
+- Ter um painel específico por aba conhecida (registrado no código) e, nas abas sem painel, o **modo automático** (D25): KPIs e gráficos a partir dos tipos de coluna, com a tabela de detalhe embaixo.
 - Filtros por aba, só em dimensões aprovadas no contrato, com busca e multisseleção quando fizer sentido, chips removíveis e "limpar filtros".
 - Ocultar e mostrar séries sem alterar o conjunto de dados nem os totais.
 - Ocultar e reexibir abas da navegação.
@@ -163,14 +164,16 @@ Contrato da planilha-modelo (por aba) → modelo normalizado + avisos
    ↓
 Filtros por aba (estado serializável) → seletores/agregações puros
    ↓
-Layout fixo por aba (config declarativa) → cartões, gráficos, tabela
+Registro de painéis: painel específico da aba, ou motor automático (D25) → KPIs e gráficos
+   ↓
+Tela (modo apresentação, Motion) → cartões, gráficos, tabela
 ```
 
 Tudo fica na memória da página. Trocar de arquivo reinicia a sessão. A fronteira entre leitor e contrato permite adaptar a planilha real sem reescrever os gráficos.
 
 ## 13. Stack e protótipo
 
-**Stack aprovada (D13):** React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 via shadcn charts · TanStack Table · SheetJS CE ≥ 0.20.3 pelo CDN oficial, nunca o `xlsx` do npm · estado local com seletores puros. ECharts é o plano B para gráficos. Comparação e fontes em `docs/comparacao-stack.md`.
+**Stack aprovada (D13):** React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 via shadcn charts · TanStack Table · SheetJS CE ≥ 0.20.3 pelo CDN oficial, nunca o `xlsx` do npm · Motion 13.4.4 para animação (D26) · Vitest + Playwright · estado local com seletores puros. ECharts é o plano B para gráficos. Comparação e fontes em `docs/comparacao-stack.md`.
 
 O protótipo descartável (D15) fica na branch `prototipo`, pasta `prototype/`, usa essa stack e dados **fictícios marcados como tal**, e cobre as duas hipóteses de conteúdo:
 

@@ -39,7 +39,7 @@
 
 **Checkpoint L — Líder (16/10):** apresentar o PRD v2, o protótipo e as pendências do PRD §8. Registrar as respostas no PRD. Sem aprovação, nada da Fase 3 em diante começa.
 
-## Fase 2B — Esqueleto neutro do produto (D19–D24) ← agora
+## Fase 2B — Esqueleto do produto (D19–D27) ✅ (13/10)
 
 Na `main`, na raiz do repo, do zero e com testes:
 
@@ -51,6 +51,11 @@ Na `main`, na raiz do repo, do zero e com testes:
 6. CI no GitHub Actions só em push na `main` (D24).
 
 **Pronto quando:** importar qualquer `.xlsx` mostra todas as abas na visão genérica, com filtros e atalhos funcionando; testes de unidade e o ponta a ponta passam.
+7. Modo automático (D25): KPIs e gráficos por tipo de coluna acima da tabela, com selo "automático". ✅
+8. Animações com Motion (D26), regras do `lp_centraleng`. ✅
+9. Deploy de teste aberto em https://dash-asten.vercel.app (D27), sempre depois do CI verde. ✅
+
+**Feito:** 94 testes de unidade/componente e 1 ponta a ponta passando; CI verde na `main`.
 
 ## Fase 3 — Planilha real e contrato de dados
 

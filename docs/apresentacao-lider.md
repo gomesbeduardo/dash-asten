@@ -2,6 +2,8 @@
 
 **13/10/2026 · validação até 16/10** · Versão publicada: https://claude.ai/artifact/5BJd74ABZhB6Js18p44Y24
 
+**Teste online, sem login:** https://dash-asten.vercel.app — enquanto a planilha real não chega, o app monta KPIs e gráficos automáticos a partir das colunas; os painéis específicos de cada aba vêm depois.
+
 ## Primeira versão
 
 **Entra**
