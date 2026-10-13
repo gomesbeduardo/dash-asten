@@ -1,0 +1,13 @@
+# Planilhas reais nunca entram no repo; fixtures sintéticas só em fixtures/
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+!fixtures/**/*.xlsx
+!fixtures/**/*.csv
+
+node_modules/
+dist/
+.DS_Store
+*.log
+.env*
