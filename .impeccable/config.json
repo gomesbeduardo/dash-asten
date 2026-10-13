@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "docs/artifact/apresentacao-lider.html"
+        ],
+        "createdAt": "2026-10-13T16:36:25.729Z",
+        "reason": "Claude: detector estático cruza tokens dos temas claro/escuro; render real nos dois temas no Chrome (13/10) legível"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "docs/artifact/apresentacao-lider.html"
+        ],
+        "createdAt": "2026-10-13T16:36:25.734Z",
+        "reason": "Claude: table-wrap é só moldura com overflow; células têm padding 13x16"
+      }
+    ]
+  }
+}
