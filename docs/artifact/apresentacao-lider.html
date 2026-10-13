@@ -51,7 +51,7 @@ p { margin: 0; }
 .logo { height: 40px; width: auto; }
 .logo.light { display: var(--logo-light); }
 .logo.dark { display: var(--logo-dark); }
-.stamp { font: 500 13px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+.stamp { font: 500 13px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
 .stamp span::before { content: ""; display: inline-block; width: 6px; height: 6px; background: var(--brand); margin-right: 8px; vertical-align: 2px; }
 
 .page { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 56px; }
@@ -97,8 +97,8 @@ h2::before { content: ""; width: 10px; height: 10px; background: var(--brand); b
 .shot figcaption { font-size: 15px; color: var(--muted); max-width: 80ch; }
 .flag { display: inline-block; margin-right: 8px; font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; background: var(--brand-soft); color: var(--brand-ink); vertical-align: 1px; }
 .run { margin-top: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 15px; }
-.run code { font: 500 14px/1 var(--font-mono); background: var(--sunk); border: 1px solid var(--line); padding: 9px 12px; border-radius: 6px; user-select: all; }
-.copy { font: 500 14px/1 var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 9px 12px; border-radius: 6px; cursor: pointer; }
+.run code { font: 500 14px/1.5 var(--font-mono); overflow-wrap: anywhere; background: var(--sunk); border: 1px solid var(--line); padding: 9px 12px; border-radius: 6px; user-select: all; }
+.copy { font: 500 14px/1.4 var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 9px 12px; border-radius: 6px; cursor: pointer; }
 .copy:hover { border-color: var(--brand); }
 
 /* Tabela */
