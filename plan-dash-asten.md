@@ -10,7 +10,7 @@
 3. A planilha chega validada e consolidada (D18). Processe localmente e não envie dados a serviços externos.
 4. Sem autenticação, backend, banco, telemetria de conteúdo, API ou persistência.
 5. Mantenha separados leitor, contrato e modelo, filtros, agregações, layout e componentes visuais.
-6. **Nenhum código de produto antes da aprovação do Líder (D14).** Até lá só existem docs e o protótipo descartável.
+6. **Antes da validação do Líder, só o esqueleto neutro (D19).** Painéis específicos e métricas esperam o ok.
 7. Antes de declarar pronto: rode os testes, valide visualmente e reporte evidência.
 8. Fluxo de agentes: siga a skill `time-de-agentes`. O Opus planeja e revisa; `explorer` lê, `worker` implementa fatias com TDD e `researcher` pesquisa fontes externas.
 
@@ -29,7 +29,7 @@
 
 ## Fase 2 — Protótipo descartável ✅ (13/10, aguardando Checkpoint L)
 
-1. Criar `prototype/` como app local na stack aprovada, isolado do futuro produto (D15).
+1. Criar `prototype/` como app local na stack aprovada, isolado do futuro produto (D15). Hoje congelado na branch `prototipo` (D23).
 2. Gerar dados **fictícios marcados como tais**, sem nenhuma planilha real, cobrindo as duas hipóteses (D3):
    - "Indicadores": meta vs. realizado por mês e área;
    - "Projetos": status, prazo, % de conclusão e atrasos.
@@ -38,6 +38,19 @@
 5. Validar em resolução de projeção (por exemplo, 1920×1080 e 1366×768) e numa largura menor.
 
 **Checkpoint L — Líder (16/10):** apresentar o PRD v2, o protótipo e as pendências do PRD §8. Registrar as respostas no PRD. Sem aprovação, nada da Fase 3 em diante começa.
+
+## Fase 2B — Esqueleto neutro do produto (D19–D24) ← agora
+
+Na `main`, na raiz do repo, do zero e com testes:
+
+1. Scaffold: React 19 + TS + Vite + shadcn/ui + Recharts + TanStack Table + SheetJS (CDN) + Vitest + Testing Library + Playwright. Marca e tokens da D17.
+2. Pipeline em camadas: leitor (arquivo → abas cruas) → normalizador (tipa colunas: texto, número, data, vazio) → registro de painéis (aba → painel específico ou visão genérica) → tela.
+3. Visão genérica (D22): tabela por aba com filtros automáticos (texto com poucos valores distintos, datas), chips e "limpar".
+4. Modo apresentação (D20/D21): quase só informação; barra de abas e filtros aparece sob demanda e some sozinha; setas trocam de aba; tecla abre filtros.
+5. Ocultar/reexibir abas e escolher colunas visíveis (D7/D8).
+6. CI no GitHub Actions só em push na `main` (D24).
+
+**Pronto quando:** importar qualquer `.xlsx` mostra todas as abas na visão genérica, com filtros e atalhos funcionando; testes de unidade e o ponta a ponta passam.
 
 ## Fase 3 — Planilha real e contrato de dados
 

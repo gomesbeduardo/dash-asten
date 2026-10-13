@@ -1,7 +1,7 @@
 # PRD — Painel de análise de planilhas (Asten)
 
 **Versão:** v2, 13/10/2026, revisada após sessão de grilling. A v1 está no histórico do Git.
-**Status:** planejamento e alinhamento. **Não autoriza código de produto** até aprovação do Líder (meta: 16/10/2026). O único código permitido antes disso é o protótipo descartável descrito em §13.
+**Status:** esqueleto neutro do produto em construção (D19). Painéis e métricas só depois da validação do Líder (meta: 16/10/2026).
 **Escopo:** painel local, numa página única, para conduzir a reunião semanal interna a partir de uma planilha `.xlsx` de estrutura fixa.
 
 ## 0. Decisões do grilling 13/10
@@ -22,9 +22,15 @@
 | D12 | Visual | A Asten tem marca. A **cor principal entra só como acento** sobre uma base neutra e clara, com uma paleta de séries acessível separada da marca. |
 | D13 | Stack | **Aprovada (Checkpoint C, 13/10)** depois da comparação breve de todas as opções: React 19 + TS + Vite 8, shadcn/ui (Tailwind v4), Recharts 3, TanStack Table e SheetJS ≥ 0.20.3 pelo CDN oficial. O `xlsx` do npm está **proibido** por causa de CVEs. Detalhes em `docs/comparacao-stack.md`. |
 | D14 | Sucesso | **Aprovação do Líder.** Até 16/10 a entrega é planejamento, alinhamento e protótipo. Nada de produto antes de 100% de alinhamento. |
-| D15 | Protótipo | **App React local descartável** em `prototype/`, na stack escolhida, com dados fictícios. Artifact não serve porque fica visualmente muito diferente do produto. |
+| D15 | Protótipo | **App React local descartável**, hoje na branch `prototipo` (D23), na stack escolhida, com dados fictícios. Artifact não serve porque fica visualmente muito diferente do produto. |
 | D17 | Estética e telas | O painel será exibido sobretudo em **TVs e telas grandes**, mas o risco de projeção continua valendo. Por isso as **superfícies são sólidas**, com acabamento moderno e contido: cantos suaves, sombras discretas, tipografia forte. Vidro/translucidez estilo Apple foi descartado; nada de efeitos decorativos. A marca vem de astensuite.com.br: laranja `#ef8127` em detalhes, azul `#043f63` em destaques de texto e ações, e Oxanium nos títulos e números (ver `docs/marca/`). |
 | D18 | Planilha consolidada | A planilha **chega validada antes do envio**: estrutura completa e conteúdo confiável. O painel trata o arquivo como consolidado. Saem do escopo o diagnóstico de abas incompatíveis, o mapeamento manual e o tratamento de arquivo malicioso. Fica só uma mensagem simples se alguém escolher um arquivo que não é a planilha da reunião. |
+| D19 | Esqueleto antes do ok | Revisa a D14: começa agora **só o esqueleto neutro** (projeto, leitura genérica de planilha, modo apresentação, encaixe do contrato por aba). Painéis específicos e métricas esperam a validação do Líder. |
+| D20 | Operação | A facilitadora usa **notebook com mouse e teclado ligado à TV**. A tela mostra quase só informação; abas e filtros aparecem sob demanda (mouse ou tecla) e somem sozinhos. Setas trocam de aba e uma tecla abre os filtros. |
+| D21 | Formato da tela | **Página com rolagem** e o mínimo de moldura, com foco quase total na informação. Nada de cara de "site com dashboard". |
+| D22 | Modo genérico | **Qualquer `.xlsx` já funciona:** cada aba vira uma tabela com filtros automáticos nas colunas de texto com poucos valores distintos e nas de data. Painéis específicos entram por aba, por cima, quando a planilha chegar. Dados fictícios só nos testes. |
+| D23 | Repositório | Protótipo congelado na branch `prototipo`. O produto começa do zero na `main`, na raiz do repo. |
+| D24 | Testes e CI | Vitest (TDD) e Testing Library; um teste Playwright ponta a ponta com `.xlsx` gerado no próprio teste. GitHub Actions **só em push na `main`**. Sem deploy até decidir a hospedagem. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 1. Visão
@@ -164,7 +170,7 @@ Tudo fica na memória da página. Trocar de arquivo reinicia a sessão. A fronte
 
 **Stack aprovada (D13):** React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 via shadcn charts · TanStack Table · SheetJS CE ≥ 0.20.3 pelo CDN oficial, nunca o `xlsx` do npm · estado local com seletores puros. ECharts é o plano B para gráficos. Comparação e fontes em `docs/comparacao-stack.md`.
 
-O protótipo descartável (D15) fica em `prototype/`, usa essa stack e dados **fictícios marcados como tal**, e cobre as duas hipóteses de conteúdo:
+O protótipo descartável (D15) fica na branch `prototipo`, pasta `prototype/`, usa essa stack e dados **fictícios marcados como tal**, e cobre as duas hipóteses de conteúdo:
 
 - aba **"Indicadores"**: meta vs. realizado por mês e área;
 - aba **"Projetos"**: status, prazo, % de conclusão e atrasos;

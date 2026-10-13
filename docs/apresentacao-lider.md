@@ -20,7 +20,7 @@ Tudo roda no navegador. A planilha não sai do computador e some quando a aba é
 
 Dados fictícios, com duas abas de exemplo (indicadores e projetos), porque ainda não sabemos o formato exato da planilha. Capturas em `docs/prototipo/`.
 
-Para abrir: `cd prototype && npm install && npm run dev`
+Para abrir: `git switch prototipo && cd prototype && npm install && npm run dev`
 
 ## Tecnologia
 
