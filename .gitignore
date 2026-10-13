@@ -11,3 +11,12 @@ dist/
 .DS_Store
 *.log
 .env*
+
+# Vite / testes
+dist-ssr/
+*.local
+coverage/
+playwright-report/
+test-results/
+.vscode/*
+!.vscode/extensions.json
