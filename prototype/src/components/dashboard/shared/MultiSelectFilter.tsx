@@ -31,7 +31,7 @@ export function MultiSelectFilter({ label, options, value, onChange }: MultiSele
         >
           <span>{label}</span>
           {value.length > 0 && (
-            <span className="num rounded-full bg-brand-soft px-2 text-sm font-semibold text-brand">
+            <span className="num rounded-full bg-brand-soft px-2 text-sm font-semibold text-brand-ink">
               {value.length}
             </span>
           )}
@@ -52,7 +52,7 @@ export function MultiSelectFilter({ label, options, value, onChange }: MultiSele
                       aria-hidden
                       className={cn(
                         "flex size-5 shrink-0 items-center justify-center rounded border border-input bg-card",
-                        checked && "border-brand bg-brand text-primary-foreground"
+                        checked && "border-primary bg-primary text-primary-foreground"
                       )}
                     >
                       {checked && <Check className="size-3.5" />}

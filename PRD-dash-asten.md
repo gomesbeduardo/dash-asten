@@ -23,6 +23,7 @@
 | D13 | Stack | **Aprovada (Checkpoint C, 13/10)** depois da comparação breve de todas as opções: React 19 + TS + Vite 8, shadcn/ui (Tailwind v4), Recharts 3, TanStack Table e SheetJS ≥ 0.20.3 pelo CDN oficial. O `xlsx` do npm está **proibido** por causa de CVEs. Detalhes em `docs/comparacao-stack.md`. |
 | D14 | Sucesso | **Aprovação do Líder.** Até 16/10 a entrega é planejamento, alinhamento e protótipo. Nada de produto antes de 100% de alinhamento. |
 | D15 | Protótipo | **App React local descartável** em `prototype/`, na stack escolhida, com dados fictícios. Artifact não serve porque fica visualmente muito diferente do produto. |
+| D17 | Estética e telas | O painel será exibido sobretudo em **TVs e telas grandes**, mas o risco de projeção continua valendo. Por isso as **superfícies são sólidas**, com acabamento moderno e contido: cantos suaves, sombras discretas, tipografia forte. Vidro/translucidez estilo Apple foi descartado; nada de efeitos decorativos. A marca vem de astensuite.com.br: laranja `#ef8127` em detalhes, azul `#043f63` em destaques de texto e ações, e Oxanium nos títulos e números (ver `docs/marca/`). |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 1. Visão

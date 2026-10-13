@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import logo from "@/assets/asten-logo-fundo-claro.png"
 import { SheetStatus } from "./SheetStatus"
 
 type Props = {
@@ -25,9 +26,9 @@ export function AppHeader({ fileName, importedAt, hasActiveFilters, onReplace, o
   const when = importedAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
 
   return (
-    <header className="border-b bg-card">
+    <header className="sticky top-0 z-30 border-b bg-card">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
-        <span className="text-2xl font-semibold tracking-tight text-brand">Asten</span>
+        <img src={logo} alt="Asten by AVMB Group" className="h-9 w-auto" />
         <div className="flex min-w-0 items-center gap-2 text-base">
           <FileSpreadsheet className="size-5 shrink-0 text-muted-foreground" aria-hidden />
           <div className="min-w-0">
@@ -70,7 +71,7 @@ export function AppHeader({ fileName, importedAt, hasActiveFilters, onReplace, o
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl">Limpar a sessão?</DialogTitle>
+            <DialogTitle className="font-display text-xl text-brand-ink">Limpar a sessão?</DialogTitle>
             <DialogDescription className="text-base">
               Há filtros ativos. Ao limpar, você perde os filtros de todas as abas e volta para a tela de carregamento.
             </DialogDescription>

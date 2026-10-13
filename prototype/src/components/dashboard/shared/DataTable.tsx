@@ -95,10 +95,10 @@ export function DataTable<T>({ caption, data, columns, initialHidden = [], pageS
                         <button
                           type="button"
                           onClick={h.column.getToggleSortingHandler()}
-                          className="-mx-1 inline-flex min-h-9 items-center gap-1.5 rounded px-1 outline-none hover:text-brand focus-visible:ring-3 focus-visible:ring-ring/50"
+                          className="-mx-1 inline-flex min-h-9 items-center gap-1.5 rounded px-1 outline-none hover:text-brand-ink focus-visible:ring-3 focus-visible:ring-ring/50"
                         >
                           {flexRender(h.column.columnDef.header, h.getContext())}
-                          <Icon className={sorted ? "size-4 text-brand" : "size-4 text-muted-foreground"} aria-hidden />
+                          <Icon className={sorted ? "size-4 text-brand-ink" : "size-4 text-muted-foreground"} aria-hidden />
                         </button>
                       ) : (
                         flexRender(h.column.columnDef.header, h.getContext())

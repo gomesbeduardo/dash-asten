@@ -9,10 +9,10 @@ export function ChartCard({ title, subtitle, isEmpty, dataView, children, classN
   const titleId = useId()
 
   return (
-    <section aria-labelledby={titleId} className={cn("flex flex-col gap-3 rounded-xl border bg-card p-5", className)}>
+    <section aria-labelledby={titleId} className={cn("flex flex-col gap-3 rounded-[12px] border bg-card shadow-[var(--shadow-card)] p-5", className)}>
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 id={titleId} className="text-lg leading-tight font-semibold">
+          <h3 id={titleId} className="font-display text-xl leading-tight font-semibold text-brand-ink">
             {title}
           </h3>
           <p className="mt-0.5 text-base text-muted-foreground">{subtitle}</p>

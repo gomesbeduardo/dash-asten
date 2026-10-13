@@ -45,7 +45,7 @@ export function LateProjectsList({ late }: { late: ProjectRow[] }) {
         })}
       </ol>
       {late.length > LATE_TOP && (
-        <a href="#projetos-tabela" className="text-sm font-medium text-[var(--brand)] underline underline-offset-4">
+        <a href="#projetos-tabela" className="text-sm font-medium text-brand-ink underline underline-offset-4">
           Ver todos os {late.length} na tabela
         </a>
       )}

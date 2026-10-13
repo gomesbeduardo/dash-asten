@@ -26,7 +26,7 @@ export function SheetTabs({ hidden, onToggle }: Props) {
           <TabsTrigger
             key={s.id}
             value={s.id}
-            className="h-11 flex-none px-4 text-base data-active:font-semibold data-active:text-brand group-data-[variant=line]/tabs-list:data-active:after:bg-brand"
+            className="h-11 flex-none px-4 text-base data-active:font-semibold data-active:text-brand-ink group-data-[variant=line]/tabs-list:data-active:after:bg-brand group-data-[variant=line]/tabs-list:data-active:after:h-[3px] group-data-[variant=line]/tabs-list:data-active:after:opacity-100"
           >
             {s.name}
           </TabsTrigger>
