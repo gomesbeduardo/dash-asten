@@ -15,7 +15,7 @@
 | D5 | Layout | **Dashboard fixo por aba.** A forma ainda depende do Líder, mas tende a ser **configuração declarativa no código**. Se a aba não tem layout definido, aparece a tabela de detalhe e um aviso. Nenhum gráfico é inferido por heurística. |
 | D6 | Filtros | **Tudo por aba.** Nenhum filtro atravessa abas, nem o de período. |
 | D7 | Gestão de abas | Fica **ocultar/reexibir abas**. Renomear e reordenar estão **cortados**; nome e ordem vêm da planilha. |
-| D8 | Foco nos dados | O usuário **escolhe quais colunas aparecem** na tabela de detalhe. O mapeamento técnico (linha de cabeçalho e tipo de cada coluna) só aparece como fallback, quando o arquivo não bate com o modelo. |
+| D8 | Foco nos dados | O usuário **escolhe quais colunas aparecem** na tabela de detalhe. Não há tela de mapeamento técnico (ver D18). |
 | D9 | Dados sensíveis | **Sem máscara automática.** O layout fixo decide o que aparece. Nada persiste: fechar a aba do navegador apaga tudo. |
 | D10 | Exportação / Claude Motion | **Fora do MVP.** O Motion fica registrado só como ideia futura, sem código. |
 | D11 | Hospedagem | **Em aberto** (depende do Líder ou da TI). O build deve ser estático e agnóstico: precisa funcionar em qualquer host estático. |
@@ -24,6 +24,7 @@
 | D14 | Sucesso | **Aprovação do Líder.** Até 16/10 a entrega é planejamento, alinhamento e protótipo. Nada de produto antes de 100% de alinhamento. |
 | D15 | Protótipo | **App React local descartável** em `prototype/`, na stack escolhida, com dados fictícios. Artifact não serve porque fica visualmente muito diferente do produto. |
 | D17 | Estética e telas | O painel será exibido sobretudo em **TVs e telas grandes**, mas o risco de projeção continua valendo. Por isso as **superfícies são sólidas**, com acabamento moderno e contido: cantos suaves, sombras discretas, tipografia forte. Vidro/translucidez estilo Apple foi descartado; nada de efeitos decorativos. A marca vem de astensuite.com.br: laranja `#ef8127` em detalhes, azul `#043f63` em destaques de texto e ações, e Oxanium nos títulos e números (ver `docs/marca/`). |
+| D18 | Planilha consolidada | A planilha **chega validada antes do envio**: estrutura completa e conteúdo confiável. O painel trata o arquivo como consolidado. Saem do escopo o diagnóstico de abas incompatíveis, o mapeamento manual e o tratamento de arquivo malicioso. Fica só uma mensagem simples se alguém escolher um arquivo que não é a planilha da reunião. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 1. Visão
@@ -47,7 +48,6 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 - Ocultar e mostrar séries pela legenda.
 - Ocultar e reexibir abas da navegação.
 - Escolher as colunas visíveis na tabela de detalhe.
-- Diagnosticar com clareza quando o arquivo não bate com o modelo.
 - Visual sóbrio, legível em projeção e acessível.
 
 ## 4. Não objetivos (MVP)
@@ -71,7 +71,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 | Facilitadora | Importar a planilha da semana em minutos e conduzir filtros e navegação ao vivo. |
 | Líder | Aprova escopo, métricas e layout. Também é dono das definições de negócio pendentes (§8). |
 
-**Cenário:** computador compartilhado e projetado. A facilitadora abre o painel, importa o arquivo, confere o diagnóstico e conduz a reunião. Fechar a aba descarta tudo.
+**Cenário:** computador ligado a uma TV ou tela grande (às vezes projetor). A facilitadora abre o painel, importa a planilha da semana e conduz a reunião. Fechar a aba descarta tudo.
 
 ## 6. Fluxos
 
@@ -80,7 +80,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 2. A pessoa seleciona ou arrasta um `.xlsx`.
 3. Leitura local de todas as abas, com status por aba (ok, aviso, vazia, não reconhecida).
 4. As abas com conteúdo entram na barra de navegação. Abas auxiliares ou sem layout podem ser ocultadas.
-5. Se uma aba não bate com o modelo (coluna faltando, cabeçalho em outra linha, tipo inválido), aparece um diagnóstico do que faltou e, como fallback, o mapeamento de cabeçalho e tipo (D8). Nada é inferido em silêncio.
+5. Como a planilha chega validada (D18), não há etapa de mapeamento nem diagnóstico por aba. Se o arquivo escolhido não for a planilha da reunião, aparece uma mensagem simples pedindo o arquivo certo.
 
 ### 6.2 Conduzir a reunião
 1. A tela única mostra a barra de abas e o dashboard fixo da aba selecionada.
@@ -94,10 +94,10 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 
 ## 7. Requisitos funcionais (MVP)
 
-- Aceitar só `.xlsx`, com mensagens compreensíveis para arquivo inválido, vazio, protegido, ilegível ou acima do limite.
+- Aceitar só `.xlsx`, com uma mensagem simples se o arquivo não for a planilha da reunião.
 - Ler o arquivo no dispositivo, sem nenhuma requisição de rede com os dados.
-- Carregar todas as abas não vazias e preservar o nome de origem. Abas vazias ou não reconhecidas ficam identificadas, com explicação, e não bloqueiam as outras.
-- Validar cada aba contra o **contrato da planilha-modelo**, que vive no código, é tipado e é validado em runtime.
+- Carregar todas as abas com conteúdo e preservar o nome de origem.
+- Ler cada aba conforme o **contrato da planilha-modelo**, que vive no código e é tipado. A planilha já chega validada (D18).
 - Normalizar texto, número, data e vazio. Mostrar ausente como ausente, nunca como zero.
 - Ter um dashboard fixo por aba conhecida e uma tabela de detalhe para as abas sem layout.
 - Filtros por aba, só em dimensões aprovadas no contrato, com busca e multisseleção quando fizer sentido, chips removíveis e "limpar filtros".
@@ -140,7 +140,7 @@ Teclado em upload, abas, filtros, legenda e tabela; rótulos acessíveis; erros 
 - **Privacidade:** processamento estritamente local; nenhum log ou telemetria com conteúdo.
 - **Desempenho:** filtro responsivo. Os limites são medidos com o arquivo real (§8.8), e Web Worker só entra se a medição pedir.
 - **Compatibilidade:** Chrome, Edge, Firefox e Safari recentes, em desktop e projeção.
-- **Robustez:** detectar e explicar aba ausente, cabeçalho ambíguo, tipo inválido, data não interpretável e arquivo grande. Nunca travar em silêncio.
+- **Robustez:** a planilha chega validada (D18). Basta não travar e avisar de forma simples se o arquivo escolhido for outro.
 - **Manutenibilidade:** módulos separados para ingestão, contrato e modelo normalizado, filtros, agregações, configuração de layout e componentes visuais. Nenhuma métrica fica embutida em componente de gráfico.
 - **Build:** estático e agnóstico de host (D11).
 
@@ -171,20 +171,17 @@ O protótipo descartável (D15) fica em `prototype/`, usa essa stack e dados **f
 
 com filtros por aba, ocultar aba, escolher colunas e estados vazio/erro. Ele serve para o Líder reagir ao visual e à interação. **Não é código de produto** e não define métricas reais.
 
-## 14. Segurança de parsing e privacidade
+## 14. Privacidade
 
-- Extensão e MIME são só sinais iniciais; o conteúdo é tratado como não confiável.
-- Limites configuráveis de tamanho, abas, linhas e colunas, com valores definidos a partir da amostra real.
-- Nunca executar macros, fórmulas, links externos nem HTML da planilha. Célula é renderizada como texto.
-- Nenhum log de células ou nomes. Mensagens de diagnóstico são estruturais.
+- A planilha chega validada e consolidada (D18); o painel só lê os valores, sem executar fórmulas ou macros, e mostra células como texto, que é o comportamento padrão das bibliotecas escolhidas.
+- Nenhum log de células ou nomes.
 - Nenhuma planilha real entra no repositório, em snapshots, URLs ou mensagens de erro.
 
 ## 15. Critérios de aceite do MVP
 
 - Importar um `.xlsx` carrega todas as abas com conteúdo localmente, sem tráfego de dados.
 - Todas as abas aparecem numa única tela, cada uma com sua origem clara, e podem ser ocultadas e reexibidas.
-- Aba vazia, incompatível ou diferente do modelo recebe diagnóstico próprio e não bloqueia as demais.
-- Arquivo inválido, vazio, grande demais ou incompatível gera mensagem útil, sem quebrar a interface.
+- Um arquivo que não é a planilha da reunião gera uma mensagem simples, sem quebrar a interface.
 - Cada aba conhecida abre com o dashboard fixo acordado: título, unidade, período, legenda e estado sem dados.
 - Alterar um filtro atualiza tudo o que depende dele na aba; os filtros ativos ficam visíveis; "limpar" restaura o estado inicial.
 - Ocultar uma série não corrompe filtros nem totais.

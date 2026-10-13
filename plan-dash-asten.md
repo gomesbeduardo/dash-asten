@@ -7,7 +7,7 @@
 
 1. Leia `PRD-dash-asten.md` inteiro antes de alterar qualquer coisa.
 2. Não invente métricas, colunas, fórmulas, regras de negócio, limites de arquivo nem interpretações de backlog. Quando isso afetar comportamento, pergunte e registre a resposta no PRD.
-3. A planilha é não confiável. Processe localmente; não execute macros, fórmulas, links nem HTML; não envie dados a serviços externos.
+3. A planilha chega validada e consolidada (D18). Processe localmente e não envie dados a serviços externos.
 4. Sem autenticação, backend, banco, telemetria de conteúdo, API ou persistência.
 5. Mantenha separados leitor, contrato e modelo, filtros, agregações, layout e componentes visuais.
 6. **Nenhum código de produto antes da aprovação do Líder (D14).** Até lá só existem docs e o protótipo descartável.
@@ -33,7 +33,7 @@
 2. Gerar dados **fictícios marcados como tais**, sem nenhuma planilha real, cobrindo as duas hipóteses (D3):
    - "Indicadores": meta vs. realizado por mês e área;
    - "Projetos": status, prazo, % de conclusão e atrasos.
-3. Mostrar: estado vazio e upload, barra de abas (com ocultar e reexibir), dashboard fixo por aba, filtros por aba com chips e "limpar", legenda que oculta série, tabela com escolha de colunas, e um exemplo de diagnóstico de aba incompatível.
+3. Mostrar: estado vazio e upload, barra de abas (com ocultar e reexibir), dashboard fixo por aba, filtros por aba com chips e "limpar", legenda que oculta série, tabela com escolha de colunas.
 4. Aplicar a direção visual do PRD §9: base neutra, acento de marca (placeholder até receber a marca), legível em projeção. Usar a skill `frontend-design` e a skill oficial da biblioteca de UI escolhida.
 5. Validar em resolução de projeção (por exemplo, 1920×1080 e 1366×768) e numa largura menor.
 
@@ -57,17 +57,16 @@
 4. Estados de vazio, carregando, erro e dados insuficientes antes dos gráficos.
 5. Aproveitar o que o protótipo validou visualmente, reescrevendo com testes em vez de copiar o código descartável.
 
-## Fase 5 — Ingestão, contrato e diagnóstico
+## Fase 5 — Leitura da planilha
 
-1. Aceitar só `.xlsx` e validar extensão, MIME e conteúdo de forma defensiva.
-2. Limites de tamanho, abas, linhas e colunas definidos a partir da medição feita com a amostra real.
-3. Ler o `ArrayBuffer` localmente, sem rede e sem log de células.
-4. Processar todas as abas e mostrar status por aba. Abas inválidas não bloqueiam as outras.
-5. Aplicar o contrato: coerção documentada, erros por coluna, avisos e diagnóstico legível.
-6. Mapeamento de cabeçalho e tipo só como fallback, quando a aba não bate com o modelo (D8).
-7. Web Worker apenas se a medição mostrar bloqueio.
+A planilha chega validada e consolidada (D18), então esta fase é enxuta.
 
-**Testes:** arquivo ilegível, rejeitado ou vazio; aba fora do modelo; cabeçalho ausente ou ambíguo; datas, números, nulos e inválidos; limites; garantia de que fórmulas e HTML não são executados nem injetados.
+1. Aceitar `.xlsx` e ler o `ArrayBuffer` localmente, sem rede e sem log de células.
+2. Ler todas as abas conforme o contrato da planilha-modelo e normalizar texto, número, data e vazio.
+3. Se o arquivo escolhido não for a planilha da reunião, mostrar uma mensagem simples pedindo o arquivo certo.
+4. Web Worker apenas se a medição com o arquivo real mostrar a tela travando.
+
+**Testes:** leitura de cada aba da fixture; datas, números e vazios; mensagem para arquivo errado.
 
 ## Fase 6 — Filtros por aba e agregações
 
