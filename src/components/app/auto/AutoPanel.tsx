@@ -6,6 +6,7 @@ import type { PanelProps } from "@/panels/registry"
 import { GenericTable } from "../GenericTable"
 import { entryContainer } from "../motion/variants"
 import { AutoChartCard } from "./AutoChartCard"
+import { complementGridClass } from "./chartTheme"
 import { KpiStrip } from "./KpiStrip"
 
 /** Painel da aba sem painel específico (D25): KPIs + gráficos automáticos + tabela. */
@@ -37,7 +38,7 @@ export function AutoPanel({
           <KpiStrip kpis={dash.kpis} entry={play} />
           {main && <AutoChartCard chart={main} main entry={play} />}
           {others.length > 0 && (
-            <div className="grid grid-cols-1 gap-4 min-[1500px]:grid-cols-3 lg:grid-cols-2">
+            <div className={complementGridClass(Math.min(others.length, 3))}>
               {others.slice(0, 3).map((c) => (
                 <AutoChartCard key={c.id} chart={c} entry={play} />
               ))}

@@ -18,6 +18,7 @@ import { chartGrow } from "../motion/tokens"
 import { entryItem } from "../motion/variants"
 import { formatValue } from "../motion/format"
 import { cn } from "@/lib/utils"
+import { lineDomain, statusColors, statusOrder } from "./chartTheme"
 
 const PALETTE = [
   "var(--chart-1)",
@@ -28,7 +29,12 @@ const PALETTE = [
 ]
 const AXIS = { fontSize: 14, fill: "#475565" }
 
-export function seriesColor(s: ChartSeries, index: number): string {
+export function seriesColor(
+  s: ChartSeries,
+  index: number,
+  statusColor?: string
+): string {
+  if (statusColor) return statusColor
   if (s.role === "meta") return "var(--chart-2)"
   if (s.role === "realizado") return "#043f63"
   return PALETTE[index % PALETTE.length]
@@ -131,10 +137,12 @@ export function AutoChartCard({
   const hHeight = horizontal
     ? Math.max(height, chart.data.length * 40 + 40)
     : height
+  const stacked = chart.kind === "stackedBar"
+  const colorsByStatus = stacked ? statusColors(chart.series) : null
   const config: ChartConfig = Object.fromEntries(
     chart.series.map((s, i) => [
       `s${i}`,
-      { label: s.label, color: seriesColor(s, i) },
+      { label: s.label, color: seriesColor(s, i, colorsByStatus?.[i]) },
     ])
   )
   const empty = chart.data.length === 0
@@ -144,11 +152,21 @@ export function AutoChartCard({
     animationEasing: "ease-out" as const,
   }
 
-  const series = chart.series.map((s, i) => ({
-    s,
-    color: seriesColor(s, i),
-    hide: hidden.includes(s.key),
+  const order = stacked
+    ? statusOrder(chart.series)
+    : chart.series.map((_, i) => i)
+  const series = order.map((i) => ({
+    s: chart.series[i],
+    color: seriesColor(chart.series[i], i, colorsByStatus?.[i]),
+    hide: hidden.includes(chart.series[i].key),
   }))
+  const lineValues =
+    chart.kind === "line"
+      ? series
+          .filter((x) => !x.hide)
+          .flatMap(({ s }) => chart.data.map((d) => d[s.key]))
+          .filter((v): v is number => typeof v === "number")
+      : []
 
   const chartBody =
     chart.kind === "line" ? (
@@ -166,6 +184,8 @@ export function AutoChartCard({
         <YAxis
           tick={AXIS}
           width={72}
+          domain={lineDomain(lineValues)}
+          allowDecimals={chart.valueFormat !== "integer"}
           tickFormatter={(v) => formatValue(v, chart.valueFormat)}
         />
         <Tooltip content={<Tip chart={chart} />} />
