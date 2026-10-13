@@ -1,4 +1,5 @@
 import { useRef } from "react"
+import { motion, useReducedMotion } from "motion/react"
 import { EyeIcon, FilterIcon, FolderOpenIcon, Trash2Icon } from "lucide-react"
 
 import logo from "@/assets/asten-logo-fundo-claro.png"
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { duration, standard } from "./motion/tokens"
 import { visibleIds } from "./tabs-state"
 
 export type TopBarProps = {
@@ -31,6 +33,7 @@ export type TopBarProps = {
 
 export function TopBar(p: TopBarProps) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const reduce = useReducedMotion()
   const visible = visibleIds(
     p.sheets.map((s) => s.id),
     p.hidden
@@ -38,11 +41,17 @@ export function TopBar(p: TopBarProps) {
   const shown = p.sheets.filter((s) => visible.includes(s.id))
 
   return (
-    <header
+    <motion.header
       data-visible={p.visible}
+      initial={false}
+      animate={{ opacity: p.visible ? 1 : 0, y: p.visible ? 0 : -24 }}
+      transition={{
+        duration: reduce ? 0 : p.visible ? duration.base : duration.fast,
+        ease: standard,
+      }}
       className={cn(
-        "fixed inset-x-0 top-0 z-30 border-b bg-card shadow-(--shadow-card) transition-[transform,opacity] duration-300 motion-reduce:transition-none",
-        !p.visible && "pointer-events-none -translate-y-full opacity-0"
+        "fixed inset-x-0 top-0 z-30 border-b bg-card shadow-(--shadow-card)",
+        !p.visible && "pointer-events-none"
       )}
     >
       <div className="flex items-center gap-4 px-6 py-2">
@@ -149,6 +158,6 @@ export function TopBar(p: TopBarProps) {
       <p className="border-t px-6 py-1 text-sm text-muted-foreground">
         ← → abas · 1–9 vai à aba · F filtros · H barra
       </p>
-    </header>
+    </motion.header>
   )
 }

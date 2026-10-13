@@ -1,4 +1,5 @@
-import { createElement, useCallback, useMemo, useState } from "react"
+import { createElement, useCallback, useEffect, useMemo, useState } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import {
   applyFilters,
@@ -6,7 +7,8 @@ import {
   type SheetFilters,
   type Workbook,
 } from "@/core"
-import { getPanel } from "@/panels/registry"
+import { resolvePanel } from "@/panels/registry"
+import { crossfade } from "@/components/app/motion/tokens"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,7 +21,6 @@ import {
 } from "@/components/ui/dialog"
 import { FilterChips } from "@/components/app/FilterChips"
 import { FiltersPanel } from "@/components/app/FiltersPanel"
-import { GenericTable } from "@/components/app/GenericTable"
 import { ImportScreen } from "@/components/app/ImportScreen"
 import { TopBar } from "@/components/app/TopBar"
 import { useBarVisibility } from "@/components/app/hooks/useBarVisibility"
@@ -62,6 +63,9 @@ function Presenter({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [tabsMenuOpen, setTabsMenuOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const reduce = useReducedMotion()
+  // Abas já abertas desde a importação: a entrada escalonada toca uma vez só.
+  const [seen, setSeen] = useState<string[]>([])
 
   const { workbook, hidden } = state
   const allIds = useMemo(() => workbook.sheets.map((s) => s.id), [workbook])
@@ -103,7 +107,15 @@ function Presenter({
     onToggleBar: bar.toggle,
   })
 
-  const panel = getPanel(sheet)
+  const panel = resolvePanel(sheet)
+  const entry = !seen.includes(sheet.id)
+  useEffect(() => {
+    const t = setTimeout(
+      () => setSeen((s) => (s.includes(activeId) ? s : [...s, activeId])),
+      0
+    )
+    return () => clearTimeout(t)
+  }, [activeId])
 
   return (
     <div className="min-h-svh">
@@ -150,29 +162,38 @@ function Presenter({
           </div>
         )}
 
-        <div className="flex flex-col gap-1">
-          <h1 className="text-6xl leading-none text-primary">{sheet.name}</h1>
-          <p className="text-lg text-muted-foreground">
-            {workbook.fileName} · importada às{" "}
-            {workbook.importedAt.toLocaleTimeString("pt-BR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={sheet.id}
+            className="flex flex-col gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : crossfade, ease: "linear" }}
+          >
+            <div className="flex flex-col gap-1">
+              <h1 className="text-6xl leading-none text-primary">
+                {sheet.name}
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                {workbook.fileName} · importada às{" "}
+                {workbook.importedAt.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
 
-        <FilterChips
-          sheet={sheet}
-          filters={filters}
-          onRemove={(key) => setSheetFilters(clearFilter(filters, key))}
-          onClearAll={() => setSheetFilters({})}
-        />
+            <FilterChips
+              sheet={sheet}
+              filters={filters}
+              onRemove={(key) => setSheetFilters(clearFilter(filters, key))}
+              onClearAll={() => setSheetFilters({})}
+            />
 
-        {panel ? (
-          createElement(panel, { sheet, rows, filters })
-        ) : (
-          <GenericTable key={sheet.id} sheet={sheet} rows={rows} />
-        )}
+            {createElement(panel, { sheet, rows, filters, entry })}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <FiltersPanel

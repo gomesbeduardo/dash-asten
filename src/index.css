@@ -86,6 +86,13 @@
     --chart-5: #7b8794; /* não iniciado */
     --late: #b42318;
     --radius: 0.5rem;
+    /* Tokens de movimento (D26), espelhados em src/components/app/motion/tokens.ts */
+    --motion-fast: 150ms;
+    --motion-base: 250ms;
+    --motion-slow: 400ms;
+    --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --motion-stagger: 110ms;
     --shadow-card: 0 1px 2px rgb(16 24 40 / 0.06);
     --sidebar: #ffffff;
     --sidebar-foreground: #14202b;
@@ -133,3 +140,12 @@ body {
 
 .font-display { font-family: var(--font-display); font-weight: 600; }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; }
+
+/* Toque/clique: encolhe 0.97 em 120 ms, só com mouse (D26). Hover nunca é obrigatório. */
+.press { transition: transform 120ms var(--motion-ease-standard); }
+@media (hover: hover) and (pointer: fine) {
+  .press:active { transform: scale(0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .press:active { transform: none; }
+}

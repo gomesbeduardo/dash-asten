@@ -22,3 +22,15 @@ describe("registro de painéis", () => {
     delete panels["Projetos"]
   })
 })
+
+describe("painel padrão", () => {
+  it("painel registrado tem prioridade; sem ele, AutoPanel", async () => {
+    const { resolvePanel } = await import("./registry")
+    const { AutoPanel } = await import("@/components/app/auto/AutoPanel")
+    const Panel = () => null
+    expect(resolvePanel(sheet("Sem painel"))).toBe(AutoPanel)
+    panels["Com painel"] = Panel
+    expect(resolvePanel(sheet("Com painel"))).toBe(Panel)
+    delete panels["Com painel"]
+  })
+})

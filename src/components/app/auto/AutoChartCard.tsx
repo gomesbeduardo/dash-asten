@@ -1,0 +1,335 @@
+import { useEffect, useState } from "react"
+import { TableIcon, ChartColumnIcon } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts"
+
+import type { AutoChart, ChartSeries } from "@/core"
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
+import { chartGrow } from "../motion/tokens"
+import { entryItem } from "../motion/variants"
+import { formatValue } from "../motion/format"
+import { cn } from "@/lib/utils"
+
+const PALETTE = [
+  "var(--chart-1)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "#b45f06",
+]
+const AXIS = { fontSize: 14, fill: "#475565" }
+
+export function seriesColor(s: ChartSeries, index: number): string {
+  if (s.role === "meta") return "var(--chart-2)"
+  if (s.role === "realizado") return "#043f63"
+  return PALETTE[index % PALETTE.length]
+}
+
+function shorten(v: unknown, max = 22) {
+  const s = String(v)
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s
+}
+
+type TipProps = {
+  active?: boolean
+  label?: string | number
+  payload?: { dataKey?: string | number; value?: unknown }[]
+  chart: AutoChart
+}
+
+function Tip({ active, label, payload, chart }: TipProps) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-md border bg-popover p-3 text-base shadow-md">
+      <p className="mb-1 font-medium">{label}</p>
+      {payload.map((p) => {
+        const s = chart.series.find((x) => x.key === p.dataKey)
+        return (
+          <p key={String(p.dataKey)} className="flex justify-between gap-4">
+            <span className="text-muted-foreground">{s?.label}</span>
+            <span className="num font-display font-semibold">
+              {formatValue(p.value as number | null, chart.valueFormat)}
+            </span>
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function DataTable({ chart }: { chart: AutoChart }) {
+  return (
+    <div className="max-h-96 overflow-auto">
+      <table className="w-full text-left text-base">
+        <caption className="sr-only">{chart.title}: dados do gráfico</caption>
+        <thead>
+          <tr className="border-b-2 border-primary/30 text-primary">
+            <th scope="col" className="px-3 py-2 font-display font-semibold">
+              {chart.xLabel}
+            </th>
+            {chart.series.map((s) => (
+              <th
+                key={s.key}
+                scope="col"
+                className="px-3 py-2 text-right font-display font-semibold"
+              >
+                {s.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {chart.data.map((d, i) => (
+            <tr key={`${d.x}-${i}`} className="border-b">
+              <th scope="row" className="px-3 py-2 font-normal">
+                {d.x}
+              </th>
+              {chart.series.map((s) => (
+                <td key={s.key} className="num px-3 py-2 text-right">
+                  {formatValue(d[s.key] as number | null, chart.valueFormat)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export function AutoChartCard({
+  chart,
+  main = false,
+  entry,
+}: {
+  chart: AutoChart
+  main?: boolean
+  entry: boolean
+}) {
+  const reduce = useReducedMotion()
+  const [hidden, setHidden] = useState<string[]>([])
+  const [showTable, setShowTable] = useState(false)
+  // Revisita: monta sem animar; depois liga, para o filtro só transitar valores.
+  const [armed, setArmed] = useState(entry)
+  useEffect(() => {
+    const t = setTimeout(() => setArmed(true), 0)
+    return () => clearTimeout(t)
+  }, [])
+  const animated = !reduce && armed
+
+  const horizontal = chart.horizontal && chart.kind !== "line"
+  const height = main ? 420 : 300
+  const hHeight = horizontal
+    ? Math.max(height, chart.data.length * 40 + 40)
+    : height
+  const config: ChartConfig = Object.fromEntries(
+    chart.series.map((s, i) => [
+      `s${i}`,
+      { label: s.label, color: seriesColor(s, i) },
+    ])
+  )
+  const empty = chart.data.length === 0
+  const common = {
+    isAnimationActive: animated,
+    animationDuration: chartGrow,
+    animationEasing: "ease-out" as const,
+  }
+
+  const series = chart.series.map((s, i) => ({
+    s,
+    color: seriesColor(s, i),
+    hide: hidden.includes(s.key),
+  }))
+
+  const chartBody =
+    chart.kind === "line" ? (
+      <LineChart
+        data={chart.data}
+        margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+      >
+        <CartesianGrid vertical={false} stroke="#d8dee4" />
+        <XAxis
+          dataKey="x"
+          tick={AXIS}
+          tickFormatter={(v) => shorten(v)}
+          tickMargin={8}
+        />
+        <YAxis
+          tick={AXIS}
+          width={72}
+          tickFormatter={(v) => formatValue(v, chart.valueFormat)}
+        />
+        <Tooltip content={<Tip chart={chart} />} />
+        {series.map(({ s, color, hide }) => (
+          <Line
+            key={s.key}
+            dataKey={s.key}
+            type="monotone"
+            stroke={color}
+            strokeWidth={3}
+            strokeDasharray={s.role === "meta" ? "8 6" : undefined}
+            dot={s.role === "meta" ? false : { r: 4, fill: color }}
+            hide={hide}
+            connectNulls
+            {...common}
+          />
+        ))}
+      </LineChart>
+    ) : (
+      <BarChart
+        data={chart.data}
+        layout={horizontal ? "vertical" : "horizontal"}
+        margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+      >
+        <CartesianGrid
+          horizontal={!horizontal}
+          vertical={horizontal}
+          stroke="#d8dee4"
+        />
+        {horizontal ? (
+          <>
+            <XAxis
+              type="number"
+              tick={AXIS}
+              tickFormatter={(v) => formatValue(v, chart.valueFormat)}
+            />
+            <YAxis
+              type="category"
+              dataKey="x"
+              tick={AXIS}
+              width={170}
+              tickFormatter={(v) => shorten(v)}
+            />
+          </>
+        ) : (
+          <>
+            <XAxis
+              dataKey="x"
+              tick={AXIS}
+              tickFormatter={(v) => shorten(v)}
+              tickMargin={8}
+            />
+            <YAxis
+              tick={AXIS}
+              width={72}
+              tickFormatter={(v) => formatValue(v, chart.valueFormat)}
+            />
+          </>
+        )}
+        <Tooltip content={<Tip chart={chart} />} cursor={{ fill: "#e6edf2" }} />
+        {series.map(({ s, color, hide }) => (
+          <Bar
+            key={s.key}
+            dataKey={s.key}
+            fill={color}
+            stackId={chart.kind === "stackedBar" ? "a" : undefined}
+            radius={chart.kind === "stackedBar" ? 0 : 3}
+            hide={hide}
+            {...common}
+          />
+        ))}
+      </BarChart>
+    )
+
+  return (
+    <motion.section
+      variants={reduce ? undefined : entryItem}
+      aria-label={chart.title}
+      className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-5 shadow-(--shadow-card)"
+    >
+      <header className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3
+            className={cn(
+              "font-display font-semibold text-primary",
+              main ? "text-3xl" : "text-2xl"
+            )}
+          >
+            {chart.title}
+          </h3>
+          <p className="text-base text-muted-foreground">{chart.subtitle}</p>
+        </div>
+        {!empty && (
+          <button
+            type="button"
+            aria-pressed={showTable}
+            onClick={() => setShowTable((v) => !v)}
+            className="press flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-base font-medium text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring aria-pressed:bg-accent"
+          >
+            {showTable ? (
+              <ChartColumnIcon className="size-5" aria-hidden />
+            ) : (
+              <TableIcon className="size-5" aria-hidden />
+            )}
+            Ver dados
+          </button>
+        )}
+      </header>
+
+      {empty ? (
+        <p className="py-12 text-center text-lg text-muted-foreground">
+          Sem dados para este filtro
+        </p>
+      ) : (
+        <>
+          {chart.series.length > 1 && (
+            <ul className="flex flex-wrap gap-2" aria-label="Séries">
+              {series.map(({ s, color, hide }) => (
+                <li key={s.key}>
+                  <button
+                    type="button"
+                    aria-pressed={!hide}
+                    onClick={() =>
+                      setHidden((h) =>
+                        h.includes(s.key)
+                          ? h.filter((k) => k !== s.key)
+                          : [...h, s.key]
+                      )
+                    }
+                    className={cn(
+                      "press flex min-h-11 items-center gap-2 rounded-md border px-3 text-base focus-visible:outline-2 focus-visible:outline-ring",
+                      hide
+                        ? "text-muted-foreground line-through"
+                        : "bg-accent/50 font-medium"
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className="inline-block h-0 w-6 border-t-[4px]"
+                      style={{
+                        borderColor: color,
+                        borderTopStyle: s.role === "meta" ? "dashed" : "solid",
+                      }}
+                    />
+                    {s.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {showTable && <DataTable chart={chart} />}
+          <div hidden={showTable}>
+            <ChartContainer
+              config={config}
+              className="aspect-auto w-full"
+              style={{ height: hHeight }}
+              role="img"
+              aria-label={`${chart.title}. ${chart.subtitle}`}
+            >
+              {chartBody}
+            </ChartContainer>
+          </div>
+        </>
+      )}
+    </motion.section>
+  )
+}

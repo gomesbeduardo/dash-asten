@@ -36,11 +36,11 @@ describe("App", () => {
     expect(screen.getByText("3 linhas")).toBeInTheDocument()
     await user.keyboard("{ArrowRight}")
     expect(
-      screen.getByRole("heading", { level: 1, name: "Outra" })
+      await screen.findByRole("heading", { level: 1, name: "Outra" })
     ).toBeInTheDocument()
     await user.keyboard("1")
     expect(
-      screen.getByRole("heading", { level: 1, name: "Projetos" })
+      await screen.findByRole("heading", { level: 1, name: "Projetos" })
     ).toBeInTheDocument()
     await user.keyboard("f")
     expect(
