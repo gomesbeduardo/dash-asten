@@ -19,7 +19,7 @@
 - `git init`, v1 dos docs commitada e repo privado `gomesbeduardo/dash-asten`.
 - `.gitignore` bloqueia `*.xlsx`, `*.xls`, `*.xlsm` e `*.csv` fora de `fixtures/`.
 
-## Fase 1 — Comparação breve de stack (até 14/10)
+## Fase 1 — Comparação breve de stack ✅ (13/10, aprovada no Checkpoint C)
 
 1. O `researcher` compara framework, UI, gráficos e leitor XLSX contra o caso do PRD: escopo enxuto, layout fixo, filtros por aba, build estático.
 2. Resultado em `docs/comparacao-stack.md`: tabela por categoria, recomendação, alternativas rejeitadas, riscos e fontes.
@@ -27,7 +27,7 @@
 
 **Checkpoint C — stack:** o usuário aprova a stack antes do protótipo.
 
-## Fase 2 — Protótipo descartável (até 16/10)
+## Fase 2 — Protótipo descartável ✅ (13/10, aguardando Checkpoint L)
 
 1. Criar `prototype/` como app local na stack aprovada, isolado do futuro produto (D15).
 2. Gerar dados **fictícios marcados como tais**, sem nenhuma planilha real, cobrindo as duas hipóteses (D3):

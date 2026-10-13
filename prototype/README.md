@@ -1,21 +1,13 @@
-# React + TypeScript + Vite + shadcn/ui
+# Protótipo descartável — Painel semanal Asten
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
-
-## Adding components
-
-To add components to your app, run the following command:
+**Dados 100% fictícios.** Serve só para o Líder avaliar visual e interação (PRD D15). Não é código de produto.
 
 ```bash
-npx shadcn@latest add button
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # typecheck + build estático em dist/
 ```
 
-This will place the ui components in the `src/components` directory.
+Stack: React 19 + TypeScript + Vite 8 + shadcn/ui (Radix, Tailwind v4) + Recharts 3 + TanStack Table. Ver `../docs/comparacao-stack.md`.
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
-```
+Estrutura: `src/data` (gerador fictício com seed), `src/lib` (filtros e agregações puros), `src/config` (abas e layouts), `src/components/dashboard/{shell,shared,indicators,projects,fallback}`.

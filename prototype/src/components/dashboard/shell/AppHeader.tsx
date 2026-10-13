@@ -26,7 +26,7 @@ export function AppHeader({ fileName, importedAt, hasActiveFilters, onReplace, o
 
   return (
     <header className="border-b bg-card">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
         <span className="text-2xl font-semibold tracking-tight text-brand">Asten</span>
         <div className="flex min-w-0 items-center gap-2 text-base">
           <FileSpreadsheet className="size-5 shrink-0 text-muted-foreground" aria-hidden />

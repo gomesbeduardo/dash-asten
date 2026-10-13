@@ -271,7 +271,7 @@ export function IndicatorsView({ rows, filters, onFiltersChange }: IndicatorsVie
           }
         >
           <ChartContainer config={barConfig} className="h-[340px] w-full">
-            <BarChart data={byArea} layout="vertical" margin={{ top: 8, right: 72, left: 0, bottom: 0 }}>
+            <BarChart data={byArea} layout="vertical" margin={{ top: 32, right: 72, left: 0, bottom: 0 }}>
               <CartesianGrid horizontal={false} strokeDasharray="3 3" />
               <XAxis type="number" domain={[0, barMax]} tick={AXIS} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} />
               <YAxis type="category" dataKey="area" tick={AXIS} tickLine={false} axisLine={false} width={96} />
@@ -290,7 +290,7 @@ export function IndicatorsView({ rows, filters, onFiltersChange }: IndicatorsVie
                     return (
                       <text x={x + width + 6} y={y + height / 2} dominantBaseline="central" fontSize={14} fontWeight={600} fill={below ? "var(--late)" : "var(--foreground)"}>
                         {below ? "▼ " : "✓ "}
-                        {fmtPct(value, 0)}
+                        {fmtPct(value, 1)}
                       </text>
                     )
                   }}

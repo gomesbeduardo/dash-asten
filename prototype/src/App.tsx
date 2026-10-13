@@ -70,7 +70,7 @@ export function App() {
           onClearSession={clearSession}
         />
       )}
-      <main className="mx-auto max-w-7xl px-6 py-5">
+      <main className="mx-auto max-w-[1600px] px-6 py-5">
         {session.phase === "empty" && <EmptyState onLoad={load} />}
         {session.phase === "loading" && <LoadingSkeleton />}
         {session.phase === "ready" && (

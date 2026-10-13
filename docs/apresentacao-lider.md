@@ -51,14 +51,32 @@ Detalhes, versões e fontes em `docs/comparacao-stack.md`.
 - ✅ **PRD v2 e plano v2** reescritos com o escopo enxuto; a v1 fica no histórico do Git.
 - ✅ **Comparação de stack**, com versões e licenças verificadas em 13/10.
 - ✅ **Repositório privado** criado, com bloqueio de planilhas reais no Git.
-- 🟡 **Protótipo descartável** em React local (`prototype/`), com **dados fictícios** e duas abas que cobrem as hipóteses de conteúdo:
-  - **Indicadores:** meta vs. realizado por mês e área;
-  - **Projetos:** status, prazo, % de conclusão e atrasos;
-  - além de exemplos de aba sem layout ("Instruções") e de aba incompatível ("Base antiga"), mostrando o diagnóstico.
+- ✅ **Protótipo descartável** em React local (`prototype/`), na stack escolhida e com **dados fictícios**. Cobre as duas hipóteses de conteúdo:
+  - **Indicadores:** meta vs. realizado por mês e área, com KPIs, o gráfico principal, o atingimento por área e a tabela;
+  - **Projetos:** status por área, atrasados, % de conclusão e a tabela;
+  - mais uma aba sem layout ("Instruções"), que vira só tabela, e uma aba incompatível ("Base antiga"), com diagnóstico e o mapeamento de fallback.
+
+  **O que já dá para testar nele:** filtros por aba com chips e "limpar"; ocultar série pela legenda; "Ver dados" (tabela alternativa ao gráfico); escolher colunas da tabela; ocultar e reexibir abas; status das abas; substituir planilha ou limpar sessão com confirmação.
+
+  **Verificado em 13/10:** typecheck, lint e build limpos; 11 checagens de interação automatizadas no Chrome passando, sem erros de console; capturas em 1920×1080, 1366×768 e 1024px.
 
   *Como rodar:* `cd prototype && npm install && npm run dev`.
 
-> O protótipo serve para reagir ao **visual e à interação**. Os números e as métricas são inventados e não representam a planilha real.
+| Tela | Captura |
+|---|---|
+| Estado vazio / upload | ![](prototipo/01-vazio.png) |
+| Indicadores (1920) | ![](prototipo/02-indicadores.png) |
+| Projetos (1920) | ![](prototipo/03-projetos.png) |
+| Aba incompatível + mapeamento | ![](prototipo/04-aba-incompativel.png) |
+| Status das abas | ![](prototipo/05-status-abas.png) |
+| Largura menor (1024) | ![](prototipo/06-largura-1024.png) |
+
+> O protótipo serve para reagir ao **visual e à interação**. Os números e as métricas são inventados e não representam a planilha real. A cor da marca (azul-petróleo) é provisória, até recebermos a identidade da Asten.
+
+**Perguntas para o Líder sobre o protótipo:**
+- A hierarquia faz sentido para a reunião: KPIs no topo, um gráfico principal, um complementar e a tabela?
+- A densidade está boa para projetar, ou é melhor ter menos informação por tela?
+- Quais desses KPIs de exemplo se parecem com o que a reunião realmente discute?
 
 ## 6. O que precisa ser analisado e decidido pelo Líder
 

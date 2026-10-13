@@ -3,7 +3,7 @@ import type { ProjectRow } from "@/data/mock"
 import { daysLate } from "@/lib/projects"
 import { fmtPct } from "@/lib/format"
 
-export const LATE_TOP = 8
+export const LATE_TOP = 5
 
 export function LateProjectsList({ late }: { late: ProjectRow[] }) {
   const top = late.slice(0, LATE_TOP)

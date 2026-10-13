@@ -107,9 +107,10 @@ export function monthlySeries(rows: IndicatorRow[]): MonthPoint[] {
 
 export type AreaPoint = { area: string; pct: number | null }
 
+/** Arredondado a 1 casa para que rótulo e classificação (na meta/abaixo) nunca divirjam. */
 export function attainmentByArea(rows: IndicatorRow[]): AreaPoint[] {
-  return AREAS.filter((a) => rows.some((r) => r.area === a)).map((area) => ({
-    area,
-    pct: attainment(rows.filter((r) => r.area === area)),
-  }))
+  return AREAS.filter((a) => rows.some((r) => r.area === a)).map((area) => {
+    const pct = attainment(rows.filter((r) => r.area === area))
+    return { area, pct: pct === null ? null : Math.round(pct * 10) / 10 }
+  })
 }

@@ -36,7 +36,7 @@ export function StatusByAreaChart({ data }: { data: StatusByArea[] }) {
           )
         })}
       </ul>
-      <ChartContainer config={config} className="aspect-auto h-[360px] w-full">
+      <ChartContainer config={config} className="aspect-auto h-[400px] w-full">
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
           <CartesianGrid horizontal={false} />
           <YAxis dataKey="area" type="category" tickLine={false} axisLine={false} width={96} tick={{ fontSize: 14 }} />

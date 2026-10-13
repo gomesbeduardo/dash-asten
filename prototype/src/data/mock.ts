@@ -122,14 +122,14 @@ export function buildProjectRows(): ProjectRow[] {
     const r = rnd()
     const status: Status =
       r < 0.17 ? "Não iniciado" : r < 0.6 ? "Em andamento" : r < 0.88 ? "Concluído" : "Pausado"
-    const inicio = addDays("2026-03-01", Math.floor(rnd() * 150))
+    const inicio = addDays("2026-06-15", Math.floor(rnd() * 150))
     const dur = 30 + Math.floor(rnd() * 140)
     const prazo = addDays(inicio, dur)
     let conclusao: number | null
     let concluidoEm: string | null = null
     if (status === "Concluído") {
       conclusao = 100
-      concluidoEm = addDays(REFERENCE_DATE, -Math.floor(rnd() * 70))
+      concluidoEm = addDays(REFERENCE_DATE, -Math.floor(rnd() * 45))
     } else if (status === "Não iniciado") conclusao = 0
     else if (status === "Pausado") conclusao = 10 + Math.floor(rnd() * 50)
     else conclusao = 15 + Math.floor(rnd() * 80)
