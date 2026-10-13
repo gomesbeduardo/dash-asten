@@ -39,7 +39,7 @@ Base: decisão D13 do PRD v2. As versões e datas vêm do registry npm e da API 
 
 | Lib | Versão | Licença | Gzip (teto) | Veredito |
 |---|---|---|---|---|
-| **Recharts** | 3.10.1 (13/10/26) | MIT | ~151 KB | **Escolhida.** Base dos shadcn charts; inclui radial (gauge e progresso). |
+| **Recharts** | 3.10.1 (13/10/26) | MIT | ~151 KB | **Escolhida.** Base dos shadcn charts; inclui radial (gauge e progresso). O protótipo usa a 3.8.0, fixada pelo shadcn; no produto, subir para 3.10.x. |
 | ECharts | 6.1.0 (05/26) + echarts-for-react 3.0.6 | Apache-2.0 | ~368 KB (menor com tree-shaking) | **Plano B**, se precisar de gauge rico ou de muitos tipos. A11y por teclado é fraca. |
 | Plotly.js | 4.1.2 (10/26) | MIT | ~1 MB | Pesada demais para o caso. Rejeitada. |
 | visx | @visx/xychart 4.0.0 (06/26) | MIT | ~50 KB | Baixo nível, sem gauge, e a a11y fica por nossa conta. Rejeitada no MVP. |

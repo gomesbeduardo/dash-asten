@@ -20,7 +20,7 @@
 | D10 | Exportação / Claude Motion | **Fora do MVP.** O Motion fica registrado só como ideia futura, sem código. |
 | D11 | Hospedagem | **Em aberto** (depende do Líder ou da TI). O build deve ser estático e agnóstico: precisa funcionar em qualquer host estático. |
 | D12 | Visual | A Asten tem marca. A **cor principal entra só como acento** sobre uma base neutra e clara, com uma paleta de séries acessível separada da marca. |
-| D13 | Stack | Antes de fechar, fazer uma **comparação breve de todas as opções** (ver `docs/comparacao-stack.md`). |
+| D13 | Stack | **Aprovada (Checkpoint C, 13/10)** depois da comparação breve de todas as opções: React 19 + TS + Vite 8, shadcn/ui (Tailwind v4), Recharts 3, TanStack Table e SheetJS ≥ 0.20.3 pelo CDN oficial. O `xlsx` do npm está **proibido** por causa de CVEs. Detalhes em `docs/comparacao-stack.md`. |
 | D14 | Sucesso | **Aprovação do Líder.** Até 16/10 a entrega é planejamento, alinhamento e protótipo. Nada de produto antes de 100% de alinhamento. |
 | D15 | Protótipo | **App React local descartável** em `prototype/`, na stack escolhida, com dados fictícios. Artifact não serve porque fica visualmente muito diferente do produto. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
@@ -161,7 +161,9 @@ Tudo fica na memória da página. Trocar de arquivo reinicia a sessão. A fronte
 
 ## 13. Stack e protótipo
 
-A stack será fechada a partir da comparação breve em `docs/comparacao-stack.md` (D13). O protótipo descartável (D15) fica em `prototype/`, usa a stack escolhida e dados **fictícios marcados como tal**, e cobre as duas hipóteses de conteúdo:
+**Stack aprovada (D13):** React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 via shadcn charts · TanStack Table · SheetJS CE ≥ 0.20.3 pelo CDN oficial, nunca o `xlsx` do npm · estado local com seletores puros. ECharts é o plano B para gráficos. Comparação e fontes em `docs/comparacao-stack.md`.
+
+O protótipo descartável (D15) fica em `prototype/`, usa essa stack e dados **fictícios marcados como tal**, e cobre as duas hipóteses de conteúdo:
 
 - aba **"Indicadores"**: meta vs. realizado por mês e área;
 - aba **"Projetos"**: status, prazo, % de conclusão e atrasos;
