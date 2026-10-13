@@ -51,7 +51,14 @@ function buildSheet(name: string, index: number, matrix: unknown[][], usedIds: S
   const nonEmpty = cells.filter((r) => r.some((c) => c !== null))
   if (nonEmpty.length < 2) return null // sem cabeçalho ou sem linhas de dados
 
-  const [header, ...body] = nonEmpty
+  // Cabeçalho = primeira linha (entre as 20 primeiras) com ao menos 50% da maior
+  // largura de células preenchidas; linhas acima (títulos) são descartadas.
+  const filled = (r: CellValue[]) => r.filter((c) => c !== null).length
+  const maxFilled = Math.max(...nonEmpty.slice(0, 20).map(filled))
+  const threshold = maxFilled >= 2 ? Math.max(2, Math.ceil(maxFilled / 2)) : 1
+  const headerAt = nonEmpty.findIndex((r) => filled(r) >= threshold)
+  const [header, ...body] = nonEmpty.slice(headerAt)
+  if (body.length < 1) return null
   const width = Math.max(...nonEmpty.map((r) => r.length))
   const usedLabels = new Set<string>()
   const usedKeys = new Set<string>()

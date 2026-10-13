@@ -132,7 +132,7 @@ function Presenter({
         onTabsMenuOpenChange={setTabsMenuOpen}
       />
 
-      <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-10 pb-16">
+      <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[104px] pb-16">
         {replaceError && (
           <div
             role="alert"

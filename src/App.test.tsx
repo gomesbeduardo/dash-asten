@@ -1,22 +1,8 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeAll, describe, expect, it } from "vitest"
+import { describe, expect, it } from "vitest"
 import * as XLSX from "xlsx"
 import { App } from "./App"
-
-// jsdom não implementa File.arrayBuffer; os navegadores reais sim.
-beforeAll(() => {
-  if (!File.prototype.arrayBuffer) {
-    File.prototype.arrayBuffer = function (this: Blob) {
-      return new Promise<ArrayBuffer>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as ArrayBuffer)
-        reader.onerror = () => reject(reader.error)
-        reader.readAsArrayBuffer(this)
-      })
-    }
-  }
-})
 
 function xlsxFile(): File {
   const wb = XLSX.utils.book_new()

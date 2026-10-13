@@ -36,6 +36,30 @@ describe("readWorkbook", () => {
     expect(s.rows[1]).toEqual({ nome: "bia", qtd: 4 })
   })
 
+  it("ignora linha de título acima do cabeçalho real", () => {
+    const wb = readWorkbook(
+      makeXlsx({
+        Indicadores: [
+          ["Relatório semanal"],
+          [],
+          ["Indicador", "Área", "Mês", "Meta", "Realizado"],
+          ["Vendas", "Comercial", utc(2025, 1, 1), 10, 8],
+          ["Churn", "CS", utc(2025, 2, 1), 5, 4],
+        ],
+      }),
+      "x.xlsx",
+    )
+    const s = wb.sheets[0]
+    expect(s.columns.map((c) => [c.label, c.type])).toEqual([
+      ["Indicador", "text"],
+      ["Área", "text"],
+      ["Mês", "date"],
+      ["Meta", "number"],
+      ["Realizado", "number"],
+    ])
+    expect(s.rows).toHaveLength(2)
+  })
+
   it("nomeia rótulos vazios e duplicados, com keys únicas", () => {
     const wb = readWorkbook(makeXlsx({ A: [["Nome", null, "Nome", "Nome"], ["a", "b", "c", "d"]] }), "x.xlsx")
     const cols = wb.sheets[0].columns
