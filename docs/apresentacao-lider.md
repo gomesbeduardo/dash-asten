@@ -58,7 +58,7 @@ Detalhes, versões e fontes em `docs/comparacao-stack.md`.
 
   **O que já dá para testar nele:** filtros por aba com chips e "limpar"; ocultar série pela legenda; "Ver dados" (tabela alternativa ao gráfico); escolher colunas da tabela; ocultar e reexibir abas; status das abas; substituir planilha ou limpar sessão com confirmação.
 
-  **Verificado em 13/10:** typecheck, lint e build limpos; 11 checagens de interação automatizadas no Chrome passando, sem erros de console; capturas em 1920×1080, 1366×768 e 1024px. Os scripts estão em `docs/prototipo/verificacao/`.
+  **Verificado em 13/10:** typecheck, lint e build limpos; 11 checagens de interação automatizadas no Chrome passando, sem erros de console; capturas em 1920×1080, 1366×768 e 1024px.
 
   *Como rodar:* `cd prototype && npm install && npm run dev`.
 
