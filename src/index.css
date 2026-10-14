@@ -55,29 +55,29 @@
 }
 
 :root {
-    --background: #f4f6f8;
+    --background: #dfe4ea;
     --foreground: #14202b;
-    --card: #ffffff;
+    --card: #eef1f4;
     --card-foreground: #14202b;
-    --popover: #ffffff;
+    --popover: #f3f5f7;
     --popover-foreground: #14202b;
     /* Marca Asten. Laranja = acento de detalhe (nunca texto sobre claro). Azul = texto de destaque e CTA. */
     --brand: #ef8127;
     --brand-ink: #043f63;
     --brand-hover: #ed581f;
-    --brand-soft: #fdf0e4;
+    --brand-soft: #f6e6d6;
     --primary: #043f63;
     --primary-foreground: #ffffff;
-    --secondary: #e9eef2;
+    --secondary: #e3e8ed;
     --secondary-foreground: #14202b;
-    --muted: #eaeff3;
+    --muted: #e3e8ed;
     --muted-foreground: #475565;
-    --accent: #e6edf2;
+    --accent: #dce3ea;
     --accent-foreground: #14202b;
     --destructive: #b42318;
-    --border: #d8dee4;
-    --input: #b4bfca;
-    --ring: #ef8127;
+    --border: #c3ccd5;
+    --input: #9aa8b5;
+    --ring: #c25a0a;
     /* Paleta de séries (Okabe-Ito ajustada), separada da marca: mesma série = mesma cor em todo lugar. */
     --chart-1: #0072b2; /* realizado / em andamento */
     --chart-2: #3b4753; /* meta */
@@ -94,14 +94,14 @@
     --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --motion-stagger: 110ms;
     --shadow-card: 0 1px 2px rgb(16 24 40 / 0.06);
-    --sidebar: #ffffff;
+    --sidebar: #eef1f4;
     --sidebar-foreground: #14202b;
     --sidebar-primary: #043f63;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #e6edf2;
+    --sidebar-accent: #dce3ea;
     --sidebar-accent-foreground: #14202b;
-    --sidebar-border: #d8dee4;
-    --sidebar-ring: #ef8127;
+    --sidebar-border: #c3ccd5;
+    --sidebar-ring: #c25a0a;
 }
 
 @layer base {
