@@ -1,0 +1,120 @@
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it } from "vitest"
+
+import { BarrasAxB, LinhaMini, type SerieLinha } from "./graficos"
+import type { LinhaSerie } from "./logica"
+
+const comp = (n: number) => ({ ano: 2026, mes: n }) as never
+const linhas = [1, 2, 3].map((n) => ({
+  competencia: comp(n),
+  rotulo: `m${n}`,
+  propria: true,
+  a_p: n,
+  a_r: null,
+  b_p: n * 2,
+  b_r: null,
+})) as LinhaSerie[]
+const duas: SerieLinha[] = [
+  { id: "a", rotulo: "Backlog", cor: "#111" },
+  { id: "b", rotulo: "Em atraso", cor: "#222" },
+]
+
+describe("legenda de séries na Evolução", () => {
+  it("mostra um botão por série com 2+ séries", () => {
+    render(
+      <LinhaMini
+        linhas={linhas}
+        series={duas}
+        formato="inteiro"
+        animar={false}
+      />
+    )
+    expect(screen.getByRole("button", { name: "Backlog" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    expect(screen.getByRole("button", { name: "Em atraso" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+  })
+
+  it("não mostra legenda com 1 série", () => {
+    render(
+      <LinhaMini
+        linhas={linhas}
+        series={[duas[0]]}
+        formato="inteiro"
+        animar={false}
+      />
+    )
+    expect(screen.queryByRole("button")).toBeNull()
+  })
+
+  it("clicar oculta e mostra a série; a última visível não oculta", async () => {
+    const u = userEvent.setup()
+    render(
+      <LinhaMini
+        linhas={linhas}
+        series={duas}
+        formato="inteiro"
+        animar={false}
+      />
+    )
+    const a = screen.getByRole("button", { name: "Backlog" })
+    const b = screen.getByRole("button", { name: "Em atraso" })
+    await u.click(a)
+    expect(a).toHaveAttribute("aria-pressed", "false")
+    expect(b).toHaveAttribute("aria-pressed", "true")
+    expect(b).toHaveAttribute("aria-disabled", "true")
+    await u.click(b)
+    expect(b).toHaveAttribute("aria-pressed", "true")
+    await u.click(a)
+    expect(a).toHaveAttribute("aria-pressed", "true")
+    // dados/descrição intactos
+    expect(screen.getByRole("img").getAttribute("aria-label")).toContain(
+      "Em atraso"
+    )
+    expect(screen.getByRole("img").getAttribute("aria-label")).toContain(
+      "Backlog"
+    )
+  })
+})
+
+describe("legenda de séries no Comparar", () => {
+  const itens = [{ rotulo: "Cli A", a: 3, b: 5 }]
+  it("liga e desliga A e B, mantendo ao menos uma", async () => {
+    const u = userEvent.setup()
+    render(
+      <BarrasAxB itens={itens} rotuloA="Ago" rotuloB="Set" animar={false} />
+    )
+    const a = screen.getByRole("button", { name: "Ago" })
+    const b = screen.getByRole("button", { name: "Set" })
+    await u.click(b)
+    expect(b).toHaveAttribute("aria-pressed", "false")
+    expect(a).toHaveAttribute("aria-disabled", "true")
+    await u.click(a)
+    expect(a).toHaveAttribute("aria-pressed", "true")
+    await u.click(b)
+    expect(b).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("img").getAttribute("aria-label")).toContain(
+      "Cli A 3 e 5"
+    )
+  })
+
+  it("volta ao padrão ao trocar de competência", async () => {
+    const u = userEvent.setup()
+    const { rerender } = render(
+      <BarrasAxB itens={itens} rotuloA="Ago" rotuloB="Set" animar={false} />
+    )
+    await u.click(screen.getByRole("button", { name: "Set" }))
+    rerender(
+      <BarrasAxB itens={itens} rotuloA="Ago" rotuloB="Out" animar={false} />
+    )
+    expect(screen.getByRole("button", { name: "Out" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+  })
+})
