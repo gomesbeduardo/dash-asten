@@ -57,6 +57,7 @@
 | D48 | Evolução em 6 competências | A Evolução mostra **exatamente as 6 competências mais recentes** (próprias + reconstruídas), coerente com o foco em curto prazo (R4). Confirmado pelo responsável em 14/10. |
 | D49 | Séries na legenda | R6: legenda clicável liga/desliga séries nos gráficos com 2+ séries (Evolução e Comparar), sem mudar dados, totais nem filtros; a última série visível não some; o estado volta ao padrão ao trocar de competência. |
 | D50 | Regras provisórias no MVP | D31, D34 e D35 seguem como estão; o Líder confirma ou corrige pela lista "Para validar" do artifact. Sem predição: as leituras só descrevem o mês (D35). |
+| D51 | De onde vem cada mês | Mês com carga própria usa sempre a **própria (versão mais recente)**; nunca reconstrói por cima. Mês sem carga **antes da primeira** é reconstruído pela planilha mais antiga; mês sem carga **no meio** (ex.: jul e set carregados, ago não) é reconstruído pela planilha da **carga seguinte**, a exportação mais próxima depois dele. Reconstruídos sempre com selo e tracejado (D41), na Evolução (6 competências de calendário, sem buracos) e como opção no Comparar. Decidido pelo responsável em 14/10. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 0.1 Requisitos de origem
