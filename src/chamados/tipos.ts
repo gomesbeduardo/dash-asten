@@ -27,6 +27,8 @@ export type MetricasChamados = {
   kpis: KpiChamados[]
   distribuicoes: Distribuicao[]
   envelhecimento: ItemDistribuicao[]
+  /** Backlog + resolvidos até o fim ainda sem aceite: denominador coerente de "aguardando aceite". */
+  baseAguardandoAceite: number | null
   linhasConsideradas: number
   /** Abertos após o fim da competência (aberto-apos); mostrados à parte. */
   linhasPosteriores: number

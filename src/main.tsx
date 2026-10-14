@@ -3,12 +3,12 @@ import { createRoot } from "react-dom/client"
 
 import "./index.css"
 import App from "./App.tsx"
-import { criarRepositorioIndexedDB } from "@/cargas"
+import { criarRepositorioPadrao } from "@/cargas/escolherRepositorio"
 import { registrarTiposDoApp } from "@/app/bootstrap"
 import { RepositorioProvider } from "@/app/RepositorioContext"
 
 registrarTiposDoApp()
-const repositorio = criarRepositorioIndexedDB()
+const repositorio = criarRepositorioPadrao()
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

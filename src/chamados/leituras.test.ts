@@ -83,11 +83,31 @@ describe("leitura gargaloCliente (aguardando aceite >= 30% do backlog)", () => {
   it("dispara no limite (3 de 10)", () => {
     const l = achar(gerarLeituras(ent(com(3))), "gargaloCliente")!
     expect(l.severidade).toBe("atencao")
-    expect(l.titulo).toBe("30% do backlog aguarda aceite do cliente")
+    expect(l.titulo).toBe(
+      "30% dos chamados em aberto ou aguardando aceite estão aguardando aceite do cliente"
+    )
     expect(l.acao).toBe("Cobrar aceite dos clientes com mais pendências")
   })
   it("não dispara abaixo (2 de 10)", () =>
     expect(achar(gerarLeituras(ent(com(2))), "gargaloCliente")).toBeUndefined())
+  it("resolvidos sem aceite entram na base: nunca passa de 100%", () => {
+    // backlog 2 (1 aguardando) + 3 resolvidos aguardando aceite: 4 / (2 + 3)
+    const linhas = [
+      { abertura: NOVO, situacao: "Aguardando Aceite de Solução", ...SLA },
+      { abertura: NOVO, ...SLA },
+      ...rep(3, {
+        abertura: "2026-09-01",
+        solucao: "2026-09-10",
+        situacao: "Aguardando Aceite de Solução",
+        ...SLA,
+      }),
+    ]
+    const l = achar(gerarLeituras(ent(linhas)), "gargaloCliente")!
+    expect(l.titulo).toContain("80%")
+    expect(l.texto).toBe(
+      "4 de 5 chamados em aberto ou aguardando aceite estão aguardando aceite."
+    )
+  })
   it("não dispara sem carga própria", () =>
     expect(
       achar(gerarLeituras(ent(com(5), "2026-09", false)), "gargaloCliente")

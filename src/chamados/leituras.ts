@@ -131,12 +131,13 @@ export function gerarLeituras(
 
   // gargalo no cliente (depende da Situação da exportação: exige carga própria)
   const aguardando = kpi("aguardandoAceite")?.valor ?? null
-  if (aguardando !== null && aguardando / backlog >= 0.3)
+  const base = m.baseAguardandoAceite
+  if (aguardando !== null && base !== null && base > 0 && aguardando / base >= 0.3)
     leituras.push({
       id: "gargaloCliente",
       severidade: "atencao",
-      titulo: `${pct(aguardando / backlog)} do backlog aguarda aceite do cliente`,
-      texto: `${inteiro(aguardando)} de ${inteiro(backlog)} chamados do backlog estão aguardando aceite.`,
+      titulo: `${pct(aguardando / base)} dos chamados em aberto ou aguardando aceite estão aguardando aceite do cliente`,
+      texto: `${inteiro(aguardando)} de ${inteiro(base)} chamados em aberto ou aguardando aceite estão aguardando aceite.`,
       evidencia: ["aguardandoAceite", "backlog"],
       acao: "Cobrar aceite dos clientes com mais pendências",
     })

@@ -180,11 +180,17 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
       ? (saidas.filter((c) => (c.reabertura ?? 0) > 0).length / saidas.length) *
         100
       : null
+  const aguardandoAceite = (c: Chamado) =>
+    c.situacao.includes("aceite") && !(c.aceite !== null && c.aceite <= fim)
   const aguardando = mapa.situacao
+    ? chamados.filter(aguardandoAceite).length
+    : null
+  // backlog + resolvidos (até o fim) que ainda aguardam aceite: base coerente do % aguardando
+  const baseAguardandoAceite = mapa.situacao
     ? chamados.filter(
         (c) =>
-          c.situacao.includes("aceite") &&
-          !(c.aceite !== null && c.aceite <= fim)
+          (c.solucao === null || c.solucao > fim) ||
+          (c.solucao !== null && aguardandoAceite(c))
       ).length
     : null
 
@@ -293,6 +299,7 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
     kpis,
     distribuicoes,
     envelhecimento,
+    baseAguardandoAceite: temSolucao ? baseAguardandoAceite : null,
     linhasConsideradas: chamados.length,
     linhasPosteriores: contagem["aberto-apos"],
     linhasSemAbertura: contagem["sem-abertura"],

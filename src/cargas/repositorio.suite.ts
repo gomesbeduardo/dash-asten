@@ -96,9 +96,10 @@ export function suiteDeRepositorio(criar: () => RepositorioDeCargas) {
       expect((await repo.salvar(nova())).versao).toBe(2)
     })
 
-    it("limparTudo esvazia", async () => {
+    it("limparTudo (quando existe) esvazia", async () => {
       const repo = criar()
       await repo.salvar(nova())
+      if (!repo.limparTudo) return
       await repo.limparTudo()
       expect(await repo.listar()).toEqual([])
     })
