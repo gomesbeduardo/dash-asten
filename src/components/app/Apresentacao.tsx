@@ -129,7 +129,7 @@ export function Apresentacao(p: ApresentacaoProps) {
           onSelectorOpenChange={setSeletorOpen}
         />
 
-        <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-40 pb-16">
+        <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16">
           {p.erro && (
             <div
               role="alert"
