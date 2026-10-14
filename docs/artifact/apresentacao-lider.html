@@ -217,6 +217,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
           <button role="tab" id="t-filtros" aria-controls="shot" aria-selected="false" tabindex="-1">Filtros</button>
           <button role="tab" id="t-carga" aria-controls="shot" aria-selected="false" tabindex="-1">Nova carga</button>
           <button role="tab" id="t-abertura" aria-controls="shot" aria-selected="false" tabindex="-1">Abertura</button>
+          <button role="tab" id="t-historico" aria-controls="shot" aria-selected="false" tabindex="-1">Histórico</button>
         </div>
         <figure class="shot" id="shot" role="tabpanel" aria-labelledby="t-painel">
           <div class="frame">
@@ -327,7 +328,8 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
     ["img/v2/evolucao.png", "Evolução dos indicadores ao longo dos meses, com pontos reconstruídos tracejados", "Evolução das últimas competências. Pontos tracejados são meses sem carga própria, montados pelas datas."],
     ["img/v2/filtros.png", "Painel de filtros aberto com o filtro Cliente Beta aplicado", "Filtros: o recorte vale para tudo (KPIs, gráficos, leituras, comparação e evolução) e aparece como etiqueta."],
     ["img/v2/nova-carga.png", "Diálogo de confirmação da nova carga com tipo e competência", "Nova carga: o app reconhece o tipo e sugere a competência; a pessoa confirma."],
-    ["img/v2/abertura.png", "Tela de envio com a lista de cargas agrupadas por mês", "Abertura: a tela de envio, com o que já existe agrupado por mês e a versão mais recente por cima."]
+    ["img/v2/abertura.png", "Tela de envio com a lista de cargas agrupadas por mês", "Abertura: a tela de envio, com o que já existe agrupado por mês e a versão mais recente por cima."],
+    ["img/v2/historico.png", "Histórico na aba Geral com o grupo de setembro expandido", "Histórico: Enviados (o que saiu deste computador) e Geral (tudo, com busca). Versões do mesmo mês ficam num grupo, a mais recente por cima."]
   ];
   const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
   const img = document.getElementById("shot-img");
