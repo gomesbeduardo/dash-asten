@@ -1,6 +1,6 @@
 // POST /api/login  { usuario, senha, lembrar } → 204 + cookie de sessão | 401
-import { credenciaisCorretas, criarSessao } from "./_lib/auth.js"
-import { ErroDeEntrada, erro, lerJson, protegido } from "./_lib/http.js"
+import { credenciaisCorretas, criarSessao } from "../_lib/auth.js"
+import { ErroDeEntrada, erro, lerJson, protegido } from "../_lib/http.js"
 
 export function POST(request: Request): Promise<Response> {
   return protegido(() => entrar(request))
