@@ -53,6 +53,12 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
   await page.goto("/")
   await page.getByLabel(/Arquivo da planilha/).setInputFiles(xlsxPath)
 
+  // Passo de confirmação: tipo e competência (inferida) antes de guardar.
+  const confirmar = page.getByRole("dialog", { name: "Confirmar a carga" })
+  await expect(confirmar).toBeVisible()
+  await expect(confirmar.getByLabel("Tipo")).toHaveValue("outro")
+  await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
+
   // Aba com título acima do cabeçalho: cabeçalho real detectado.
   await expect(h1(page, "Indicadores")).toBeVisible()
   await expect(page.getByRole("columnheader", { name: /Meta/ })).toBeVisible()
@@ -101,7 +107,50 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
   await expect(page.getByRole("tab", { name: /Projetos/ })).toBeVisible()
 
   // Arquivo inválido: mensagem, e a planilha atual continua.
-  await page.getByLabel("Escolher outra planilha (.xlsx)").setInputFiles(txtPath)
+  await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(txtPath)
   await expect(page.getByRole("alert")).toContainText("não parece ser a planilha")
+  await expect(page.getByRole("alert")).toContainText("A carga atual continua aberta")
   await expect(h1(page, "Projetos")).toBeVisible()
+})
+
+test("duas competências: recarregar abre a mais recente e o seletor troca", async ({ page }, testInfo) => {
+  const cria = (nome: string, linhas: number) => {
+    const path = testInfo.outputPath(nome)
+    mkdirSync(dirname(path), { recursive: true })
+    const rows: unknown[][] = [["Item", "Valor"]]
+    for (let i = 0; i < linhas; i++) rows.push([`Item ${i + 1}`, i + 1])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Resumo")
+    writeFileSync(path, XLSX.write(wb, { type: "buffer", bookType: "xlsx" }))
+    return path
+  }
+  const agosto = cria("painel-agosto-2026.xlsx", 4)
+  const setembro = cria("painel-setembro-2026.xlsx", 6)
+
+  await page.goto("/")
+  await page.getByLabel(/Arquivo da planilha/).setInputFiles(agosto)
+  const confirmar = page.getByRole("dialog", { name: "Confirmar a carga" })
+  await expect(confirmar.getByLabel("Mês")).toHaveValue("8")
+  await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
+  await expect(h1(page, "Resumo")).toBeVisible()
+  await expect(page.getByText("4 linhas")).toBeVisible()
+
+  await page.mouse.move(400, 40)
+  await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(setembro)
+  await expect(confirmar.getByLabel("Mês")).toHaveValue("9")
+  await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
+  await expect(page.getByText("6 linhas")).toBeVisible()
+
+  // Recarregar: abre direto a competência mais recente.
+  await page.reload()
+  await expect(h1(page, "Resumo")).toBeVisible()
+  await expect(page.getByText("6 linhas")).toBeVisible()
+  await page.mouse.move(400, 40)
+  const seletor = page.getByRole("button", { name: "Competência" })
+  await expect(seletor).toContainText("Setembro de 2026")
+
+  await seletor.click()
+  await page.getByRole("button", { name: "Agosto de 2026, versão 1" }).click()
+  await expect(seletor).toContainText("Agosto de 2026")
+  await expect(page.getByText("4 linhas")).toBeVisible()
 })

@@ -1,44 +1,42 @@
 import { useRef } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { EyeIcon, FilterIcon, FolderOpenIcon, Trash2Icon } from "lucide-react"
+import { FolderOpenIcon, HistoryIcon, Trash2Icon } from "lucide-react"
 
 import logo from "@/assets/asten-logo-fundo-claro.png"
-import type { Sheet } from "@/core"
+import type { CargaMeta } from "@/cargas"
+import type { GrupoCompetencia, Visao } from "@/app/navegacao"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { CompetenciaSelector } from "./CompetenciaSelector"
 import { duration, standard } from "./motion/tokens"
-import { visibleIds } from "./tabs-state"
+
+const ROTULO_VISAO: Record<Visao, string> = {
+  painel: "Painel",
+  comparar: "Comparar",
+  evolucao: "Evolução",
+}
 
 export type TopBarProps = {
   visible: boolean
-  sheets: Sheet[]
-  hidden: string[]
-  activeId: string
-  filterCount: number
-  onSelect: (id: string) => void
-  onToggleSheet: (id: string, show: boolean) => void
-  onOpenFilters: () => void
+  tipoNome: string
+  atual: CargaMeta
+  grupos: GrupoCompetencia[]
+  visoes: Visao[]
+  visao: Visao
+  /** Recebe a faixa onde o painel do tipo desenha seus controles. */
+  onSlot: (el: HTMLElement | null) => void
+  onAbrir: (id: string) => void
+  onVisao: (v: Visao) => void
   onPickFile: (file: File) => void
+  onHistorico: () => void
   onClear: () => void
-  onTabsMenuOpenChange: (open: boolean) => void
+  onSelectorOpenChange: (open: boolean) => void
+  dica: string | null
 }
 
-export function TopBar(p: TopBarProps) {
-  const fileRef = useRef<HTMLInputElement>(null)
+export function TopBar({ onSlot, ...p }: TopBarProps) {
+  const arquivoInput = useRef<HTMLInputElement>(null)
   const reduce = useReducedMotion()
-  const visible = visibleIds(
-    p.sheets.map((s) => s.id),
-    p.hidden
-  )
-  const shown = p.sheets.filter((s) => visible.includes(s.id))
 
   return (
     <motion.header
@@ -57,36 +55,37 @@ export function TopBar(p: TopBarProps) {
       <div className="flex items-center gap-4 px-6 py-2">
         <img src={logo} alt="Asten" className="h-8 w-auto shrink-0" />
 
-        <nav
-          aria-label="Abas da planilha"
-          className="min-w-0 flex-1 overflow-x-auto"
-        >
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="rounded-full border px-3 py-1 text-base font-medium text-primary">
+            {p.tipoNome}
+          </span>
+          <CompetenciaSelector
+            atual={p.atual}
+            grupos={p.grupos}
+            onAbrir={p.onAbrir}
+            onOpenChange={p.onSelectorOpenChange}
+          />
+        </div>
+
+        <nav aria-label="Visões" className="min-w-0 flex-1">
           <div role="tablist" className="flex gap-1">
-            {shown.map((sheet, i) => {
-              const active = sheet.id === p.activeId
+            {p.visoes.map((v) => {
+              const active = v === p.visao
               return (
                 <button
-                  key={sheet.id}
+                  key={v}
                   role="tab"
                   type="button"
                   aria-selected={active}
-                  onClick={() => p.onSelect(sheet.id)}
+                  onClick={() => p.onVisao(v)}
                   className={cn(
-                    "flex shrink-0 items-center gap-2 border-b-4 px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-ring",
+                    "shrink-0 border-b-4 px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-ring",
                     active
                       ? "border-brand font-semibold text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {i < 9 && (
-                    <span
-                      className="font-display text-sm tabular-nums opacity-70"
-                      aria-hidden
-                    >
-                      {i + 1}
-                    </span>
-                  )}
-                  {sheet.name}
+                  {ROTULO_VISAO[v]}
                 </button>
               )
             })}
@@ -94,49 +93,13 @@ export function TopBar(p: TopBarProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="default" size="lg" onClick={p.onOpenFilters}>
-            <FilterIcon aria-hidden /> Filtros
-            {p.filterCount > 0 && (
-              <span className="rounded-full bg-primary-foreground px-2 text-sm font-semibold text-primary tabular-nums">
-                {p.filterCount}
-              </span>
-            )}
-          </Button>
-
-          <DropdownMenu onOpenChange={p.onTabsMenuOpenChange}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="lg">
-                <EyeIcon aria-hidden /> Abas
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-60">
-              <DropdownMenuLabel>Mostrar na apresentação</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {p.sheets.map((sheet) => {
-                const isShown = visible.includes(sheet.id)
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={sheet.id}
-                    checked={isShown}
-                    disabled={isShown && visible.length === 1}
-                    onCheckedChange={(v) => p.onToggleSheet(sheet.id, !!v)}
-                    onSelect={(e) => e.preventDefault()}
-                    className="text-base"
-                  >
-                    {sheet.name}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           <input
-            ref={fileRef}
+            ref={arquivoInput}
             type="file"
             accept=".xlsx"
             className="sr-only"
             tabIndex={-1}
-            aria-label="Escolher outra planilha (.xlsx)"
+            aria-label="Arquivo da nova carga (.xlsx)"
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) p.onPickFile(file)
@@ -144,19 +107,24 @@ export function TopBar(p: TopBarProps) {
             }}
           />
           <Button
-            variant="outline"
+            variant="default"
             size="lg"
-            onClick={() => fileRef.current?.click()}
+            onClick={() => arquivoInput.current?.click()}
           >
-            <FolderOpenIcon aria-hidden /> Trocar planilha
+            <FolderOpenIcon aria-hidden /> Nova carga
+          </Button>
+          <Button variant="outline" size="lg" onClick={p.onHistorico}>
+            <HistoryIcon aria-hidden /> Histórico
           </Button>
           <Button variant="ghost" size="lg" onClick={p.onClear}>
             <Trash2Icon aria-hidden /> Limpar
           </Button>
         </div>
       </div>
+      <div ref={onSlot} />
       <p className="border-t px-6 py-1 text-sm text-muted-foreground">
-        ← → abas · 1–9 vai à aba · F filtros · H barra
+        {p.dica && `${p.dica} · `}H barra
+        {p.visoes.length > 1 && " · P painel · C comparar · E evolução"}
       </p>
     </motion.header>
   )

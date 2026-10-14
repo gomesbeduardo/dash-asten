@@ -1,13 +1,25 @@
 import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 
-import { buildAutoDashboard } from "@/core"
-import type { PanelProps } from "@/panels/registry"
+import {
+  buildAutoDashboard,
+  type Row,
+  type Sheet,
+  type SheetFilters,
+} from "@/core"
 import { GenericTable } from "../GenericTable"
 import { entryContainer } from "../motion/variants"
 import { AutoChartCard } from "./AutoChartCard"
 import { complementGridClass } from "./chartTheme"
 import { KpiStrip } from "./KpiStrip"
+
+export type PanelProps = {
+  sheet: Sheet
+  rows: Row[]
+  filters: SheetFilters
+  /** true na 1ª abertura da aba após importar: toca a entrada única (D26). */
+  entry?: boolean
+}
 
 /** Painel da aba sem painel específico (D25): KPIs + gráficos automáticos + tabela. */
 export function AutoPanel({

@@ -2,7 +2,7 @@ import { fireEvent, render } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { useShortcuts, type ShortcutHandlers } from "./useShortcuts"
 
-function Harness(props: ShortcutHandlers & { withInput?: boolean }) {
+function Harness(props: Partial<ShortcutHandlers> & { withInput?: boolean }) {
   useShortcuts(props)
   return props.withInput ? <input aria-label="busca" /> : null
 }
@@ -78,5 +78,20 @@ describe("useShortcuts e Esc já tratado", () => {
     ev.preventDefault()
     window.dispatchEvent(ev)
     expect(h.onEscape).not.toHaveBeenCalled()
+  })
+
+  it("P, C e E pedem a visão (só se o handler existir)", () => {
+    const onVisao = vi.fn()
+    render(<Harness onVisao={onVisao} />)
+    fireEvent.keyDown(window, { key: "p" })
+    fireEvent.keyDown(window, { key: "C" })
+    fireEvent.keyDown(window, { key: "e" })
+    expect(onVisao.mock.calls).toEqual([["painel"], ["comparar"], ["evolucao"]])
+  })
+
+  it("sem handlers, tecla não quebra", () => {
+    render(<Harness />)
+    fireEvent.keyDown(window, { key: "ArrowRight" })
+    fireEvent.keyDown(window, { key: "f" })
   })
 })

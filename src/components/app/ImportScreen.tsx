@@ -29,11 +29,12 @@ export function ImportScreen({
       <img src={logo} alt="Asten" className="h-12 w-auto self-start" />
       <div className="flex flex-col gap-3">
         <h1 className="text-5xl leading-tight text-primary">
-          Painel da reunião semanal
+          Carregar a planilha da competência
         </h1>
         <p className="max-w-prose text-xl text-muted-foreground">
-          Escolha a planilha da semana e as abas viram telas para apresentar. O
-          arquivo fica neste computador e não é enviado a lugar nenhum.
+          Escolha a planilha do mês, confirme o tipo e a competência, e ela vira
+          telas para apresentar. As cargas ficam guardadas só neste navegador;
+          nada é enviado a lugar nenhum.
         </p>
       </div>
 

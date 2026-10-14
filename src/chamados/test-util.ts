@@ -1,8 +1,13 @@
 import type { CellValue, Column, Row, Sheet, Workbook } from "@/core"
 
-export const dia = (s: string, hora = "00:00:00"): Date => new Date(`${s}T${hora}Z`)
+export const dia = (s: string, hora = "00:00:00"): Date =>
+  new Date(`${s}T${hora}Z`)
 
-export function montarSheet(rotulos: string[], linhas: CellValue[][], nome = "Aba"): Sheet {
+export function montarSheet(
+  rotulos: string[],
+  linhas: CellValue[][],
+  nome = "Aba"
+): Sheet {
   const columns: Column[] = rotulos.map((label, i) => ({
     key: `c${i}`,
     label,
@@ -10,7 +15,9 @@ export function montarSheet(rotulos: string[], linhas: CellValue[][], nome = "Ab
     filterable: false,
     distinctCount: 0,
   }))
-  const rows: Row[] = linhas.map((l) => Object.fromEntries(columns.map((c, i) => [c.key, l[i] ?? null])))
+  const rows: Row[] = linhas.map((l) =>
+    Object.fromEntries(columns.map((c, i) => [c.key, l[i] ?? null]))
+  )
   return { id: nome, name: nome, index: 0, columns, rows }
 }
 
@@ -63,5 +70,8 @@ export function linha(l: LinhaChamado, codigo: number): CellValue[] {
 }
 
 export function sheetChamados(linhas: LinhaChamado[]): Sheet {
-  return montarSheet(ROTULOS_PADRAO, linhas.map((l, i) => linha(l, i + 1)))
+  return montarSheet(
+    ROTULOS_PADRAO,
+    linhas.map((l, i) => linha(l, i + 1))
+  )
 }

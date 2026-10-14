@@ -16,7 +16,7 @@ import {
   Columns3Icon,
 } from "lucide-react"
 
-import { formatCell, type CellValue, type Row, type Sheet } from "@/core"
+import { formatColumnValue, type CellValue, type Row, type Sheet } from "@/core"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -57,7 +57,7 @@ export function GenericTable({ sheet, rows }: { sheet: Sheet; rows: Row[] }) {
         id: col.key,
         header: col.label,
         accessorFn: (row) => row[col.key] ?? null,
-        cell: (ctx) => formatCell(ctx.getValue() as CellValue, col.type),
+        cell: (ctx) => formatColumnValue(ctx.getValue() as CellValue, col),
         sortingFn: (a, b, id) =>
           compareCells(
             a.getValue(id) as CellValue,

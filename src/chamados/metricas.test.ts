@@ -8,13 +8,35 @@ const LINHAS: LinhaChamado[] = [
   // 2 aberto antes, sem SLA, > 180 dias
   { abertura: "2026-03-01", cliente: "Cli B", areaSuperior: null },
   // 3 aberto e resolvido no mês, dentro do SLA
-  { abertura: "2026-09-02", solucao: "2026-09-10", sla: "2026-09-12", situacao: "Finalizado" },
+  {
+    abertura: "2026-09-02",
+    solucao: "2026-09-10",
+    sla: "2026-09-12",
+    situacao: "Finalizado",
+  },
   // 4 resolvido no mês, fora do SLA, reaberto
-  { abertura: "2026-09-05", solucao: "2026-09-20", sla: "2026-09-10", reab: 1, situacao: "Finalizado" },
+  {
+    abertura: "2026-09-05",
+    solucao: "2026-09-20",
+    sla: "2026-09-10",
+    reab: 1,
+    situacao: "Finalizado",
+  },
   // 5 SLA renegociado prevalece (previsto vencido, renegociado ok)
-  { abertura: "2026-08-20", solucao: "2026-09-25", sla: "2026-09-01", slaReneg: "2026-09-30", situacao: "Finalizado" },
+  {
+    abertura: "2026-08-20",
+    solucao: "2026-09-25",
+    sla: "2026-09-01",
+    slaReneg: "2026-09-30",
+    situacao: "Finalizado",
+  },
   // 6 resolvido depois do fim do mês: ainda é backlog em setembro
-  { abertura: "2026-08-01", solucao: "2026-10-05", sla: "2026-09-20", situacao: "Finalizado" },
+  {
+    abertura: "2026-08-01",
+    solucao: "2026-10-05",
+    sla: "2026-09-20",
+    situacao: "Finalizado",
+  },
   // 7 aberto depois do fim: ignorado
   { abertura: "2026-10-03" },
   // 8 sem abertura: ignorado
@@ -22,22 +44,89 @@ const LINHAS: LinhaChamado[] = [
   // 9 fechado antes do mês
   { abertura: "2026-06-01", solucao: "2026-08-15", situacao: "Finalizado" },
   // 10 aberto no fim do mês, aguardando aceite
-  { abertura: "2026-09-28", sla: "2026-10-30", situacao: "Aguardando Aceite de Solução" },
+  {
+    abertura: "2026-09-28",
+    sla: "2026-10-30",
+    situacao: "Aguardando Aceite de Solução",
+  },
   // 11 resolvido no último dia, SLA no último dia, aceite só depois de F
-  { abertura: "2026-09-01", solucao: "2026-09-30", sla: "2026-09-30", aceite: "2026-10-02", situacao: "Aguardando Aceite de Solução" },
+  {
+    abertura: "2026-09-01",
+    solucao: "2026-09-30",
+    sla: "2026-09-30",
+    aceite: "2026-10-02",
+    situacao: "Aguardando Aceite de Solução",
+  },
   // 12 aceite dado antes de F: não conta
-  { abertura: "2026-05-01", solucao: "2026-07-01", aceite: "2026-07-05", situacao: "Aguardando Aceite de Solução" },
+  {
+    abertura: "2026-05-01",
+    solucao: "2026-07-01",
+    aceite: "2026-07-05",
+    situacao: "Aguardando Aceite de Solução",
+  },
 ]
-const valor = (m: ReturnType<typeof calcularMetricas>, id: string) => m.kpis.find((k) => k.id === id)?.valor
+const valor = (m: ReturnType<typeof calcularMetricas>, id: string) =>
+  m.kpis.find((k) => k.id === id)?.valor
 const SET = { competencia: "2026-09" }
 
 describe("calcularMetricas (corte no fim da competência, D34)", () => {
   const m = calcularMetricas({ sheet: sheetChamados(LINHAS), ...SET })
 
-  it("ignora linhas sem abertura ou abertas depois do fim, com aviso", () => {
+  it("nenhuma linha é excluída: posteriores e sem abertura ficam à parte, com aviso", () => {
     expect(m.linhasConsideradas).toBe(10)
-    expect(m.linhasIgnoradas).toBe(2)
-    expect(m.avisos.some((a) => a.includes("2"))).toBe(true)
+    expect(m.linhasPosteriores).toBe(1)
+    expect(m.linhasSemAbertura).toBe(1)
+    expect(
+      m.linhasConsideradas + m.linhasPosteriores + m.linhasSemAbertura
+    ).toBe(LINHAS.length)
+    expect(m.avisos).toContain(
+      "1 chamado(s) abertos após o fim da competência — mostrados à parte"
+    )
+    expect(m.avisos.join(" ")).not.toMatch(/ignorad/)
+    expect("linhasIgnoradas" in m).toBe(false)
+  })
+
+  it("porSituacaoNaCompetencia traz as 5 classes e soma o total de linhas", () => {
+    expect(m.porSituacaoNaCompetencia).toEqual([
+      { rotulo: "Aberto no fim do mês", valor: 4 },
+      { rotulo: "Resolvido no mês", valor: 4 },
+      { rotulo: "Resolvido antes do mês", valor: 2 },
+      { rotulo: "Aberto após a competência", valor: 1 },
+      { rotulo: "Sem data de abertura", valor: 1 },
+    ])
+    expect(m.porSituacaoNaCompetencia.reduce((s, i) => s + i.valor, 0)).toBe(
+      LINHAS.length
+    )
+  })
+
+  it("KPI abertosApos e flags reconstruivel", () => {
+    expect(valor(m, "abertosApos")).toBe(1)
+    const k = m.kpis.find((x) => x.id === "abertosApos")!
+    expect(k.rotulo).toBe("Abertos após a competência")
+    expect(k.melhorQuando).toBe("neutro")
+    expect(k.definicao).toMatch(/competência seguinte/)
+    const rec = Object.fromEntries(m.kpis.map((x) => [x.id, x.reconstruivel]))
+    expect(rec).toEqual({
+      backlog: true,
+      entradas: true,
+      saidas: true,
+      abertosApos: true,
+      tempoMedio: true,
+      semSla: true,
+      aguardandoAceite: false,
+      reabertos: false,
+      sla: false,
+      atraso: false,
+    })
+  })
+
+  it("distribuição por situação é do estado atual e não reconstruível", () => {
+    const d = Object.fromEntries(m.distribuicoes.map((x) => [x.id, x]))
+    expect(d.situacao.titulo).toBe("Backlog por situação atual (na exportação)")
+    expect(d.situacao.reconstruivel).toBe(false)
+    expect(d.cliente.reconstruivel).toBe(true)
+    expect(d.areaSuperior.reconstruivel).toBe(true)
+    expect(d.atividade.reconstruivel).toBe(true)
   })
 
   it("backlog, entradas e saídas", () => {
@@ -66,8 +155,16 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
 
   it("distribuição e envelhecimento do backlog", () => {
     const cli = m.distribuicoes.find((d) => d.id === "cliente")!
-    expect(cli.itens).toEqual([{ rotulo: "Cli A", valor: 3 }, { rotulo: "Cli B", valor: 1 }])
-    expect(m.distribuicoes.map((d) => d.id)).toEqual(["cliente", "areaSuperior", "atividade", "situacao"])
+    expect(cli.itens).toEqual([
+      { rotulo: "Cli A", valor: 3 },
+      { rotulo: "Cli B", valor: 1 },
+    ])
+    expect(m.distribuicoes.map((d) => d.id)).toEqual([
+      "cliente",
+      "areaSuperior",
+      "atividade",
+      "situacao",
+    ])
     expect(m.envelhecimento).toEqual([
       { rotulo: "0–30 dias", valor: 1 },
       { rotulo: "31–90 dias", valor: 2 },
@@ -79,7 +176,10 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
   it("valores nulos viram '(sem informação)' e mais de 10 itens agrupam em Outros", () => {
     const area = m.distribuicoes.find((d) => d.id === "areaSuperior")!
     expect(area.itens).toContainEqual({ rotulo: "(sem informação)", valor: 1 })
-    const muitas = Array.from({ length: 12 }, (_, i) => ({ abertura: "2026-09-01", cliente: `C${i}` }))
+    const muitas = Array.from({ length: 12 }, (_, i) => ({
+      abertura: "2026-09-01",
+      cliente: `C${i}`,
+    }))
     const g = calcularMetricas({ sheet: sheetChamados(muitas), ...SET })
     const itens = g.distribuicoes.find((d) => d.id === "cliente")!.itens
     expect(itens).toHaveLength(11)
@@ -87,13 +187,19 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
   })
 
   it("todo KPI tem definição", () => {
-    expect(m.kpis.length).toBe(9)
+    expect(m.kpis.length).toBe(10)
     for (const k of m.kpis) expect(k.definicao.length).toBeGreaterThan(5)
   })
 
   it("anterior preenche anterior e delta", () => {
-    const ant = calcularMetricas({ sheet: sheetChamados(LINHAS), competencia: "2026-08" })
-    const c = calcularMetricas({ sheet: sheetChamados(LINHAS), ...SET }, { sheet: sheetChamados(LINHAS), competencia: "2026-08" })
+    const ant = calcularMetricas({
+      sheet: sheetChamados(LINHAS),
+      competencia: "2026-08",
+    })
+    const c = calcularMetricas(
+      { sheet: sheetChamados(LINHAS), ...SET },
+      { sheet: sheetChamados(LINHAS), competencia: "2026-08" }
+    )
     const k = c.kpis.find((x) => x.id === "backlog")!
     expect(k.anterior).toBe(valor(ant, "backlog"))
     expect(k.delta).toBe(k.valor! - k.anterior!)
@@ -102,7 +208,10 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
   })
 
   it("campos ausentes viram null e avisos, sem quebrar", () => {
-    const s = montarSheet(["Data Abertura", "Situação"], [[new Date("2026-09-01T00:00:00Z"), "Em Análise"]])
+    const s = montarSheet(
+      ["Data Abertura", "Situação"],
+      [[new Date("2026-09-01T00:00:00Z"), "Em Análise"]]
+    )
     const r = calcularMetricas({ sheet: s, ...SET })
     expect(valor(r, "entradas")).toBe(1)
     expect(valor(r, "backlog")).toBeNull()
@@ -111,8 +220,36 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
   })
 
   it("sem saídas com SLA o % no SLA é null", () => {
-    const r = calcularMetricas({ sheet: sheetChamados([{ abertura: "2026-09-01" }]), ...SET })
+    const r = calcularMetricas({
+      sheet: sheetChamados([{ abertura: "2026-09-01" }]),
+      ...SET,
+    })
     expect(valor(r, "sla")).toBeNull()
     expect(valor(r, "tempoMedio")).toBeNull()
+  })
+
+  it("entrada sem carga própria anula KPIs não reconstruíveis; o delta fica null", () => {
+    const r = calcularMetricas({
+      sheet: sheetChamados(LINHAS),
+      ...SET,
+      cargaPropria: false,
+    })
+    for (const id of ["aguardandoAceite", "reabertos", "sla", "atraso"]) {
+      const k = r.kpis.find((x) => x.id === id)!
+      expect(k.valor).toBeNull()
+      expect(k.detalhe).toBe("exige a carga daquele mês")
+    }
+    expect(valor(r, "backlog")).toBe(4)
+    const c = calcularMetricas(
+      { sheet: sheetChamados(LINHAS), ...SET },
+      {
+        sheet: sheetChamados(LINHAS),
+        competencia: "2026-08",
+        cargaPropria: false,
+      }
+    )
+    expect(c.kpis.find((x) => x.id === "sla")!.delta).toBeNull()
+    expect(c.kpis.find((x) => x.id === "sla")!.anterior).toBeNull()
+    expect(c.kpis.find((x) => x.id === "backlog")!.delta).not.toBeNull()
   })
 })

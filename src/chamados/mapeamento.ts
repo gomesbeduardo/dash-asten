@@ -2,9 +2,24 @@ import type { TipoDeConjunto } from "@/cargas/types"
 import type { Sheet, Workbook } from "@/core"
 
 export type CampoChamado =
-  | "codigo" | "abertura" | "solucao" | "aceite" | "slaPrevisto" | "slaRenegociado" | "situacao"
-  | "cliente" | "areaSuperior" | "area" | "atividade" | "severidade" | "qtdReabertura"
-  | "tempoResolucao" | "tempoAtraso" | "resumo" | "operador" | "responsavel"
+  | "codigo"
+  | "abertura"
+  | "solucao"
+  | "aceite"
+  | "slaPrevisto"
+  | "slaRenegociado"
+  | "situacao"
+  | "cliente"
+  | "areaSuperior"
+  | "area"
+  | "atividade"
+  | "severidade"
+  | "qtdReabertura"
+  | "tempoResolucao"
+  | "tempoAtraso"
+  | "resumo"
+  | "operador"
+  | "responsavel"
 export type MapaColunas = Partial<Record<CampoChamado, string /* Column.key */>>
 
 export function normalizar(s: string): string {
@@ -13,9 +28,30 @@ export function normalizar(s: string): string {
 
 // Sinônimos já normalizados e sem as palavras "de/da/do/em" (ver `chave`).
 const SINONIMOS: Record<CampoChamado, string[]> = {
-  codigo: ["codigo", "cod", "id", "numero", "chamado", "os", "numero chamado", "numero os"],
-  abertura: ["data abertura", "abertura", "dt abertura", "data aberto", "aberto"],
-  solucao: ["data solucao", "solucao", "dt solucao", "data resolucao", "data conclusao"],
+  codigo: [
+    "codigo",
+    "cod",
+    "id",
+    "numero",
+    "chamado",
+    "os",
+    "numero chamado",
+    "numero os",
+  ],
+  abertura: [
+    "data abertura",
+    "abertura",
+    "dt abertura",
+    "data aberto",
+    "aberto",
+  ],
+  solucao: [
+    "data solucao",
+    "solucao",
+    "dt solucao",
+    "data resolucao",
+    "data conclusao",
+  ],
   aceite: ["data aceite", "aceite", "dt aceite"],
   slaPrevisto: ["sla previsto", "sla", "prazo sla", "data sla", "sla prevista"],
   slaRenegociado: ["sla renegociado", "sla renegociada", "novo sla"],
@@ -25,7 +61,14 @@ const SINONIMOS: Record<CampoChamado, string[]> = {
   area: ["area"],
   atividade: ["atividade"],
   severidade: ["severidade", "prioridade"],
-  qtdReabertura: ["qtd reabertura", "qtd reaberturas", "quantidade reabertura", "quantidade reaberturas", "reaberturas", "qtde reabertura"],
+  qtdReabertura: [
+    "qtd reabertura",
+    "qtd reaberturas",
+    "quantidade reabertura",
+    "quantidade reaberturas",
+    "reaberturas",
+    "qtde reabertura",
+  ],
   tempoResolucao: ["tempo resolucao", "tempo solucao"],
   tempoAtraso: ["tempo atraso"],
   resumo: ["resumo", "titulo", "assunto"],
@@ -34,7 +77,13 @@ const SINONIMOS: Record<CampoChamado, string[]> = {
 }
 
 const ESSENCIAIS: CampoChamado[] = ["abertura", "situacao"]
-const RECONHECIMENTO: CampoChamado[] = ["abertura", "situacao", "solucao", "slaPrevisto", "codigo"]
+const RECONHECIMENTO: CampoChamado[] = [
+  "abertura",
+  "situacao",
+  "solucao",
+  "slaPrevisto",
+  "codigo",
+]
 
 function chave(s: string): string {
   return normalizar(s)
@@ -44,14 +93,20 @@ function chave(s: string): string {
     .join(" ")
 }
 
-export function mapearColunas(sheet: Sheet): { mapa: MapaColunas; faltando: CampoChamado[] } {
+export function mapearColunas(sheet: Sheet): {
+  mapa: MapaColunas
+  faltando: CampoChamado[]
+} {
   const mapa: MapaColunas = {}
   const usadas = new Set<string>()
   const campos = Object.keys(SINONIMOS) as CampoChamado[]
   // Mais específicos primeiro (sinônimo exato de prioridade mais alta vence).
   for (const campo of campos) {
     for (const sin of SINONIMOS[campo]) {
-      const col = sheet.columns.find((c) => !usadas.has(c.key) && (chave(c.label) === sin || chave(c.key) === sin))
+      const col = sheet.columns.find(
+        (c) =>
+          !usadas.has(c.key) && (chave(c.label) === sin || chave(c.key) === sin)
+      )
       if (col) {
         mapa[campo] = col.key
         usadas.add(col.key)
@@ -82,7 +137,8 @@ export function escolherAba(workbook: Workbook): Sheet | null {
 export const tipoChamados: TipoDeConjunto = {
   id: "chamados",
   nome: "Chamados / OS",
-  descricao: "Registro de chamados/OS, uma linha por chamado, com datas de abertura, solução e SLA.",
+  descricao:
+    "Registro de chamados/OS, uma linha por chamado, com datas de abertura, solução e SLA.",
   reconhecer(workbook) {
     let melhor = 0
     for (const s of workbook.sheets) {
