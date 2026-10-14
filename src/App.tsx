@@ -4,7 +4,6 @@ import type { Carga, CargaMeta } from "@/cargas"
 import { registrarEnvio } from "@/cargas/enviados"
 import { ordenarMetas } from "@/cargas/repositorio-comum"
 import type { Workbook } from "@/core"
-import { escolherCargaInicial } from "@/app/navegacao"
 import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
 import { useListaInicial } from "@/app/sessao/SessaoContext"
@@ -33,17 +32,15 @@ export function App() {
   )
   const loader = useWorkbookLoader(onLoaded)
 
-  // Abertura (TV): competência mais recente do tipo da última carga feita.
+  // Abertura: sempre na tela de envio. Só lista as cargas (para mostrar o que
+  // já existe); nenhuma carga completa é baixada até a pessoa escolher uma.
   useEffect(() => {
     let cancelado = false
     ;(async () => {
       try {
         const ms = listaInicial.current ?? (await repo.listar())
-        const ini = escolherCargaInicial(ms)
-        const carga = ini ? await repo.obter(ini.id) : null
         if (cancelado) return
         setMetas(ms)
-        setAtual(carga)
       } catch {
         if (!cancelado)
           setErroRepo("Não foi possível ler o histórico deste navegador.")
@@ -104,8 +101,6 @@ export function App() {
     loader.dismiss()
   }, [loader])
 
-  if (!pronto) return null
-
   const erro =
     erroRepo ?? (loader.state.status === "error" ? loader.state.message : null)
 
@@ -133,6 +128,9 @@ export function App() {
             erroRepo ? { status: "error", message: erroRepo } : loader.state
           }
           onFile={loader.load}
+          metas={metas}
+          carregandoLista={!pronto}
+          onAbrir={abrir}
         />
       )}
       {pendente && (

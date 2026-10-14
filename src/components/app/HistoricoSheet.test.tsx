@@ -114,4 +114,44 @@ describe("HistoricoSheet", () => {
     )
     expect(onAbrir).toHaveBeenCalledWith("c")
   })
+
+  it("Geral agrupa as versões (mais recente por cima, anteriores recolhidas) e a busca mostra a versão que casou", async () => {
+    const user = userEvent.setup()
+    const A2 = meta({ id: "a2", versao: 2, arquivo: "setembro-novo.xlsx" })
+    const { onAbrir } = montar([A, A2, B])
+    await user.click(screen.getByRole("tab", { name: "Geral" }))
+    const aba = screen.getByRole("tabpanel")
+    expect(within(aba).getByText("setembro-novo.xlsx")).toBeInTheDocument()
+    expect(within(aba).queryByText("setembro.xlsx")).toBeNull()
+
+    await user.type(within(aba).getByLabelText("Buscar"), "v1")
+    // a versão 1 casou: o grupo aparece com ela visível
+    expect(within(aba).getByText("setembro.xlsx")).toBeInTheDocument()
+    await user.click(
+      within(aba).getByRole("button", { name: "Abrir Setembro de 2026 v1" })
+    )
+    expect(onAbrir).toHaveBeenCalledWith("a")
+  })
+
+  it("Enviados agrupa só as enviadas e Tirar da lista tira só aquela versão", async () => {
+    const user = userEvent.setup()
+    const A2 = meta({ id: "a2", versao: 2, arquivo: "setembro-novo.xlsx" })
+    registrarEnvio("a")
+    registrarEnvio("a2")
+    registrarEnvio("b")
+    montar([A, A2, B, C])
+    const aba = () => screen.getByRole("tabpanel")
+    expect(within(aba()).queryByText("julho.xlsx")).toBeNull()
+    await user.click(
+      within(aba()).getByRole("button", { name: /1 versão anterior/ })
+    )
+    await user.click(
+      within(aba()).getByRole("button", {
+        name: "Tirar da lista Setembro de 2026 v1",
+      })
+    )
+    expect(within(aba()).queryByText("setembro.xlsx")).toBeNull()
+    expect(within(aba()).getByText("setembro-novo.xlsx")).toBeInTheDocument()
+    expect(within(aba()).getByText("agosto.xlsx")).toBeInTheDocument()
+  })
 })

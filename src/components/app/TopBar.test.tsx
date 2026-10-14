@@ -1,5 +1,7 @@
-import { render } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { SessaoContext } from "@/app/sessao/SessaoContext"
 import type { CargaMeta } from "@/cargas"
 import { TopBar } from "./TopBar"
 
@@ -45,5 +47,47 @@ describe("TopBar", () => {
     const h = barra(true)
     expect(h.style.transform).not.toContain("-100%")
     expect(h.className).toContain("fixed")
+  })
+
+  describe("botão Sair", () => {
+    afterEach(() => vi.unstubAllEnvs())
+    const comSessao = (sair: () => Promise<void>) =>
+      render(
+        <SessaoContext.Provider value={{ sair }}>
+          <TopBar
+            visible
+            tipoNome="Chamados"
+            atual={atual}
+            grupos={[]}
+            visoes={["painel"]}
+            visao="painel"
+            onSlot={() => {}}
+            onAbrir={() => {}}
+            onVisao={() => {}}
+            onPickFile={() => {}}
+            onHistorico={() => {}}
+            podeApagar={false}
+            onClear={() => {}}
+            onSelectorOpenChange={() => {}}
+            dica={null}
+          />
+        </SessaoContext.Provider>
+      )
+
+    it("com login em uso, existe e chama sair", async () => {
+      vi.stubEnv("VITE_REPOSITORIO", "api")
+      vi.stubEnv("VITE_LOGIN", "")
+      const sair = vi.fn(async () => undefined)
+      comSessao(sair)
+      await userEvent.click(screen.getByRole("button", { name: "Sair" }))
+      expect(sair).toHaveBeenCalledTimes(1)
+    })
+
+    it("sem login em uso, não existe", () => {
+      vi.stubEnv("VITE_REPOSITORIO", "api")
+      vi.stubEnv("VITE_LOGIN", "desativado")
+      comSessao(async () => undefined)
+      expect(screen.queryByRole("button", { name: "Sair" })).toBeNull()
+    })
   })
 })
