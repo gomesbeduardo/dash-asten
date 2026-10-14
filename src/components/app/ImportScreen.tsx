@@ -3,6 +3,7 @@ import { FileSpreadsheetIcon } from "lucide-react"
 
 import { formatarCompetencia, tiposRegistrados, type CargaMeta } from "@/cargas"
 import { escolherCargaInicial } from "@/app/navegacao"
+import { modoApi } from "@/app/modo-api"
 import logo from "@/assets/asten-logo-fundo-claro.png"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -47,8 +48,10 @@ export function ImportScreen({
         </h1>
         <p className="max-w-prose text-xl text-muted-foreground">
           Escolha a planilha do mês, confirme o tipo e a competência, e ela vira
-          telas para apresentar. As cargas ficam guardadas só neste navegador;
-          nada é enviado a lugar nenhum.
+          telas para apresentar.{" "}
+          {modoApi()
+            ? "A carga fica guardada no banco do app e aparece em qualquer computador."
+            : "As cargas ficam guardadas só neste navegador; nada é enviado a lugar nenhum."}
         </p>
       </div>
 

@@ -4,6 +4,7 @@ import type { Carga, CargaMeta } from "@/cargas"
 import { registrarEnvio } from "@/cargas/enviados"
 import { ordenarMetas } from "@/cargas/repositorio-comum"
 import type { Workbook } from "@/core"
+import { modoApi } from "@/app/modo-api"
 import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
 import { useListaInicial } from "@/app/sessao/SessaoContext"
@@ -43,7 +44,11 @@ export function App() {
         setMetas(ms)
       } catch {
         if (!cancelado)
-          setErroRepo("Não foi possível ler o histórico deste navegador.")
+          setErroRepo(
+            modoApi()
+              ? "Não foi possível ler o histórico do app."
+              : "Não foi possível ler o histórico deste navegador."
+          )
       } finally {
         if (!cancelado) setPronto(true)
       }
@@ -71,7 +76,11 @@ export function App() {
         setAtual({ ...meta, workbook: pendente.workbook })
         setErroRepo(null)
       } catch {
-        setErroRepo("Não foi possível guardar a carga neste navegador.")
+        setErroRepo(
+          modoApi()
+            ? "Não foi possível guardar a carga no banco do app."
+            : "Não foi possível guardar a carga neste navegador."
+        )
       }
       setPendente(null)
     },
