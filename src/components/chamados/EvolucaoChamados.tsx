@@ -109,7 +109,7 @@ export function EvolucaoChamados({
                 <span aria-hidden className="inline-block align-middle">
                   <svg width="44" height="14" viewBox="0 0 44 14">
                     <line x1="0" y1="7" x2="30" y2="7" stroke="#475565" strokeWidth="3" strokeDasharray="6 5" />
-                    <circle cx="36" cy="7" r="5" fill="#fff" stroke="#475565" strokeWidth="2.5" />
+                    <circle cx="36" cy="7" r="5" fill="var(--card)" stroke="#475565" strokeWidth="2.5" />
                   </svg>
                 </span>{" "}
                 Tracejado e ponto vazado = reconstruído pelas datas da planilha

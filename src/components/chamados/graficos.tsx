@@ -291,7 +291,7 @@ export function BarrasAxB({
                 height="8"
                 patternTransform="rotate(45)"
               >
-                <rect width="8" height="8" fill="#ffffff" />
+                <rect width="8" height="8" fill="var(--card)" />
                 <rect width="4" height="8" fill={cor} />
               </pattern>
             ))}
@@ -433,7 +433,7 @@ export function LinhaMini({
                     cx={p.cx}
                     cy={p.cy}
                     r={5}
-                    fill="#ffffff"
+                    fill="var(--card)"
                     stroke={s.cor}
                     strokeWidth={2.5}
                   />
@@ -465,7 +465,7 @@ export function LinhaMini({
                     cy={p.cy}
                     r={p.index === ultimo ? 8 : 5}
                     fill={s.cor}
-                    stroke="#ffffff"
+                    stroke="var(--card)"
                     strokeWidth={2}
                   />
                 ) : (
