@@ -73,21 +73,21 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Pronto quando:** carregar a planilha do Líder (local, nunca no git) e uma fictícia de outro mês gera duas competências; painel, comparação e evolução funcionam; recarga cria versão; testes de unidade, componente e ponta a ponta passam; tudo testado localmente na `staging` antes de ir para a `main`.
 
-## Fase 2D — Banco, autenticação e painel estratégico (D36–D38) ← agora, na `staging`
+## Fase 2D — Banco, autenticação e painel estratégico (D36–D38) ← feita na `staging`, falta promover para a `main`
 
 **Infra (Opus — área sensível):**
-1. Provisionar **Neon** pelo Marketplace no projeto `g0mes/dash-asten` (`vercel integration add neon`); branch `staging` do Neon para local/preview; `vercel env pull`.
-2. Esquema (`db/schema.sql` + script de migração idempotente): tabela `cargas` (id uuid pk, tipo text, competencia char(7), versao int, importada_em timestamptz default now(), arquivo text, linhas int, dados jsonb, unique(tipo, competencia, versao)), índice (tipo, competencia desc).
-3. API em Vercel Functions: `GET /api/cargas` (metadados, sem `dados`), `POST /api/cargas` (corpo gzip; versão = max+1 numa transação, com retry em conflito de unicidade), `GET /api/cargas/:id`, `DELETE /api/cargas/:id`, `DELETE /api/cargas` (limpar). Driver `@neondatabase/serverless`, inicialização preguiçosa.
-4. **Basic Auth** em duas camadas: Routing Middleware na raiz (site + API) e verificação repetida em cada função da API; comparação em tempo constante; credenciais `BASIC_AUTH_USER`/`BASIC_AUTH_PASS` por ambiente.
-5. Dev local: `vercel dev` (porta 3000) como dev server.
+1. ✅ **Neon** pelo Marketplace no projeto `g0mes/dash-asten`. Um banco só; ambientes separados por **schema Postgres** (`public` = produção, `staging` = preview e local) via `DB_SCHEMA`.
+2. ✅ Esquema com **Prisma 7.10.0** (`db/schema.prisma`, migrações `0001_cargas` e `0002_ids_cuid` geradas por `prisma migrate diff`, aplicadas nos dois schemas): tabela `cargas` com id **CUID2**, tipo, competência, versão, importada_em, arquivo, linhas, dados jsonb, unique(tipo, competência, versão).
+3. ✅ API em Vercel Functions: `GET /api/cargas` (metadados), `POST /api/cargas` (corpo gzip, versão = max+1 com retry em conflito), `GET /api/cargas/:id`, `DELETE /api/cargas/:id`. Sem "apagar tudo" (405). Entradas validadas (id CUID2, tipo, tamanho até 4 MB).
+4. ✅ **Login próprio** (D38) no lugar do Basic Auth: `POST /api/login`, `/api/logout`, `/api/sessao`; token HMAC em cookie HttpOnly/Secure/Lax (14 dias com "lembrar"); duas camadas (Routing Middleware em `/api/*` + verificação em cada função).
+5. ✅ Dev local: `vercel dev` (porta 3000) para o app completo.
 
 **Cliente (workers):**
-6. `criarRepositorioApi()` implementando `RepositorioDeCargas` (fetch, gzip via CompressionStream, revive de datas pelos tipos de coluna); contrato idêntico ao da memória/IndexedDB (mesma suíte de testes com fetch simulado). Produção passa a usar a API.
-7. D36: remover a tabela de linhas brutas do painel; filtros das leituras destacam KPIs/gráficos.
-8. Fatia 4: painel de Chamados (KPIs com delta, leituras, distribuições, envelhecimento), Comparar (A×B) e Evolução (cargas próprias + reconstruídas), e a correção da base do "aguardando aceite".
+6. ✅ `criarRepositorioApi()` com o mesmo contrato da memória/IndexedDB; `VITE_REPOSITORIO` escolhe o repositório.
+7. ✅ D36: sem tabela de linhas brutas; filtros das leituras destacam KPIs e gráficos.
+8. ✅ Painel de Chamados (KPIs com delta, leituras, distribuições, envelhecimento), Comparar (A×B), Evolução (cargas próprias + reconstruídas, com selo) e base correta do "aguardando aceite". Tela de login.
 
-**Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`.
+**Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`. **Falta:** promover para a `main`, CI verde, deploy de produção e validar com a planilha do Líder.
 
 ## Fase 3 — Planilha real e contrato de dados
 

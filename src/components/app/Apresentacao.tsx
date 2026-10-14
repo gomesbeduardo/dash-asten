@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
@@ -75,7 +75,8 @@ export function Apresentacao(p: ApresentacaoProps) {
         : visoes.Painel
 
   const overlay = historicoOpen || limparOpen || seletorOpen || painelHold
-  const bar = useBarVisibility({ hold: overlay })
+  const barRef = useRef<HTMLElement>(null)
+  const bar = useBarVisibility({ hold: overlay, barRef })
 
   const pedirVisao = useCallback(
     (v: Visao) => {
@@ -109,6 +110,8 @@ export function Apresentacao(p: ApresentacaoProps) {
       <div className="min-h-svh">
         <TopBar
           visible={bar.visible}
+          fixa={bar.fixa}
+          barRef={barRef}
           tipoNome={tipoNome}
           atual={atualMeta}
           grupos={competenciasDoTipo(metas, carga.tipo)}

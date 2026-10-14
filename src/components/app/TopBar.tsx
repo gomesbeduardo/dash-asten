@@ -1,4 +1,5 @@
 import { useRef } from "react"
+import type { Ref } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { FolderOpenIcon, HistoryIcon, Trash2Icon, XIcon } from "lucide-react"
 
@@ -35,14 +36,19 @@ export type TopBarProps = {
   onClear: () => void
   onSelectorOpenChange: (open: boolean) => void
   dica: string | null
+  /** Mede a barra para a região de detecção do mouse. */
+  barRef?: Ref<HTMLElement>
+  /** Barra fixada pela tecla H. */
+  fixa?: boolean
 }
 
-export function TopBar({ onSlot, ...p }: TopBarProps) {
+export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
   const arquivoInput = useRef<HTMLInputElement>(null)
   const reduce = useReducedMotion()
 
   return (
     <motion.header
+      ref={barRef}
       data-visible={p.visible}
       initial={false}
       animate={{ opacity: p.visible ? 1 : 0, y: p.visible ? 0 : -24 }}
@@ -131,7 +137,7 @@ export function TopBar({ onSlot, ...p }: TopBarProps) {
       </div>
       <div ref={onSlot} />
       <p className="border-t px-6 py-1 text-sm text-muted-foreground">
-        {p.dica && `${p.dica} · `}H barra
+        {p.dica && `${p.dica} · `}{p.fixa ? "H soltar barra" : "H fixar barra"}
         {p.visoes.length > 1 && " · P painel · L leituras · C comparar · E evolução"}
       </p>
     </motion.header>
