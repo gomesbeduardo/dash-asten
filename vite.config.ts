@@ -19,5 +19,7 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "api/**/*.test.ts"],
     css: false,
+    // Testes de interação com Radix (ex.: 6 seletores no Comparar) passam de 5 s no runner do CI.
+    testTimeout: 20_000,
   },
 })
