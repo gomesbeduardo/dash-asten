@@ -10,6 +10,7 @@ import { modoApi } from "@/app/modo-api"
 import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
 import { useListaInicial } from "@/app/sessao/SessaoContext"
+import { guardarUltimaAbertura, lerUltimaAbertura } from "@/app/ultima-abertura"
 import { Apresentacao } from "@/components/app/Apresentacao"
 import { ImportScreen } from "@/components/app/ImportScreen"
 import { NovaCargaDialog } from "@/components/app/NovaCargaDialog"
@@ -19,6 +20,8 @@ import {
   type Guardada,
   type ItemLido,
 } from "@/components/app/NovaCargaLoteDialog"
+import { useAvisoAoSair } from "@/components/app/hooks/useAvisoAoSair"
+import { useImpedirAbrirArquivo } from "@/components/app/hooks/useArrasteNaJanela"
 import {
   useWorkbookLoader,
   type LoteLido,
@@ -41,6 +44,10 @@ export function App() {
   const [lote, setLote] = useState<LoteLido | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [erroRepo, setErroRepo] = useState<string | null>(null)
+  // Envio em andamento (guardando) e carga sendo baixada ao abrir.
+  const [guardando, setGuardando] = useState(0)
+  const [abrindo, setAbrindo] = useState(false)
+  const abrindoRef = useRef(false)
 
   const ultimaLista = useRef(0)
   const sequencia = useRef(0)
@@ -108,8 +115,17 @@ export function App() {
 
   const abrir = useCallback(
     async (id: string) => {
-      const carga = await repo.obter(id)
-      if (carga) setAtual(carga)
+      // O download leva um instante: mostra o indicador e ignora cliques repetidos.
+      if (abrindoRef.current) return
+      abrindoRef.current = true
+      setAbrindo(true)
+      try {
+        const carga = await repo.obter(id)
+        if (carga) setAtual(carga)
+      } finally {
+        abrindoRef.current = false
+        setAbrindo(false)
+      }
     },
     [repo]
   )
@@ -197,14 +213,20 @@ export function App() {
   // baixar de novo (o adaptador da API também revive datas para Date).
   const persistir = useCallback(
     async (item: ItemLido, escolha: Escolha) => {
-      const meta = await repo.salvar({
-        tipo: escolha.tipo,
-        competencia: escolha.competencia,
-        arquivo: item.workbook.fileName,
-        ...(escolha.nome ? { nome: escolha.nome } : {}),
-        workbook: item.workbook,
-        original: item.original,
-      })
+      setGuardando((n) => n + 1)
+      let meta: CargaMeta
+      try {
+        meta = await repo.salvar({
+          tipo: escolha.tipo,
+          competencia: escolha.competencia,
+          arquivo: item.workbook.fileName,
+          ...(escolha.nome ? { nome: escolha.nome } : {}),
+          workbook: item.workbook,
+          original: item.original,
+        })
+      } finally {
+        setGuardando((n) => n - 1)
+      }
       registrarEnvio(meta.id)
       setMetas((ms) => ordenarMetas([...ms.filter((m) => m.id !== meta.id), meta]))
       return meta
@@ -245,6 +267,15 @@ export function App() {
     setErroRepo(null)
     setLote(null)
   }, [atualizarLista])
+
+  // Lembra a carga aberta (por navegador) para o "Abrir a última" da TV.
+  const atualId = atual?.id
+  useEffect(() => {
+    if (atualId) guardarUltimaAbertura({ cargaId: atualId })
+  }, [atualId])
+
+  useImpedirAbrirArquivo()
+  useAvisoAoSair(guardando > 0 || loader.state.status === "loading")
 
   usePrecarga(repo, ativas, atual?.tipo ?? null)
 
@@ -293,7 +324,17 @@ export function App() {
           metas={ativas}
           carregandoLista={!pronto}
           onAbrir={abrir}
+          lembradaId={lerUltimaAbertura().cargaId}
+          abrindo={abrindo}
         />
+      )}
+      {abrindo && atual && (
+        <p
+          role="status"
+          className="fixed bottom-4 left-4 z-50 rounded-md border bg-card px-4 py-2 text-base shadow-md"
+        >
+          Abrindo a carga…
+        </p>
       )}
       {loader.state.status === "loading" && atual && (
         <p

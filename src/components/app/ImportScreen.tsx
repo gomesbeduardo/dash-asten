@@ -1,3 +1,4 @@
+import { Loader2Icon } from "lucide-react"
 import { formatarCompetencia, tiposRegistrados, type CargaMeta } from "@/cargas"
 import { escolherCargaInicial } from "@/app/navegacao"
 import { modoApi } from "@/app/modo-api"
@@ -14,6 +15,8 @@ export function ImportScreen({
   metas = [],
   carregandoLista = false,
   onAbrir,
+  lembradaId,
+  abrindo = false,
 }: {
   state: LoadState
   onFiles: (files: File[], ignorados: string[]) => void
@@ -21,10 +24,19 @@ export function ImportScreen({
   metas?: CargaMeta[]
   carregandoLista?: boolean
   onAbrir?: (id: string) => void
+  /** Carga aberta por último neste navegador; "Abrir a última" volta nela. */
+  lembradaId?: string
+  /** Uma carga está sendo baixada: mostra o indicador e trava os cliques. */
+  abrindo?: boolean
 }) {
   const nomeDoTipo = (id: string) =>
     tiposRegistrados().find((t) => t.id === id)?.nome ?? id
-  const ultima = escolherCargaInicial(metas)
+  const lembrada = lembradaId
+    ? metas.find(
+        (m) => m.id === lembradaId && !m.arquivadaEm
+      )
+    : undefined
+  const ultima = lembrada ?? escolherCargaInicial(metas)
   const loading = state.status === "loading"
 
   return (
@@ -44,6 +56,7 @@ export function ImportScreen({
       </div>
 
       <AreaDeEnvio
+        janela
         onFiles={onFiles}
         loading={loading}
         progresso={state.status === "loading" ? state.progresso : null}
@@ -77,16 +90,31 @@ export function ImportScreen({
               <Button
                 size="lg"
                 className="h-11 self-start px-5 text-base"
+                disabled={abrindo}
                 onClick={() => onAbrir(ultima.id)}
               >
                 {`Abrir a última: ${nomeDoTipo(ultima.tipo)} · ${formatarCompetencia(ultima.competencia, "longo")} ${rotuloVersao(ultima)}`}
               </Button>
             )}
-            <ListaCargasAgrupada
-              metas={metas}
-              nomeDoTipo={nomeDoTipo}
-              onAbrir={onAbrir}
-            />
+            {abrindo && (
+              <p
+                role="status"
+                className="flex items-center gap-2 text-base font-medium text-primary"
+              >
+                <Loader2Icon className="size-5 animate-spin" aria-hidden />
+                Abrindo a carga…
+              </p>
+            )}
+            <div
+              inert={abrindo}
+              className={abrindo ? "pointer-events-none opacity-60" : undefined}
+            >
+              <ListaCargasAgrupada
+                metas={metas}
+                nomeDoTipo={nomeDoTipo}
+                onAbrir={onAbrir}
+              />
+            </div>
           </>
         )}
       </section>

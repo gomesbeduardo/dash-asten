@@ -10,6 +10,7 @@ export type ShortcutHandlers = {
   onEscape: () => void
   onToggleBar: () => void
   onVisao: (visao: VisaoTecla) => void
+  onTelaCheia: () => void
 }
 
 function isEditable(target: EventTarget | null): boolean {
@@ -39,6 +40,7 @@ export function useShortcuts(handlers: Partial<ShortcutHandlers>) {
       else if (/^[1-9]$/.test(e.key)) h.onGoTo?.(Number(e.key) - 1)
       else if (k === "f") h.onToggleFilters?.()
       else if (k === "h") h.onToggleBar?.()
+      else if (k === "t") h.onTelaCheia?.()
       else if (k === "p") h.onVisao?.("painel")
       else if (k === "c") h.onVisao?.("comparar")
       else if (k === "e") h.onVisao?.("evolucao")

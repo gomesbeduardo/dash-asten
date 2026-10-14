@@ -4,6 +4,12 @@ import { afterEach } from "vitest"
 
 afterEach(() => {
   cleanup()
+  // A última abertura fica no localStorage; um teste não pode herdar a do anterior.
+  try {
+    localStorage.clear()
+  } catch {
+    /* sem storage */
+  }
 })
 
 // jsdom não implementa Blob/File.arrayBuffer; os navegadores reais sim.
