@@ -10,8 +10,19 @@ const NOMES: Record<string, number> = {
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
-/** Procura um mês pt-BR (palavra inteira) e, junto dele, um ano de 4 dígitos. */
+/** Mês em número junto do ano: 2026-07, 2026_07, 2026.07, 202607, 07-2026, 07/2026, 7-2026. */
+function mesNumerico(texto: string): Competencia | null {
+  const anoMes = texto.match(/(?<!\d)(20\d{2})(?:[-_./ ](0?[1-9]|1[0-2])|(0[1-9]|1[0-2]))(?!\d)/)
+  if (anoMes) return `${anoMes[1]}-${pad(Number(anoMes[2] ?? anoMes[3]))}`
+  const mesAno = texto.match(/(?<!\d)(0?[1-9]|1[0-2])[-_./ ](20\d{2})(?!\d)/)
+  if (mesAno) return `${mesAno[2]}-${pad(Number(mesAno[1]))}`
+  return null
+}
+
+/** Procura um mês (número+ano ou nome pt-BR por palavra inteira) e, junto do nome, um ano de 4 dígitos. */
 function mesNoTexto(texto: string, hoje: Date): Competencia | null {
+  const numerico = mesNumerico(texto)
+  if (numerico) return numerico
   const tokens = texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().match(/[a-z]+|\d+/g) ?? []
   const idx = tokens.findIndex((t) => t in NOMES)
   if (idx < 0) return null

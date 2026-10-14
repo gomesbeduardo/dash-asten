@@ -47,4 +47,32 @@ describe("inferirCompetencia", () => {
     expect(inferirCompetencia(wb(["Dados"], [utc(1900, 1, 1)]), "a.xlsx", hoje).origem).toBe("mes-anterior")
     expect(inferirCompetencia(wb(["Dados"]), "a.xlsx", hoje).origem).toBe("mes-anterior")
   })
+  describe("mês em número junto do ano", () => {
+    const casos: [string, string][] = [
+      ["chamados-2026-07-ficticio.xlsx", "2026-07"],
+      ["dados_2026_08.xlsx", "2026-08"],
+      ["dados.2026.09.xlsx", "2026-09"],
+      ["chamados202607.xlsx", "2026-07"],
+      ["chamados-07-2026.xlsx", "2026-07"],
+      ["chamados_08_2026.xlsx", "2026-08"],
+      ["chamados.09.2026.xlsx", "2026-09"],
+      ["chamados 07/2026.xlsx", "2026-07"],
+      ["chamados-7-2026.xlsx", "2026-07"],
+      ["export-2026-07-15.xlsx", "2026-07"],
+      ["chamados-2026-09-v2-correcao.xlsx", "2026-09"],
+    ]
+    for (const [nome, esperado] of casos) {
+      it(`arquivo ${nome}`, () => {
+        expect(inferirCompetencia(wb(["Dados"]), nome, hoje)).toEqual({ competencia: esperado, origem: "arquivo" })
+      })
+    }
+    it("aba com número", () => {
+      expect(inferirCompetencia(wb(["2026-07"]), "x.xlsx", hoje)).toEqual({ competencia: "2026-07", origem: "aba" })
+    })
+    it("não confunde outros números", () => {
+      for (const nome of ["relatorio-123456.xlsx", "v2.xlsx", "codigo-1307.xlsx"]) {
+        expect(inferirCompetencia(wb(["Dados"]), nome, hoje).origem).toBe("mes-anterior")
+      }
+    })
+  })
 })
