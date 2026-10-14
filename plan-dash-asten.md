@@ -89,6 +89,18 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`. **Falta:** promover para a `main`, CI verde, deploy de produção e validar com a planilha do Líder.
 
+## Fase 2E — Fechar os requisitos do MVP (14/10) ← agora
+
+- [x] Lentidão (D46): API numa função só, carga com cache imutável, abertura sem `/api/sessao`, cache e pré-carga no cliente, carregando em Comparar/Evolução. A frio: 6,1 s → ~2,8 s de rede (medido no preview).
+- [x] Histórico Enviados/Geral com busca e "Limpar" local (D47).
+- [x] Séries liga/desliga na Evolução e no Comparar (R6/D49).
+- [x] Evolução nas 6 competências mais recentes (D48).
+- [x] Barra sobreposta que some de verdade, verificada no navegador (D43).
+- [ ] Fundo e cartões menos claros para TV (em andamento).
+- [ ] PR da branch para a `staging` → validar no preview → PR `staging` → `main` → CI verde → deploy de produção → conferir com a planilha do Líder (D42).
+- [ ] Publicar o artifact (capturas novas, senha preenchida pelo responsável).
+- [ ] Depois (refinamento): semear o cache com a carga recém-enviada; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; contas individuais; hard delete.
+
 ## Fase 3 — Planilha real e contrato de dados
 
 1. Receber a planilha real ou uma cópia anonimizada de estrutura idêntica. Inspecionar sem copiar dados sensíveis para logs, commits ou fixtures.
