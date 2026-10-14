@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { montarMeta } from "./repositorio-comum"
+import { aplicarAlteracao, montarMeta } from "./repositorio-comum"
 import { ErroDeCarga, criarRepositorioApi } from "./repositorio-api"
 import { suiteDeRepositorio, workbookDeTeste } from "./repositorio.suite"
 import type { CargaMeta, NovaCarga } from "./types"
@@ -39,13 +39,19 @@ function servidorFalso() {
       return c ? json(200, { ...c.meta, workbook: JSON.parse(c.workbook) }) : json(404, { erro: "não encontrada" })
     }
     if (method === "POST") {
-      const body = JSON.parse(corpo) as Pick<NovaCarga, "tipo" | "competencia" | "arquivo"> & { workbook: unknown; originalBase64?: string }
+      const body = JSON.parse(corpo) as Pick<NovaCarga, "tipo" | "competencia" | "arquivo" | "nome"> & { workbook: unknown; originalBase64?: string }
       const meta = montarMeta(
-        { tipo: body.tipo, competencia: body.competencia, arquivo: body.arquivo, workbook: { fileName: "", importedAt: new Date(), sheets: (body.workbook as { sheets: [] }).sheets } },
+        { tipo: body.tipo, competencia: body.competencia, arquivo: body.arquivo, nome: body.nome, workbook: { fileName: "", importedAt: new Date(), sheets: (body.workbook as { sheets: [] }).sheets } },
         [...cargas.values()].map((c) => c.meta),
       )
       cargas.set(meta.id, { meta, workbook: JSON.stringify(body.workbook), original: body.originalBase64 })
       return json(201, meta)
+    }
+    if (method === "PATCH" && id) {
+      const c = cargas.get(id)
+      if (!c) return json(404, { erro: "não encontrada" })
+      c.meta = aplicarAlteracao(c.meta, JSON.parse(corpo), [...cargas.values()].map((x) => x.meta))
+      return json(200, c.meta)
     }
     if (method === "DELETE" && id) { cargas.delete(id); return new Response(null, { status: 204 }) }
     return json(405, { erro: "método" })
@@ -84,6 +90,21 @@ describe("repositório API", () => {
     expect(wb.sheets[0].rows[0].d).toEqual(new Date(Date.UTC(2026, 8, 3)))
     expect(wb.sheets[0].rows[1].d).toBeNull()
     expect(wb.sheets[1].rows[0].n).toBe(1)
+  })
+
+  it("alterar manda PATCH /cargas/:id só com os campos pedidos e devolve a meta", async () => {
+    const repo = criarRepositorioApi()
+    const meta = await repo.salvar(nova())
+    const r = await repo.alterar(meta.id, { nome: "Correção", arquivada: true })
+    const patch = srv.chamadas.find((c) => c.method === "PATCH")!
+    expect(patch.url).toBe(`/api/cargas/${meta.id}`)
+    expect(JSON.parse(patch.corpo)).toEqual({ nome: "Correção", arquivada: true })
+    expect(r).toMatchObject({ nome: "Correção" })
+    expect(r.arquivadaEm).not.toBeNull()
+  })
+
+  it("alterar carga inexistente vira ErroDeCarga 404", async () => {
+    await expect(criarRepositorioApi().alterar("nada", { nome: "x" })).rejects.toMatchObject({ status: 404 })
   })
 
   it("envia o corpo comprimido com gzip e X-Content-Encoding", async () => {

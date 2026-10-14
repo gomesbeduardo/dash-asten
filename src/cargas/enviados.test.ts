@@ -15,7 +15,7 @@ const meta = (id: string): CargaMeta => ({
   versao: 1,
   importadaEm: "2026-10-01T12:00:00.000Z",
   arquivo: `${id}.xlsx`,
-  linhas: 1,
+  linhas: 1, nome: null, arquivadaEm: null,
 })
 
 beforeEach(() => localStorage.clear())

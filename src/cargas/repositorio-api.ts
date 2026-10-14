@@ -1,6 +1,6 @@
 import type { Workbook } from "@/core"
 import { ordenarMetas } from "./repositorio-comum"
-import type { Carga, CargaMeta, NovaCarga, RepositorioDeCargas } from "./types"
+import type { AlteracaoDeCarga, Carga, CargaMeta, NovaCarga, RepositorioDeCargas } from "./types"
 
 /** Falha ao falar com o servidor de cargas; a mensagem já é legível para o usuário. */
 export class ErroDeCarga extends Error {
@@ -96,11 +96,12 @@ export function criarRepositorioApi(base = "/api"): RepositorioDeCargas {
       return { ...carga, workbook: reviver(carga.workbook) }
     },
     async salvar(nova: NovaCarga) {
-      const { tipo, competencia, arquivo, workbook, original } = nova
+      const { tipo, competencia, arquivo, nome, workbook, original } = nova
       const texto = JSON.stringify({
         tipo,
         competencia,
         arquivo,
+        ...(nome ? { nome } : {}),
         workbook,
         ...(original ? { originalBase64: paraBase64(original) } : {}),
       })
@@ -119,6 +120,16 @@ export function criarRepositorioApi(base = "/api"): RepositorioDeCargas {
       }
       const resp = await validar(
         await chamar("/cargas", { method: "POST", headers, body: corpo as BodyInit })
+      )
+      return (await resp.json()) as CargaMeta
+    },
+    async alterar(id, alteracao: AlteracaoDeCarga) {
+      const resp = await validar(
+        await chamar(`/cargas/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(alteracao),
+        })
       )
       return (await resp.json()) as CargaMeta
     },

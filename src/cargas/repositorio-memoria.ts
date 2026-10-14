@@ -1,4 +1,4 @@
-import { montarMeta, ordenarMetas } from "./repositorio-comum"
+import { aplicarAlteracao, montarMeta, ordenarMetas } from "./repositorio-comum"
 import type { Carga, CargaMeta, RepositorioDeCargas } from "./types"
 
 /** Adaptador em memória; structuredClone evita vazar referências para o chamador. */
@@ -20,6 +20,13 @@ export function criarRepositorioMemoria(): RepositorioDeCargas {
     },
     async excluir(id) {
       cargas.delete(id)
+    },
+    async alterar(id, alteracao) {
+      const c = cargas.get(id)
+      if (!c) throw new Error("Carga não encontrada.")
+      const meta = aplicarAlteracao(metaDe(c), alteracao, [...cargas.values()].map(metaDe))
+      cargas.set(id, { ...meta, workbook: c.workbook })
+      return meta
     },
     async limparTudo() {
       cargas.clear()

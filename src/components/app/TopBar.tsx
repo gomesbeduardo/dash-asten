@@ -10,7 +10,7 @@ import {
 
 import logo from "@/assets/asten-logo-fundo-claro.png"
 import type { CargaMeta } from "@/cargas"
-import type { GrupoCompetencia, Visao } from "@/app/navegacao"
+import type { GrupoCompetencia, GrupoTipo, Visao } from "@/app/navegacao"
 import { loginEmUso } from "@/app/login-em-uso"
 import { useSessao } from "@/app/sessao/SessaoContext"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,8 @@ export type TopBarProps = {
   tipoNome: string
   atual: CargaMeta
   grupos: GrupoCompetencia[]
+  /** Cargas ativas dos outros tipos, para o seletor mostrar em seções rotuladas. */
+  outrosTipos?: GrupoTipo[]
   visoes: Visao[]
   visao: Visao
   /** Recebe a faixa onde o painel do tipo desenha seus controles. */
@@ -79,6 +81,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
           <CompetenciaSelector
             atual={p.atual}
             grupos={p.grupos}
+            outrosTipos={p.outrosTipos}
             onAbrir={p.onAbrir}
             onOpenChange={p.onSelectorOpenChange}
           />

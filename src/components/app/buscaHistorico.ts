@@ -20,6 +20,7 @@ function texto(m: CargaMeta, nomeDoTipo: (id: string) => string): string {
   return semAcento(
     [
       m.arquivo,
+      m.nome ?? "",
       nomeDoTipo(m.tipo),
       m.tipo,
       `v${m.versao}`,
