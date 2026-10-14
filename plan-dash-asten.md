@@ -57,6 +57,22 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Feito:** 94 testes de unidade/componente e 1 ponta a ponta passando; CI verde na `main`.
 
+## Fase 2C — Competência, histórico e tipos de conjunto (D28–D33) ← agora, na `staging`
+
+**Modelo:**
+- `Carga` = { id, tipo, competência `AAAA-MM`, versão, importadaEm, arquivo, workbook normalizado }. Tipo + competência + versão é único; versão nova a cada recarga do mesmo mês.
+- `RepositorioDeCargas` (interface): listar metadados, obter carga, salvar (atribui versão), excluir. Adaptadores: memória (testes) e IndexedDB (provisório, D29). Datas serializadas e revividas na leitura.
+- `TipoDeConjunto` (registro no código): id, nome, `reconhecer(workbook) → pontuação`, mapeamento de colunas por sinônimos (planilha ainda não definitiva), painel. Tipos: `chamados` e `outro` (modo automático).
+- Inferência de competência: mês por extenso em nome de aba/arquivo (pt-BR) + ano inferido das datas; senão mês anterior à data de hoje.
+
+**Fatias** (contratos fixados no brief antes de paralelizar):
+1. Núcleo de cargas (TDD): interface + adaptadores memória/IndexedDB, versão, serialização, inferência de competência, registro e reconhecimento de tipos.
+2. Métricas de Chamados (TDD): mapeamento de colunas, KPIs da D31 sobre a competência, variação vs competência anterior, dados de comparação (A×B) e de evolução (série por competência).
+3. Interface de carga e histórico: tela inicial com histórico (tipo, competência, versões), nova carga com passo de confirmação (tipo + competência), seletor de competência/versão no modo apresentação.
+4. Interface de Chamados: painel da D31 com deltas, tela Comparar (A×B lado a lado), tela Evolução; Motion e marca como hoje.
+
+**Pronto quando:** carregar a planilha do Líder (local, nunca no git) e uma fictícia de outro mês gera duas competências; painel, comparação e evolução funcionam; recarga cria versão; testes de unidade, componente e ponta a ponta passam; tudo testado localmente na `staging` antes de ir para a `main`.
+
 ## Fase 3 — Planilha real e contrato de dados
 
 1. Receber a planilha real ou uma cópia anonimizada de estrutura idêntica. Inspecionar sem copiar dados sensíveis para logs, commits ou fixtures.
