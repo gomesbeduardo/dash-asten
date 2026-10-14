@@ -98,10 +98,11 @@ Na `main`, na raiz do repo, do zero e com testes:
 - [x] Login desligado no MVP (D52); abertura na tela de envio com a lista do que existe (D53); banco de staging limpo.
 - [x] Comparar com 2 a 6 competências e leituras clicáveis (D54).
 - [x] Nova carga em modal com arrastar e soltar (D55) e envio em lote (D56).
+- [x] Competência reconhecida em todas as formas: nome, títulos e datas das linhas (D57).
 - [x] Produção atualizada pela `main` com CI verde; artifact publicado.
 - [x] Planilhas fictícias de teste com guia e números esperados (`docs/exemplos/LEIA-ME-testes.md`, fora do Git).
 
-**Refinamento (depois da validação):** legenda da Evolução ainda cita "planilha mais antiga" para buraco no meio; semear o cache com a carga recém-enviada; com a gaveta de filtros aberta a barra cobre o topo dos chips; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; JS de ~800 kB (carregar gráficos e leitor sob demanda); aviso do npm sobre scripts do Prisma; ligar o deploy automático pelo GitHub; contas individuais; hard delete; regras D31/D34/D35 com o Líder; próximo tipo de conjunto.
+**Refinamento (depois da validação):** o leitor descarta linhas de título acima do cabeçalho ("Competência: setembro" ali não é visto); palavras soltas como "set"/"out" no nome contam como mês; legenda da Evolução ainda cita "planilha mais antiga" para buraco no meio; semear o cache com a carga recém-enviada; com a gaveta de filtros aberta a barra cobre o topo dos chips; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; JS de ~800 kB (carregar gráficos e leitor sob demanda); aviso do npm sobre scripts do Prisma; ligar o deploy automático pelo GitHub; contas individuais; hard delete; regras D31/D34/D35 com o Líder; próximo tipo de conjunto.
 
 ## Fase 3 — Planilha real e contrato de dados
 
