@@ -12,4 +12,4 @@ export interface RepositorioDeCargas {
   limparTudo?(): Promise<void>
 }
 export type TipoDeConjunto = { id: string; nome: string; descricao: string; reconhecer(workbook: Workbook): number /* 0..1 */ }
-export type OrigemCompetencia = "aba" | "arquivo" | "datas" | "mes-anterior"
+export type OrigemCompetencia = "aba" | "arquivo" | "titulo" | "datas" | "mes-anterior"

@@ -45,7 +45,8 @@ export const MESES = [
 export const DICA_ORIGEM: Record<OrigemCompetencia, string> = {
   aba: "pelo nome da aba",
   arquivo: "pelo nome do arquivo",
-  datas: "pelas datas",
+  titulo: "pelo título da planilha",
+  datas: "pelas datas das linhas",
   "mes-anterior": "mês anterior",
 }
 

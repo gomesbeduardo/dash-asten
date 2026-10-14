@@ -43,7 +43,6 @@ describe("inferirCompetencia", () => {
     expect(inferirCompetencia(wb(["Dados"], [utc(2026, 10, 2)]), "a.xlsx", hoje).competencia).toBe("2026-10")
   })
   it("data máxima antiga ou ausente: mês anterior a hoje", () => {
-    expect(inferirCompetencia(wb(["Dados"], [utc(2025, 3, 3)]), "a.xlsx", hoje)).toEqual({ competencia: "2026-09", origem: "mes-anterior" })
     expect(inferirCompetencia(wb(["Dados"], [utc(1900, 1, 1)]), "a.xlsx", hoje).origem).toBe("mes-anterior")
     expect(inferirCompetencia(wb(["Dados"]), "a.xlsx", hoje).origem).toBe("mes-anterior")
   })
@@ -73,6 +72,107 @@ describe("inferirCompetencia", () => {
       for (const nome of ["relatorio-123456.xlsx", "v2.xlsx", "codigo-1307.xlsx"]) {
         expect(inferirCompetencia(wb(["Dados"]), nome, hoje).origem).toBe("mes-anterior")
       }
+    })
+  })
+
+  describe("títulos e cabeçalhos dentro da planilha", () => {
+    const planilha = (columns: Sheet["columns"], rows: Sheet["rows"] = []): Workbook => ({
+      fileName: "x.xlsx", importedAt: new Date(),
+      sheets: [{ id: "a", name: "Dados", index: 0, columns, rows }],
+    })
+    const col = (key: string, label: string, type: Sheet["columns"][number]["type"] = "text") =>
+      ({ key, label, type, filterable: false, distinctCount: 1 })
+    it("rótulo de coluna com mês e ano", () => {
+      const w = planilha([col("a", "Chamados Setembro/2026")])
+      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2026-09", origem: "titulo" })
+    })
+    it("colunas de meses soltos (Jan, Fev...) não definem competência", () => {
+      const w = planilha([col("a", "Jan"), col("b", "Fev"), col("c", "Mar")])
+      expect(inferirCompetencia(w, "x.xlsx", hoje).origem).toBe("mes-anterior")
+    })
+    it("célula 'Competência: mês' nas primeiras linhas", () => {
+      const w = planilha([col("a", "A"), col("b", "B")], [{ a: "Competência: Agosto/2026", b: null }])
+      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2026-08", origem: "titulo" })
+    })
+    it("'Período' com o mês na célula ao lado", () => {
+      const w = planilha([col("a", "A"), col("b", "B")], [{ a: "Período", b: "07/2026" }])
+      expect(inferirCompetencia(w, "x.xlsx", hoje).competencia).toBe("2026-07")
+    })
+    it("'Competência' com data de verdade ao lado", () => {
+      const w = planilha([col("a", "A"), col("b", "B", "date")], [{ a: "Referência", b: utc(2026, 6, 1) }])
+      expect(inferirCompetencia(w, "x.xlsx", hoje).competencia).toBe("2026-06")
+    })
+    it("sem a palavra-chave, texto de célula não vira competência", () => {
+      const w = planilha([col("a", "A")], [{ a: "Aberto em setembro" }])
+      expect(inferirCompetencia(w, "x.xlsx", hoje).origem).toBe("mes-anterior")
+    })
+    it("aba e arquivo vencem o título; o título vence as datas", () => {
+      const w = planilha([col("a", "Julho/2026"), col("d", "Data", "date")], [{ a: null, d: utc(2026, 9, 3) }])
+      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2026-07", origem: "titulo" })
+      expect(inferirCompetencia(w, "agosto-2026.xlsx", hoje)).toEqual({ competencia: "2026-08", origem: "arquivo" })
+    })
+  })
+
+  describe("datas das linhas", () => {
+    const dias = (y: number, m: number, n: number) => Array.from({ length: n }, (_, i) => utc(y, m, 1 + (i % 28)))
+    const col = (key: string, label: string, type: Sheet["columns"][number]["type"]) =>
+      ({ key, label, type, filterable: false, distinctCount: 1 })
+    const planilha = (columns: Sheet["columns"], rows: Sheet["rows"]): Workbook => ({
+      fileName: "x.xlsx", importedAt: new Date(),
+      sheets: [{ id: "a", name: "Dados", index: 0, columns, rows }],
+    })
+    const sugerir = (w: Workbook) => inferirCompetencia(w, "planilha.xlsx", hoje)
+
+    it("exportação no dia 2 do mês seguinte (3 chamados novos) ainda sugere o mês certo", () => {
+      const datas = [...dias(2026, 9, 120), ...dias(2026, 10, 3)]
+      const w = planilha([col("d", "Abertura", "date")], datas.map((d) => ({ d })))
+      expect(sugerir(w)).toEqual({ competencia: "2026-09", origem: "datas" })
+    })
+    it("planilha antiga: julho enviado em outubro", () => {
+      const w = planilha([col("d", "Abertura", "date")], dias(2026, 7, 80).map((d) => ({ d })))
+      expect(sugerir(w)).toEqual({ competencia: "2026-07", origem: "datas" })
+    })
+    it("datas futuras (SLA previsto) são ignoradas e escolhe a coluna de evento", () => {
+      const aberturas = dias(2026, 9, 60)
+      const rows = aberturas.map((d) => ({ a: d, sla: utc(2026, 11, 20), f: null as Date | null }))
+      rows.slice(0, 10).forEach((r, i) => { r.f = aberturas[i] })
+      const w = planilha([col("sla", "SLA previsto", "date"), col("a", "Data de abertura", "date"), col("f", "Fechamento", "date")], rows)
+      expect(sugerir(w)).toEqual({ competencia: "2026-09", origem: "datas" })
+    })
+    it("só datas futuras ou anteriores a 2000: mês anterior", () => {
+      const w = planilha([col("d", "Abertura", "date")], [{ d: utc(2026, 12, 1) }, { d: utc(1999, 5, 1) }])
+      expect(sugerir(w).origem).toBe("mes-anterior")
+    })
+    it("datas como texto dd/mm/aaaa", () => {
+      const rows = Array.from({ length: 40 }, (_, i) => ({ d: `${String(1 + (i % 28)).padStart(2, "0")}/08/2026` }))
+      const w = planilha([col("d", "Data de abertura", "text")], rows)
+      expect(sugerir(w)).toEqual({ competencia: "2026-08", origem: "datas" })
+    })
+    it("datas ISO e '30-set-2026' como texto", () => {
+      const iso = planilha([col("d", "Criado", "text")], Array.from({ length: 10 }, (_, i) => ({ d: `2026-06-${String(1 + i).padStart(2, "0")}T08:00:00` })))
+      expect(sugerir(iso).competencia).toBe("2026-06")
+      const ext = planilha([col("d", "Criado", "text")], Array.from({ length: 10 }, (_, i) => ({ d: `${1 + i}-set-2026` })))
+      expect(sugerir(ext).competencia).toBe("2026-09")
+    })
+    it("texto mm/dd quando o 2º número passa de 12", () => {
+      const rows = Array.from({ length: 10 }, (_, i) => ({ d: `05/${13 + i}/2026` }))
+      const w = planilha([col("d", "Date", "text")], rows)
+      expect(sugerir(w).competencia).toBe("2026-05")
+    })
+    it("coluna de texto comum não vira data", () => {
+      const w = planilha([col("d", "Status", "text")], Array.from({ length: 10 }, () => ({ d: "Aberto" })))
+      expect(sugerir(w).origem).toBe("mes-anterior")
+    })
+    it("número serial do Excel em coluna cujo rótulo é data", () => {
+      const serial = (y: number, m: number, d: number) => Date.UTC(y, m - 1, d) / 86400000 + 25569
+      const rows = Array.from({ length: 20 }, (_, i) => ({ d: serial(2026, 6, 1 + i) }))
+      const w = planilha([col("d", "Dt abertura", "number")], rows)
+      expect(sugerir(w)).toEqual({ competencia: "2026-06", origem: "datas" })
+    })
+    it("número serial em coluna sem rótulo de data é ignorado", () => {
+      const rows = Array.from({ length: 20 }, () => ({ d: 46000 }))
+      const w = planilha([col("d", "Valor", "number")], rows)
+      expect(sugerir(w).origem).toBe("mes-anterior")
     })
   })
 })
