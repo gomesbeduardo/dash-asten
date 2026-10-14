@@ -26,3 +26,6 @@ test-results/
 api/_generated/
 # Skills de provedores instaladas localmente
 skills-lock.json
+
+# Handoff entre sessões (rascunho, não versionar)
+HANDOFF.md

@@ -89,7 +89,7 @@ describe("SessaoGate", () => {
     montar()
     await userEvent.type(await screen.findByLabelText("Usuário"), "ana")
     await userEvent.type(screen.getByLabelText("Senha"), "segredo")
-    if (marcar) await userEvent.click(screen.getByLabelText("Lembrar login por 14 dias"))
+    if (marcar) await userEvent.click(screen.getByLabelText("Lembrar login"))
     fetchMock.mockResolvedValueOnce(json({ usuario: "ana", expiraEm: "x" }))
     await userEvent.keyboard("{Enter}")
     expect(await screen.findByText("conteúdo do app")).toBeInTheDocument()

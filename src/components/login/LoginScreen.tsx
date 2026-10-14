@@ -109,7 +109,7 @@ export function LoginScreen({ entrar, aviso, sobreposta = false }: Props) {
               onChange={(e) => setLembrar(e.target.checked)}
               className="size-5 accent-primary"
             />
-            Lembrar login por 14 dias
+            Lembrar login
           </label>
 
           {erro && (
