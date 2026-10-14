@@ -31,7 +31,7 @@ import {
   temOutros,
   type SeloTipo,
 } from "./logica"
-import { Selos } from "./selos"
+import { LegendaSimbolos, Selos } from "./selos"
 
 const SEV_ROTULO = { critico: "Crítico", atencao: "Atenção", destaque: "Destaque" }
 
@@ -88,6 +88,8 @@ export function LeiturasChamados({
       ]
     : []
 
+  const tiposNaTela: SeloTipo[] = leituras.flatMap((l) => selosDaLeitura(l, anteriorPropria))
+
   return (
     <TooltipProvider>
       <motion.div
@@ -101,6 +103,7 @@ export function LeiturasChamados({
           Leituras automáticas do mês, com regras de limite fixo: não projetam o
           futuro. Clique numa para ver a regra, os números e a evidência.
         </p>
+        <LegendaSimbolos tipos={tiposNaTela} />
         {leituras.length > 0 ? (
           <ul className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {leituras.map((l) => (
@@ -157,8 +160,11 @@ export function LeiturasChamados({
 
             {evidencia && (
               <section aria-label="Evidência" className="flex flex-col gap-2">
-                <h3 className="text-xl text-primary">{evidencia.titulo}</h3>
-                <Selos tipos={selosGrafico} />
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl text-primary">{evidencia.titulo}</h3>
+                  <Selos tipos={selosGrafico} />
+                </div>
+                <LegendaSimbolos tipos={selosGrafico} />
                 <BarrasRanking
                   itens={evidencia.itens}
                   corDoItem={(i) =>

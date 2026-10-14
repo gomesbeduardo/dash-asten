@@ -12,7 +12,7 @@ import { BarrasFaixas, BarrasRanking, COR } from "./graficos"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
 import { recorteTexto, temOutros, type SeloTipo } from "./logica"
-import { Selo } from "./selos"
+import { LegendaSimbolos, Selo } from "./selos"
 
 const DESTAQUES = ["backlog", "sla", "atraso", "saidas"]
 const inteiro = new Intl.NumberFormat("pt-BR")
@@ -111,6 +111,15 @@ export function PainelChamados({
   ]
   const cliente = dist("cliente")
   const situacaoAtual = dist("situacao")
+  // símbolos que aparecem nesta tela, para a legenda
+  const tiposNaTela: SeloTipo[] = [
+    ...(metricas.kpis.some((k) => !k.reconstruivel) ? (["calculado"] as const) : []),
+    "derivado",
+    ...(situacaoAtual ? (["exportacao"] as const) : []),
+    ...([cliente, ...rankings.map((r) => dist(r.id))].some((d) => d && temOutros(d.itens))
+      ? (["outros"] as const)
+      : []),
+  ]
 
   return (
     <TooltipProvider>
@@ -121,6 +130,7 @@ export function PainelChamados({
         animate="show"
       >
         {cabecalho}
+        <LegendaSimbolos tipos={tiposNaTela} />
 
         <section aria-label="Indicadores" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">

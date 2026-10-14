@@ -10,7 +10,7 @@ import { COR, LinhaMini, type SerieLinha } from "./graficos"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
 import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
-import { Selo } from "./selos"
+import { LegendaSimbolos, type ItemLegenda } from "./selos"
 import {
   formatarKpi,
   linhasDeSerie,
@@ -89,6 +89,11 @@ export function EvolucaoChamados({
   const formatoDe = (id: string): FormatoKpi =>
     kpis.find((k) => k.id === id)?.formato ?? "inteiro"
   const temReconstruido = pontos.some((p) => !p.propria)
+  const tiposNaTela = [
+    ...CARTOES.flatMap((c) =>
+      selosDoCartao(c, pontos, kpis.find((k) => k.id === c.series[0].id)?.reconstruivel ?? true)
+    ),
+  ]
 
   return (
     <TooltipProvider>
@@ -102,22 +107,9 @@ export function EvolucaoChamados({
           {titulo}
           <ChipsFiltrosChamados />
           <p className="text-lg text-muted-foreground">
-            Um ponto por competência.{" "}
-            {temReconstruido && (
-              <>
-                <Selo tipo="reconstruido" />{" "}
-                <span aria-hidden className="inline-block align-middle">
-                  <svg width="44" height="14" viewBox="0 0 44 14">
-                    <line x1="0" y1="7" x2="30" y2="7" stroke="#475565" strokeWidth="3" strokeDasharray="6 5" />
-                    <circle cx="36" cy="7" r="5" fill="var(--card)" stroke="#475565" strokeWidth="2.5" />
-                  </svg>
-                </span>{" "}
-                Tracejado e ponto vazado = reconstruído pelas datas da planilha
-                mais antiga; indicadores que dependem da carga do mês ficam sem
-                valor.
-              </>
-            )}
+            Um ponto por competência.
           </p>
+          <LegendaSimbolos tipos={tiposNaTela} extras={temReconstruido ? [TRACEJADO] : []} />
         </header>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 min-[1700px]:grid-cols-4">
@@ -139,6 +131,34 @@ export function EvolucaoChamados({
   )
 }
 
+/** Selos de um gráfico: indicador que só vale na carga própria e/ou pontos reconstruídos com valor. */
+function selosDoCartao(
+  cartao: Cartao,
+  pontos: PontoEvolucao[],
+  reconstruivel: boolean
+): SeloTipo[] {
+  return [
+    ...(!reconstruivel ? (["calculado"] as const) : []),
+    ...(pontos.some(
+      (p) => !p.propria && cartao.series.some((s) => p.valores[s.id] !== null)
+    )
+      ? (["reconstruido"] as const)
+      : []),
+  ]
+}
+
+const TRACEJADO: ItemLegenda = {
+  chave: "tracejado",
+  glifo: (
+    <svg width="44" height="14" viewBox="0 0 44 14">
+      <line x1="0" y1="7" x2="30" y2="7" stroke="#475565" strokeWidth="3" strokeDasharray="6 5" />
+      <circle cx="36" cy="7" r="5" fill="var(--card)" stroke="#475565" strokeWidth="2.5" />
+    </svg>
+  ),
+  nome: "Tracejado e ponto vazado",
+  texto: "reconstruído pelas datas da planilha mais antiga; indicadores que dependem da carga do mês ficam sem valor",
+}
+
 function CartaoEvolucao({
   cartao,
   pontos,
@@ -153,14 +173,7 @@ function CartaoEvolucao({
   reconstruivel: boolean
   play: boolean
 }) {
-  const selos: SeloTipo[] = [
-    ...(!reconstruivel ? (["calculado"] as const) : []),
-    ...(pontos.some(
-      (p) => !p.propria && cartao.series.some((s) => p.valores[s.id] !== null)
-    )
-      ? (["reconstruido"] as const)
-      : []),
-  ]
+  const selos = selosDoCartao(cartao, pontos, reconstruivel)
   const linhas = useMemo(
     () => linhasDeSerie(pontos, cartao.series.map((s) => s.id)),
     [pontos, cartao]

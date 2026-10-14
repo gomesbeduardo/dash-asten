@@ -17,7 +17,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, LeituraCartao } from "./cartoes"
 import { BarrasAxB } from "./graficos"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
-import { Selo } from "./selos"
+import { LegendaSimbolos, SeloSimbolo } from "./selos"
 import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
 import {
@@ -159,6 +159,15 @@ function ComparacaoVisao({
   const detalhe = (lado: "a" | "b", id: string) =>
     cmp[lado].kpis.find((k) => k.id === id)?.detalhe
   const fmt = (v: number | null, f: FormatoKpi) => formatarKpi(v, f)
+  // símbolos que aparecem nesta tela, para a legenda
+  const tiposNaTela: SeloTipo[] = [
+    ...(algumReconstruido ? (["reconstruido"] as const) : []),
+    ...(cmp.b.kpis.some((k) => k.reconstruivel === false) ? (["calculado"] as const) : []),
+    ...leituras.flatMap((l) => selosDaLeitura(l, opA.propria)),
+    ...(cmp.distribuicoes.some((d) => d.id !== "situacao" && temOutros(agruparAxB(d.itens, MAX_ITENS)))
+      ? (["outros"] as const)
+      : []),
+  ]
 
   const dists = cmp.distribuicoes.filter((d) => d.id !== "situacao")
   const envel = cmp.b.envelhecimento.map((i, k) => ({
@@ -212,6 +221,7 @@ function ComparacaoVisao({
               planilha mais recente.
             </p>
           </div>
+          <LegendaSimbolos tipos={tiposNaTela} />
         </header>
 
         <section aria-label="Indicadores lado a lado">
@@ -225,20 +235,16 @@ function ComparacaoVisao({
                   Indicador
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
-                  A · {rotA}
-                  {!opA.propria && (
-                    <span className="mt-1 flex justify-end font-sans">
-                      <Selo tipo="reconstruido" />
-                    </span>
-                  )}
+                  <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
+                    A · {rotA}
+                    {!opA.propria && <SeloSimbolo tipo="reconstruido" />}
+                  </span>
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
-                  B · {rotB}
-                  {!opB.propria && (
-                    <span className="mt-1 flex justify-end font-sans">
-                      <Selo tipo="reconstruido" />
-                    </span>
-                  )}
+                  <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
+                    B · {rotB}
+                    {!opB.propria && <SeloSimbolo tipo="reconstruido" />}
+                  </span>
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
                   Δ
@@ -259,12 +265,12 @@ function ComparacaoVisao({
                 return (
                   <tr key={k.id} className="border-b bg-card">
                     <th scope="row" className="px-4 py-3 font-medium">
-                      {k.rotulo}
-                      {cmp.b.kpis.find((x) => x.id === k.id)?.reconstruivel === false && (
-                        <span className="mt-1 flex font-sans">
-                          <Selo tipo="calculado" />
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-2">
+                        {k.rotulo}
+                        {cmp.b.kpis.find((x) => x.id === k.id)?.reconstruivel === false && (
+                          <SeloSimbolo tipo="calculado" />
+                        )}
+                      </span>
                     </th>
                     {([["a", k.a], ["b", k.b]] as const).map(([lado, v]) => (
                       <td key={lado} className="num px-4 py-3 text-right font-display font-semibold text-primary">

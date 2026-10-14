@@ -29,7 +29,7 @@ import {
   motivoSemDelta,
   type SeloTipo,
 } from "./logica"
-import { Selo, Selos } from "./selos"
+import { SeloSimbolo, Selos } from "./selos"
 
 const TOM = {
   bom: "text-[#00694b]",
@@ -83,7 +83,18 @@ export function KpiCartao({
             destaque ? "text-xl" : "text-lg"
           )}
         >
-          {kpi.rotulo}
+          {kpi.reconstruivel ? (
+            kpi.rotulo
+          ) : (
+            <>
+              {kpi.rotulo.replace(/\s*\S+$/, "")}{" "}
+              {/* última palavra + símbolo juntos: o símbolo nunca cai sozinho na linha de baixo */}
+              <span className="whitespace-nowrap">
+                {kpi.rotulo.match(/\S+$/)?.[0]}{" "}
+                <SeloSimbolo tipo="calculado" className="-my-1" />
+              </span>
+            </>
+          )}
         </h3>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -142,11 +153,6 @@ export function KpiCartao({
         </p>
       )}
       {extra && <p className="text-base text-muted-foreground">{extra}</p>}
-      {!kpi.reconstruivel && (
-        <div>
-          <Selo tipo="calculado" />
-        </div>
-      )}
     </motion.article>
   )
 }
@@ -226,7 +232,7 @@ export function LeituraCartao({
   return (
     <motion.li
       variants={reduce ? undefined : entryItem}
-      className="flex min-w-0 flex-col gap-2"
+      className="relative flex min-w-0 flex-col gap-2"
       data-leitura={leitura.id}
     >
       {onAbrir ? (
@@ -244,7 +250,10 @@ export function LeituraCartao({
       ) : (
         <article className={base}>{corpo}</article>
       )}
-      <Selos tipos={selos} />
+      {/* símbolos sobre o canto do cartão, na linha da severidade: não mudam a altura nem alinham diferente */}
+      <div className="absolute top-4 right-4">
+        <Selos tipos={selos} />
+      </div>
     </motion.li>
   )
 }
@@ -327,9 +336,12 @@ export function GraficoCartao({
     >
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="font-display text-2xl font-semibold text-primary">
-            {titulo}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-2xl font-semibold text-primary">
+              {titulo}
+            </h3>
+            <Selos tipos={selos} />
+          </div>
           {subtitulo && (
             <p className="text-base text-muted-foreground">{subtitulo}</p>
           )}
@@ -348,7 +360,6 @@ export function GraficoCartao({
           Ver dados
         </button>
       </header>
-      <Selos tipos={selos} />
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
       <div hidden={verTabela}>{children}</div>
       {nota && <p className="text-base text-muted-foreground">{nota}</p>}
