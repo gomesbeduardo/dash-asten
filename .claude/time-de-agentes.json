@@ -1,5 +1,5 @@
 {
-  "_doc": "Caminhos onde a sessão principal (Opus) edita código direto: só áreas sensíveis (dependências, CI, build e deploy). Código de app é dos workers. Aprovado pelo responsável em 13/10/2026.",
+  "_doc": "Caminhos onde a sessão principal (Opus) edita código direto: só áreas sensíveis (dependências, CI, build e deploy). Código de app é dos workers. Aprovado pelo responsável em 13/10/2026. 14/10/2026: + banco, autenticação e API (D37/D38), aprovado pelo responsável.",
   "opusCodaDireto": [
     "*package.json",
     "*package-lock.json",
@@ -7,6 +7,11 @@
     ".github/*",
     "*vite.config.ts",
     "*vercel.ts",
-    "*vercel.json"
+    "*vercel.json",
+    "middleware.ts",
+    "api/*",
+    "db/*",
+    "scripts/*",
+    "vercel.json"
   ]
 }
