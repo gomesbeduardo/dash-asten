@@ -27,7 +27,6 @@ export type ApresentacaoProps = {
   metas: CargaMeta[]
   obterCarga: (id: string) => Promise<Carga | null>
   onAbrir: (id: string) => void
-  onExcluir: (meta: CargaMeta) => void
   onNovaCarga: (file: File) => void
   /** Ausente no banco compartilhado: não há como apagar tudo. */
   onApagarTudo?: () => void
@@ -173,7 +172,6 @@ export function Apresentacao(p: ApresentacaoProps) {
           metas={metas}
           atualId={carga.id}
           onAbrir={p.onAbrir}
-          onExcluir={p.onExcluir}
         />
 
         <Dialog open={limparOpen} onOpenChange={setLimparOpen}>
