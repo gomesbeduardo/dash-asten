@@ -22,7 +22,7 @@ const meta = (
   versao,
   importadaEm,
   arquivo: "a.xlsx",
-  linhas: 1,
+  linhas: 1, nome: null, arquivadaEm: null,
 })
 
 const a1 = meta("chamados", "2026-08", 1, "2026-09-01T10:00:00.000Z")

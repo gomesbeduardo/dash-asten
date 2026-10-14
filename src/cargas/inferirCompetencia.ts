@@ -59,26 +59,32 @@ function datasDaColuna(sheet: Sheet, col: Column, hoje: Date): Date[] {
   return datas.filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()) && d.getUTCFullYear() >= MIN_ANO && d.getTime() < limite)
 }
 
+/** Colunas de prazo/atualização não são eventos do chamado (abertura, solução). */
+const NAO_E_EVENTO = /(?<![a-z])(sla|prazo|previst[oa]s?|vencimento|atualizac\w*|modificac\w*|nascimento)(?![a-z])/
+
 /**
- * Mês mais recente com volume significativo na coluna de evento (a com mais datas válidas):
- * conta por mês e pega o último mês com pelo menos 30% da mediana dos meses com dados.
+ * Mês mais recente com volume significativo de eventos (abertura e solução somados):
+ * conta por mês as datas de todas as colunas de evento e pega o último mês com pelo
+ * menos max(5, 10% da mediana) eventos.
  */
 function mesDasDatas(workbook: Workbook, hoje: Date): Competencia | null {
-  let melhor: Date[] = []
+  const porMes = new Map<Competencia, number>()
   for (const sheet of workbook.sheets) {
     for (const col of sheet.columns) {
-      const datas = datasDaColuna(sheet, col, hoje)
-      if (datas.length > melhor.length) melhor = datas
+      if (NAO_E_EVENTO.test(semAcento(col.label))) continue
+      for (const d of datasDaColuna(sheet, col, hoje)) {
+        const c = competenciaDe(d)
+        porMes.set(c, (porMes.get(c) ?? 0) + 1)
+      }
     }
   }
-  if (melhor.length === 0) return null
-  const porMes = new Map<Competencia, number>()
-  for (const d of melhor) porMes.set(competenciaDe(d), (porMes.get(competenciaDe(d)) ?? 0) + 1)
+  if (porMes.size === 0) return null
   const contagens = [...porMes.values()].sort((a, b) => a - b)
   const meio = Math.floor(contagens.length / 2)
   const mediana = contagens.length % 2 ? contagens[meio] : (contagens[meio - 1] + contagens[meio]) / 2
+  const minimo = Math.max(5, mediana * 0.1)
   const meses = [...porMes.keys()].sort().reverse()
-  return meses.find((m) => porMes.get(m)! >= mediana * 0.3) ?? meses[0]
+  return meses.find((m) => porMes.get(m)! >= minimo) ?? meses[0]
 }
 
 export function inferirCompetencia(

@@ -2,8 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
-import { tiposRegistrados, type Carga, type CargaMeta } from "@/cargas"
-import { competenciasDoTipo, resolverVisao, type Visao } from "@/app/navegacao"
+import {
+  tiposRegistrados,
+  type AlteracaoDeCarga,
+  type Carga,
+  type CargaMeta,
+} from "@/cargas"
+import {
+  agruparHistorico,
+  competenciasDoTipo,
+  resolverVisao,
+  type Visao,
+} from "@/app/navegacao"
 import { visoesDoTipo } from "@/panels/tipos"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +35,11 @@ import { crossfade } from "./motion/tokens"
 
 export type ApresentacaoProps = {
   carga: Carga
+  /** Cargas ativas (as arquivadas ficam de fora do seletor e das visões). */
   metas: CargaMeta[]
+  /** Todas as cargas, inclusive arquivadas: só o Histórico e a conta de versões usam. */
+  metasTodas: CargaMeta[]
+  onAlterar: (id: string, alteracao: AlteracaoDeCarga) => Promise<void>
   obterCarga: (id: string) => Promise<Carga | null>
   onAbrir: (id: string) => void
   onNovaCarga: (files: File[], ignorados: string[]) => void
@@ -127,6 +141,9 @@ export function Apresentacao(p: ApresentacaoProps) {
           tipoNome={tipoNome}
           atual={atualMeta}
           grupos={competenciasDoTipo(metas, carga.tipo)}
+          outrosTipos={agruparHistorico(metas).filter(
+            (g) => g.tipo !== carga.tipo
+          )}
           visoes={disponiveis}
           visao={visao}
           onSlot={setSlot}
@@ -188,9 +205,10 @@ export function Apresentacao(p: ApresentacaoProps) {
         <HistoricoSheet
           open={historicoOpen}
           onOpenChange={setHistoricoOpen}
-          metas={metas}
+          metas={p.metasTodas}
           atualId={carga.id}
           onAbrir={p.onAbrir}
+          onAlterar={p.onAlterar}
         />
 
         <Dialog open={limparOpen} onOpenChange={setLimparOpen}>

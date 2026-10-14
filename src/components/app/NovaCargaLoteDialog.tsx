@@ -36,11 +36,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { LIMITE_NOME, nomeSugerido } from "./formatoCarga"
 import { DICA_ORIGEM, MESES } from "./NovaCargaDialog"
 
 export type ItemLido = { workbook: Workbook; original: ArrayBuffer }
 export type FalhaDeLeitura = { nome: string; mensagem: string }
-export type Escolha = { tipo: string; competencia: string }
+export type Escolha = { tipo: string; competencia: string; nome?: string }
 export type Guardada = { meta: CargaMeta; item: ItemLido }
 
 type Estado = "aguardando" | "enviando" | "guardada" | "erro"
@@ -53,6 +54,7 @@ type Linha = {
   mes: number
   ano: string
   origem: OrigemCompetencia
+  nome: string
   linhas: number
   estado: Estado
   meta?: CargaMeta
@@ -71,6 +73,7 @@ function linhaInicial(item: ItemLido, chave: number): Linha {
     mes,
     ano: String(ano),
     origem: comp.origem,
+    nome: nomeSugerido(item.workbook.fileName),
     linhas: item.workbook.sheets.reduce((n, s) => n + s.rows.length, 0),
     estado: "aguardando",
   }
@@ -151,9 +154,12 @@ export function NovaCargaLoteDialog({
       atualizar(l.chave, { estado: "enviando" })
       try {
         const atual = linhasRef.current.find((x) => x.chave === l.chave)!
+        // O nome só vale quando a carga vira versão 2 ou mais (a mesma conta da tabela).
+        const versao = versoes.get(atual.chave) ?? 1
         const meta = await guardar(atual.item, {
           tipo: atual.tipo,
           competencia: competenciaDe(atual),
+          ...(versao > 1 ? { nome: atual.nome } : {}),
         })
         atualizar(l.chave, { estado: "guardada", meta })
       } catch {
@@ -324,6 +330,26 @@ export function NovaCargaLoteDialog({
                         <p className="mt-1 border-l-4 border-brand pl-2 text-sm">
                           Vira a versão {versao} deste mês
                         </p>
+                      )}
+                      {l.estado !== "guardada" && versao > 1 && anoOk(l.ano) && (
+                        <div className="mt-2 flex flex-col gap-1">
+                          <label
+                            htmlFor={`nome-${l.chave}`}
+                            className="text-sm font-medium"
+                          >
+                            Nome (opcional)
+                          </label>
+                          <Input
+                            id={`nome-${l.chave}`}
+                            aria-label={`Nome (opcional) de ${nome}`}
+                            maxLength={LIMITE_NOME}
+                            disabled={travada}
+                            value={l.nome}
+                            onChange={(e) =>
+                              atualizar(l.chave, { nome: e.target.value })
+                            }
+                          />
+                        </div>
                       )}
                     </TableCell>
                     <TableCell aria-live="polite" className="whitespace-normal">

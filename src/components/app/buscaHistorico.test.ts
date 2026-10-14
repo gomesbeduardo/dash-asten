@@ -9,7 +9,7 @@ const m = (p: Partial<CargaMeta>): CargaMeta => ({
   versao: 1,
   importadaEm: "2026-10-14T15:00:00.000Z",
   arquivo: "Relatório Setembro.xlsx",
-  linhas: 10,
+  linhas: 10, nome: null, arquivadaEm: null,
   ...p,
 })
 const nomes = () => (id: string) => (id === "chamados" ? "Chamados" : id)
@@ -34,6 +34,8 @@ describe("busca do histórico", () => {
     "competência %s",
     (q) => expect(ids(todas, q)).toEqual(["a"])
   )
+  it("nome dado à carga", () =>
+    expect(ids([m({ id: "n", nome: "Correção do Líder" }), b], "correcao lider")).toEqual(["n"]))
   it("data da carga dd/mm/aaaa", () => {
     expect(ids(todas, "14/10/2026")).toEqual(["a"])
     expect(ids(todas, "02/09/2026")).toEqual(["b"])

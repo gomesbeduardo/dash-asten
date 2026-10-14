@@ -139,6 +139,20 @@ describe("inferirCompetencia", () => {
       const w = planilha([col("sla", "SLA previsto", "date"), col("a", "Data de abertura", "date"), col("f", "Fechamento", "date")], rows)
       expect(sugerir(w)).toEqual({ competencia: "2026-09", origem: "datas" })
     })
+    it("poucas entradas no mês (12) mas muitas soluções (72): conta os dois eventos e sugere o mês", () => {
+      const rows: Sheet["rows"] = []
+      const abertura = [...dias(2026, 7, 60), ...dias(2026, 8, 60), ...dias(2026, 9, 12)]
+      const solucao = [...dias(2026, 8, 60), ...dias(2026, 9, 72)]
+      const n = Math.max(abertura.length, solucao.length)
+      for (let i = 0; i < n; i++) rows.push({ a: abertura[i] ?? null, s: solucao[i] ?? null })
+      const w = planilha([col("a", "Data de abertura", "date"), col("s", "Data de solução", "date")], rows)
+      expect(sugerir(w)).toEqual({ competencia: "2026-09", origem: "datas" })
+    })
+    it("coluna de SLA/prazo não conta como evento, mesmo com datas passadas", () => {
+      const rows = dias(2026, 8, 60).map((d) => ({ a: d, sla: utc(2026, 9, 10) }))
+      const w = planilha([col("a", "Abertura", "date"), col("sla", "Prazo SLA", "date")], rows)
+      expect(sugerir(w).competencia).toBe("2026-08")
+    })
     it("só datas futuras ou anteriores a 2000: mês anterior", () => {
       const w = planilha([col("d", "Abertura", "date")], [{ d: utc(2026, 12, 1) }, { d: utc(1999, 5, 1) }])
       expect(sugerir(w).origem).toBe("mes-anterior")

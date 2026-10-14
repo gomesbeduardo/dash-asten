@@ -83,6 +83,44 @@ describe("NovaCargaLoteDialog", () => {
     expect(within(l2).getByText(/vira a versão 3/i)).toBeInTheDocument()
   })
 
+  describe("Nome (opcional) só na versão 2 ou mais (D58)", () => {
+    it("versão 1 não mostra o campo e não manda nome", async () => {
+      const p = montar({ itens: [item("chamados-setembro-2026.xlsx")] })
+      await screen.findByText("chamados-setembro-2026.xlsx")
+      expect(screen.queryByLabelText(/Nome \(opcional\)/)).toBeNull()
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar 1 carga" }))
+      await waitFor(() => expect(p.onConcluir).toHaveBeenCalled())
+      expect(p.guardar.mock.calls[0][1]).toStrictEqual({ tipo: "chamados", competencia: "2026-09" })
+    })
+
+    it("versão 2 (já existe no banco): campo preenchido com o nome do arquivo sem extensão, editável, enviado", async () => {
+      const p = montar({ itens: [item("chamados-setembro-2026-v2.xlsx")], metas: [metaDe({})] })
+      const campo = await screen.findByLabelText("Nome (opcional) de chamados-setembro-2026-v2.xlsx")
+      expect(campo).toHaveValue("chamados-setembro-2026-v2")
+      await userEvent.clear(campo)
+      await userEvent.type(campo, "Correção do Líder")
+      await userEvent.click(screen.getByRole("button", { name: "Confirmar 1 carga" }))
+      await waitFor(() => expect(p.onConcluir).toHaveBeenCalled())
+      expect(p.guardar.mock.calls[0][1]).toEqual({ tipo: "chamados", competencia: "2026-09", nome: "Correção do Líder" })
+    })
+
+    it("repetida dentro do lote: só a segunda linha (v2) ganha o campo", async () => {
+      montar({ itens: [item("chamados-setembro-2026.xlsx"), item("chamados-setembro-2026-v2.xlsx")] })
+      await screen.findByText("chamados-setembro-2026.xlsx")
+      expect(screen.queryByLabelText("Nome (opcional) de chamados-setembro-2026.xlsx")).toBeNull()
+      expect(screen.getByLabelText("Nome (opcional) de chamados-setembro-2026-v2.xlsx")).toBeInTheDocument()
+    })
+
+    it("mudar o mês para um sem versões esconde o campo", async () => {
+      montar({ itens: [item("chamados-setembro-2026.xlsx")], metas: [metaDe({})] })
+      const user = userEvent.setup()
+      expect(await screen.findByLabelText(/Nome \(opcional\)/)).toBeInTheDocument()
+      await user.click(screen.getByRole("combobox", { name: "Mês de chamados-setembro-2026.xlsx" }))
+      await user.click(await screen.findByRole("option", { name: "Março" }))
+      expect(screen.queryByLabelText(/Nome \(opcional\)/)).toBeNull()
+    })
+  })
+
   it("tirar uma linha antes de confirmar", async () => {
     const p = montar()
     const user = userEvent.setup()

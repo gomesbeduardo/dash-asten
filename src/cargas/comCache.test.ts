@@ -10,6 +10,7 @@ function repoFalso(obter: RepositorioDeCargas["obter"]) {
     obter: vi.fn(obter),
     salvar: vi.fn(),
     excluir: vi.fn(async () => undefined),
+    alterar: vi.fn(),
   }
   return base
 }
@@ -77,5 +78,19 @@ describe("comCache", () => {
     await repo.limparTudo!()
     await repo.obter("x")
     expect(base.obter).toHaveBeenCalledTimes(2)
+  })
+
+  it("alterar invalida a lista, mas os dados do obter continuam em cache", async () => {
+    const base = repoFalso(async (id) => carga(id))
+    base.alterar = vi.fn(async () => ({}) as never)
+    const repo = comCache(base)
+    await repo.listar()
+    await repo.obter("x")
+    await repo.alterar("x", { nome: "n" })
+    await repo.listar()
+    await repo.obter("x")
+    expect(base.listar).toHaveBeenCalledTimes(2)
+    expect(base.obter).toHaveBeenCalledTimes(1)
+    expect(base.alterar).toHaveBeenCalledWith("x", { nome: "n" })
   })
 })
