@@ -19,6 +19,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { LeituraCartao } from "./cartoes"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
 import { BarrasRanking, COR } from "./graficos"
+import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
 import {
   evidenciaDaLeitura,
@@ -68,7 +69,12 @@ export function LeiturasChamados({
       </div>
     )
   if (!metricas || anterior === undefined)
-    return <div className="flex flex-col gap-6">{cabecalho}</div>
+    return (
+      <div className="flex flex-col gap-6">
+        {cabecalho}
+        <Carregando texto="Carregando as leituras…" />
+      </div>
+    )
 
   const play = entrada && !reduce
   const anteriorPropria = anterior?.propria ?? false

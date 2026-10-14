@@ -9,6 +9,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, KpiCartao } from "./cartoes"
 import { ChipsFiltrosChamados } from "./filtros"
 import { BarrasFaixas, BarrasRanking, COR } from "./graficos"
+import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
 import { recorteTexto, temOutros, type SeloTipo } from "./logica"
 import { Selo } from "./selos"
@@ -73,7 +74,12 @@ export function PainelChamados({
       </div>
     )
   if (!metricas || anterior === undefined)
-    return <div className="flex flex-col gap-6">{cabecalho}</div>
+    return (
+      <div className="flex flex-col gap-6">
+        {cabecalho}
+        <Carregando texto="Carregando o painel…" />
+      </div>
+    )
 
   const play = entrada && !reduce
   const rotuloAnterior = anterior

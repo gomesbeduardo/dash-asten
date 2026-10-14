@@ -4,9 +4,12 @@ import type { Carga, CargaMeta, NovaCarga, RepositorioDeCargas } from "./types"
 
 /** Falha ao falar com o servidor de cargas; a mensagem já é legível para o usuário. */
 export class ErroDeCarga extends Error {
-  constructor(mensagem: string) {
+  /** Status HTTP da resposta; ausente quando nem chegou resposta (rede). */
+  readonly status?: number
+  constructor(mensagem: string, status?: number) {
     super(mensagem)
     this.name = "ErroDeCarga"
+    this.status = status
   }
 }
 
@@ -54,7 +57,7 @@ async function validar(resp: Response): Promise<Response> {
     // Avisa o porteiro de sessão (SessaoGate), que devolve o usuário ao login.
     if (typeof window !== "undefined")
       window.dispatchEvent(new CustomEvent("asten:sessao-expirada"))
-    throw new ErroDeCarga(MSG_401)
+    throw new ErroDeCarga(MSG_401, 401)
   }
   let detalhe: string | undefined
   try {
@@ -63,7 +66,10 @@ async function validar(resp: Response): Promise<Response> {
   } catch {
     /* corpo não é JSON */
   }
-  throw new ErroDeCarga(detalhe ?? `Falha ao falar com o servidor (HTTP ${resp.status}).`)
+  throw new ErroDeCarga(
+    detalhe ?? `Falha ao falar com o servidor (HTTP ${resp.status}).`,
+    resp.status
+  )
 }
 
 /** Adaptador HTTP do banco compartilhado. Não oferece `limparTudo` de propósito. */

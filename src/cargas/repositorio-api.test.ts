@@ -128,6 +128,17 @@ describe("repositório API", () => {
     const erro = await criarRepositorioApi().listar().catch((e) => e)
     expect(erro).toBeInstanceOf(ErroDeCarga)
     expect(erro.message).toBe("Sessão sem login. Recarregue a página e entre com o usuário e senha do time.")
+    expect(erro.status).toBe(401)
+  })
+
+  it("ErroDeCarga carrega o status HTTP; sem resposta (rede), fica sem status", async () => {
+    srv.respostasForcadas.push(new Response("", { status: 503 }))
+    const erro = await criarRepositorioApi().listar().catch((e) => e)
+    expect(erro.status).toBe(503)
+    vi.stubGlobal("fetch", async () => { throw new TypeError("falhou") })
+    const sem = await criarRepositorioApi().listar().catch((e) => e)
+    expect(sem).toBeInstanceOf(ErroDeCarga)
+    expect(sem.status).toBeUndefined()
   })
 
   it("401 dispara o evento asten:sessao-expirada", async () => {

@@ -18,6 +18,7 @@ import { GraficoCartao, LeituraCartao } from "./cartoes"
 import { BarrasAxB } from "./graficos"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
 import { Selo } from "./selos"
+import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
 import {
   agruparAxB,
@@ -78,7 +79,14 @@ export function CompararChamados({
         </p>
       </div>
     )
-  if (!cargas || opcoes.length === 0)
+  if (!cargas)
+    return (
+      <div className="flex flex-col gap-4">
+        {cabecalho}
+        <Carregando />
+      </div>
+    )
+  if (opcoes.length === 0)
     return <div className="flex flex-col gap-4">{cabecalho}</div>
 
   return (
