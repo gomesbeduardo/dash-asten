@@ -89,17 +89,20 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`. **Falta:** promover para a `main`, CI verde, deploy de produção e validar com a planilha do Líder.
 
-## Fase 2E — Fechar os requisitos do MVP (14/10) ← agora
+## Fase 2E — Fechar os requisitos do MVP (14/10) ✅ em produção
 
-- [x] Lentidão (D46): API numa função só, carga com cache imutável, abertura sem `/api/sessao`, cache e pré-carga no cliente, carregando em Comparar/Evolução. A frio: 6,1 s → ~2,8 s de rede (medido no preview).
-- [x] Histórico Enviados/Geral com busca e "Limpar" local (D47).
-- [x] Séries liga/desliga na Evolução e no Comparar (R6/D49).
-- [x] Evolução nas 6 competências mais recentes (D48).
-- [x] Barra sobreposta que some de verdade, verificada no navegador (D43).
-- [ ] Fundo e cartões menos claros para TV (em andamento).
-- [ ] PR da branch para a `staging` → validar no preview → PR `staging` → `main` → CI verde → deploy de produção → conferir com a planilha do Líder (D42).
-- [ ] Publicar o artifact (capturas novas, senha preenchida pelo responsável).
-- [ ] Depois (refinamento): semear o cache com a carga recém-enviada; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; contas individuais; hard delete.
+- [x] Lentidão (D46): API numa função só, carga com cache imutável, abertura sem `/api/sessao`, cache e pré-carga no cliente, carregando nas visões. A frio: 6,1 s → ~2,5 s de rede.
+- [x] Histórico Enviados/Geral com busca e "Limpar" local (D47); versões agrupadas com a mais recente por cima (D53).
+- [x] Séries liga/desliga na Evolução e no Comparar (R6/D49); Evolução nas 6 competências mais recentes (D48); mês faltante reconstruído pela carga seguinte (D51).
+- [x] Barra sobreposta que some de verdade (D43); fundo e cartões menos claros para TV; selos só com símbolo, antes do texto, com legenda; controles, abas e toggles com cor e transição.
+- [x] Login desligado no MVP (D52); abertura na tela de envio com a lista do que existe (D53); banco de staging limpo.
+- [x] Comparar com 2 a 6 competências e leituras clicáveis (D54).
+- [x] Nova carga em modal com arrastar e soltar (D55) e envio em lote (D56).
+- [x] Competência reconhecida em todas as formas: nome, títulos e datas das linhas (D57).
+- [x] Produção atualizada pela `main` com CI verde; artifact publicado.
+- [x] Planilhas fictícias de teste com guia e números esperados (`docs/exemplos/LEIA-ME-testes.md`, fora do Git).
+
+**Refinamento (depois da validação):** o leitor descarta linhas de título acima do cabeçalho ("Competência: setembro" ali não é visto); palavras soltas como "set"/"out" no nome contam como mês; legenda da Evolução ainda cita "planilha mais antiga" para buraco no meio; semear o cache com a carga recém-enviada; com a gaveta de filtros aberta a barra cobre o topo dos chips; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; JS de ~800 kB (carregar gráficos e leitor sob demanda); aviso do npm sobre scripts do Prisma; ligar o deploy automático pelo GitHub; contas individuais; hard delete; regras D31/D34/D35 com o Líder; próximo tipo de conjunto.
 
 ## Fase 3 — Planilha real e contrato de dados
 
