@@ -132,7 +132,9 @@ function ComparacaoVisao({
   const onB = (v: string) => setEscolha((e) => ({ ...e, b: v }))
   const entradaDe = (o: OpcaoCompetencia): EntradaCompetencia => ({
     sheet: filtrarSheet(
-      o.propria ? (sheets.get(o.competencia) ?? sheetAtual) : sheetAtual,
+      o.propria
+        ? (sheets.get(o.competencia) ?? sheetAtual)
+        : ((o.deCarga ? sheets.get(o.deCarga) : undefined) ?? sheetAtual),
       filtros,
       o.competencia
     ),
