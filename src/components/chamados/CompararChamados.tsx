@@ -10,6 +10,13 @@ import {
   type FormatoKpi,
 } from "@/chamados"
 import { entryContainer } from "@/components/app/motion/variants"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { Sheet } from "@/core"
@@ -33,8 +40,8 @@ import {
   type OpcaoCompetencia,
 } from "./logica"
 
-const campo =
-  "h-11 rounded-md border border-input bg-card px-3 text-base focus-visible:outline-2 focus-visible:outline-ring"
+// O rótulo da opção traz "(reconstruído)"; no seletor ele vira um rótulo secundário.
+const SUFIXO_RECONSTRUIDO = / \(reconstruído\)$/
 const TOM = {
   bom: "text-[#00694b]",
   ruim: "text-late",
@@ -193,18 +200,23 @@ function ComparacaoVisao({
                 <label htmlFor={id} className="text-base font-medium">
                   {rotulo}
                 </label>
-                <select
-                  id={id}
-                  className={cn(campo, "min-w-64")}
-                  value={valor}
-                  onChange={(e) => onChange(e.target.value)}
-                >
-                  {opcoes.map((o) => (
-                    <option key={o.competencia} value={o.competencia}>
-                      {o.rotulo}
-                    </option>
-                  ))}
-                </select>
+                <Select value={valor} onValueChange={onChange}>
+                  <SelectTrigger id={id} className="min-w-72">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcoes.map((o) => (
+                      <SelectItem key={o.competencia} value={o.competencia}>
+                        {o.rotulo.replace(SUFIXO_RECONSTRUIDO, "")}
+                        {!o.propria && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            reconstruído
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ))}
             <p className="pb-2 text-base text-muted-foreground">

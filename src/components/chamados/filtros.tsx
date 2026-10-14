@@ -141,7 +141,7 @@ export function FiltrosChamadosProvider({
             <Button
               variant="outline"
               size="lg"
-              className="h-11 w-full text-base"
+              className="w-full"
               onClick={limpar}
             >
               Limpar filtros

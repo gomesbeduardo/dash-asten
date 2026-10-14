@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CalendarIcon, ChevronDownIcon } from "lucide-react"
+import { CalendarIcon, CheckIcon, ChevronDownIcon } from "lucide-react"
 
 import type { CargaMeta } from "@/cargas"
 import type { GrupoCompetencia } from "@/app/navegacao"
@@ -31,7 +31,12 @@ export function CompetenciaSelector({
   return (
     <Popover open={open} onOpenChange={change}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="lg" aria-label="Competência">
+        <Button
+          variant="outline"
+          size="lg"
+          aria-label="Competência"
+          className="font-normal data-[state=open]:border-ring data-[state=open]:bg-muted"
+        >
           <CalendarIcon aria-hidden />
           {competenciaLonga(atual.competencia)}
           {atual.versao !== 1 && (
@@ -64,11 +69,17 @@ export function CompetenciaSelector({
                     if (!ativa) onAbrir(v.id)
                   }}
                   className={cn(
-                    "flex items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-base hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
+                    "flex min-h-11 items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-base outline-none transition-colors duration-200 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
                     ativa && "bg-brand-soft font-semibold text-brand-ink"
                   )}
                 >
-                  <span className="tabular-nums">{rotuloVersao(v)}</span>
+                  <span className="flex items-center gap-2 tabular-nums">
+                    <CheckIcon
+                      aria-hidden
+                      className={cn("size-5 text-ring", !ativa && "invisible")}
+                    />
+                    {rotuloVersao(v)}
+                  </span>
                   <span className="text-muted-foreground tabular-nums">
                     {dataHora(v.importadaEm)}
                   </span>

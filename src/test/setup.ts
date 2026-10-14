@@ -17,3 +17,20 @@ if (!Blob.prototype.arrayBuffer) {
     })
   }
 }
+
+// jsdom não tem as APIs de ponteiro e rolagem que o Radix Select usa ao abrir.
+if (typeof Element !== "undefined") {
+  Element.prototype.hasPointerCapture ??= () => false
+  Element.prototype.setPointerCapture ??= () => {}
+  Element.prototype.releasePointerCapture ??= () => {}
+  Element.prototype.scrollIntoView ??= () => {}
+}
+
+// Radix Switch/Select medem o elemento com ResizeObserver, que o jsdom não traz.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+}

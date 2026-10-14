@@ -301,15 +301,17 @@ describe("CompararChamados", () => {
   it("troca A e B e mostra o Δ com melhorQuando", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenario(true)} />)
-    const a = await screen.findByLabelText("Competência A")
-    const b = screen.getByLabelText("Competência B")
-    expect(b).toHaveValue("2026-09")
-    expect(a).toHaveValue("2026-08")
+    const a = await screen.findByRole("combobox", { name: "Competência A" })
+    const b = screen.getByRole("combobox", { name: "Competência B" })
+    expect(b).toHaveTextContent("Setembro de 2026")
+    expect(a).toHaveTextContent("Agosto de 2026")
     const linha = () => screen.getByRole("row", { name: /Backlog aberto/ })
     expect(linha()).toHaveTextContent("+1")
     expect(linha()).toHaveTextContent("pior")
-    await user.selectOptions(a, "2026-09")
-    await user.selectOptions(b, "2026-08")
+    await user.click(a)
+    await user.click(await screen.findByRole("option", { name: /Setembro de 2026/ }))
+    await user.click(b)
+    await user.click(await screen.findByRole("option", { name: /Agosto de 2026/ }))
     expect(linha()).toHaveTextContent("-1")
     expect(linha()).toHaveTextContent("melhor")
     // KPI de Agosto sem base própria → traço
@@ -320,10 +322,14 @@ describe("CompararChamados", () => {
 
   it("com uma só carga oferece meses reconstruídos e marca '—' nos que exigem a carga", async () => {
     render(<CompararChamados {...await cenario(false)} />)
-    const a = await screen.findByLabelText("Competência A")
-    expect(
-      within(a).getByRole("option", { name: "Agosto de 2026 (reconstruído)" })
-    ).toBeInTheDocument()
+    const user = userEvent.setup()
+    const a = await screen.findByRole("combobox", { name: "Competência A" })
+    await user.click(a)
+    // rótulo secundário "reconstruído", sem parênteses colados ao nome do mês
+    const opcao = await screen.findByRole("option", { name: /Agosto de 2026/ })
+    expect(within(opcao).getByText("reconstruído")).toBeInTheDocument()
+    expect(opcao).not.toHaveTextContent("(")
+    await user.keyboard("{Escape}")
     const sla = screen.getByRole("row", { name: /% no SLA/ })
     expect(sla).toHaveTextContent("exige a carga daquele mês")
     // mês reconstruído: selo no cabeçalho da coluna e Δ marcado

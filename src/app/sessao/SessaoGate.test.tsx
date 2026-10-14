@@ -120,7 +120,8 @@ describe("SessaoGate", () => {
     await userEvent.type(screen.getByLabelText("Senha"), "segredo")
     if (marcar) await userEvent.click(screen.getByLabelText("Lembrar login"))
     fetchMock.mockResolvedValueOnce(json({ usuario: "ana", expiraEm: "x" }))
-    await userEvent.keyboard("{Enter}")
+    // O switch não envia com Enter (padrão ARIA); o envio é pelo botão.
+    await userEvent.click(screen.getByRole("button", { name: /^Entrar/ }))
     expect(await screen.findByText("conteúdo do app")).toBeInTheDocument()
     const [url, init] = fetchMock.mock.calls[1]
     expect(url).toBe("/api/login")

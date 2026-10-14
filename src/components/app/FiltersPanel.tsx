@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon } from "lucide-react"
 
 import {
   clearFilter,
@@ -62,10 +62,11 @@ export function MultiSelectFilter({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          size="lg"
           role="combobox"
           aria-label={label}
           aria-expanded={open}
-          className="h-11 w-full justify-between text-base"
+          className="w-full justify-between font-normal"
         >
           <span className="truncate">
             {selected.length === 0
@@ -74,7 +75,7 @@ export function MultiSelectFilter({
                 ? selected[0]
                 : `${selected.length} selecionados`}
           </span>
-          <ChevronsUpDownIcon className="size-4 opacity-60" aria-hidden />
+          <ChevronDownIcon className="text-muted-foreground" aria-hidden />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -93,10 +94,10 @@ export function MultiSelectFilter({
                     key={value}
                     value={value}
                     onSelect={() => toggle(value)}
-                    className="text-base"
+                    className={cn("text-base", on && "bg-brand-soft font-semibold text-brand-ink")}
                   >
                     <CheckIcon
-                      className={cn("size-4", on ? "opacity-100" : "opacity-0")}
+                      className={cn("size-5 text-ring", on ? "opacity-100" : "opacity-0")}
                       aria-hidden
                     />
                     <span>{value}</span>
@@ -167,7 +168,6 @@ function DateFilter({
         <Input
           id={`${column.key}-de`}
           type="date"
-          className="h-11 text-base"
           value={from}
           min={bounds?.min}
           max={to || bounds?.max}
@@ -181,7 +181,7 @@ function DateFilter({
         <Input
           id={`${column.key}-ate`}
           type="date"
-          className="h-11 text-base"
+          
           value={to}
           min={from || bounds?.min}
           max={bounds?.max}
@@ -260,7 +260,7 @@ export function FiltersPanel({
           <Button
             variant="outline"
             size="lg"
-            className="h-11 w-full text-base"
+            className="w-full"
             onClick={onClearAll}
           >
             Limpar filtros

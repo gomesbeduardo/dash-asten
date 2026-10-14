@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 
+import { Switch } from "@/components/ui/switch"
 import logo from "@/assets/asten-logo-fundo-claro.png"
 
 export type ResultadoLogin = { ok: true } | { ok: false; erro: string }
@@ -14,7 +15,7 @@ interface Props {
 }
 
 const campo =
-  "h-12 w-full rounded-md border border-border bg-card px-3 text-lg text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring"
+  "h-12 w-full rounded-lg border border-input bg-card px-3 text-lg text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring"
 
 export function LoginScreen({ entrar, aviso, sobreposta = false }: Props) {
   const [usuario, setUsuario] = useState("")
@@ -102,15 +103,16 @@ export function LoginScreen({ entrar, aviso, sobreposta = false }: Props) {
             </button>
           </div>
 
-          <label className="mt-5 flex cursor-pointer items-center gap-3 text-base">
-            <input
-              type="checkbox"
+          <div className="mt-5 flex min-h-11 items-center justify-between gap-3">
+            <label htmlFor="lembrar-login" className="cursor-pointer text-base">
+              Lembrar login
+            </label>
+            <Switch
+              id="lembrar-login"
               checked={lembrar}
-              onChange={(e) => setLembrar(e.target.checked)}
-              className="size-5 accent-primary"
+              onCheckedChange={setLembrar}
             />
-            Lembrar login
-          </label>
+          </div>
 
           {erro && (
             <p role="alert" className="mt-5 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-base text-destructive">
