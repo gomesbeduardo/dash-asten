@@ -49,11 +49,14 @@
 | D40 | Leituras em visão própria | "Leituras do mês" ficam numa **visão própria** (Painel · Comparar · Evolução · Leituras; atalho L). Cada leitura abre o detalhe num **modal** (regra e limite, números, mini-gráfico de evidência, ação), sem navegar nem rolar a página. No Painel, só um indicador discreto que leva às Leituras. Revisa a posição da D35. |
 | D41 | Dado derivado sempre sinalizado | Todo número que **não é dado original puro** leva um selo claro com ícone e texto, igual em todas as visões, nunca só cor nem só tooltip: reconstruído pelas datas, calculado sobre colunas da data da exportação, classificação derivada (Situação na competência) e agrupamento "Outros". Na Evolução, pontos reconstruídos ficam vazados ou tracejados, com legenda. |
 | D42 | Conferência independente | Antes de dar um número como certo, ele é **conferido por um cálculo independente** do motor do app (feito do zero sobre a planilha) e as diferenças são explicadas. Não presumir. |
-| D43 | Barra auto-ocultável | Revisa a D20: a barra superior fica **escondida por padrão** (aparece 3 s ao abrir). Aparece quando o mouse chega na faixa dela no topo e some 0,8 s depois que ele sai. **H fixa** a barra (H de novo solta). Menus abertos e foco de teclado dentro dela também a mostram. Filtros ativos continuam visíveis como chips. |
+| D43 | Barra auto-ocultável | Revisa a D20: a barra superior fica **escondida por padrão** (aparece 3 s ao abrir), **sobreposta** ao conteúdo (não reserva espaço; sai inteira para cima). Aparece quando o mouse chega na faixa dela no topo e some 0,8 s depois que ele sai. **H fixa** a barra (H de novo solta). Menus abertos e foco de teclado dentro dela também a mostram. Filtros ativos continuam visíveis como chips. |
 | D44 | Fluxo de Git | Trabalho numa branch própria (push livre) → **PR para a `staging`** → PR `staging` → `main`. **Nunca push direto** em `staging` nem em `main`. Deploy de produção só depois do CI verde na `main`. |
-| D45 | Requisito original revisto | O pedido original dizia "sem autenticação, base de dados, nem nada". O requisito seguinte, **guardar o passado carregado para revisitar e comparar**, junto com o uso por várias máquinas (TV, notebooks), levou ao banco (D37) e, por consequência, ao login (D38). Fica registrado como revisão consciente do pedido original, a confirmar com o Líder junto com a ida dos dados para a nuvem (D1). |
+| D45 | Requisito original revisto | O pedido original dizia "sem autenticação, base de dados, nem nada". O requisito seguinte, **guardar o passado carregado para revisitar e comparar**, junto com o uso por várias máquinas (TV, notebooks), levou ao banco (D37) e, por consequência, ao login (D38). Fica registrado como revisão consciente do pedido original. **14/10: aprovado pelo responsável para o MVP de testes**; o produto definitivo, que vem depois da validação, reavalia banco, login e hospedagem. |
 | D46 | Desempenho da abertura | Abrir o app com cargas salvas levava **~8 s** na Vercel. Medição (14/10): índices não são o gargalo (leitura por chave primária, tabela pequena); a rede em série (sessão → lista → carga) soma 2–3 s quente e **6,1 s a frio** (sessão 2,3 s sem nem tocar o banco: cada função e o middleware acordam separados). Correção: **API numa função só** com a checagem de login dentro dela (substitui o Routing Middleware da D38, que era mais uma partida a frio por chamada); carga com **cache permanente** no navegador (versão nunca muda); abertura sem a chamada separada de sessão; cargas já baixadas reaproveitadas entre Painel, Comparar e Evolução, com pré-carga e estado de carregamento. Meta: abrir a frio em ~3 s. |
 | D47 | Histórico: Enviados e Geral | O histórico ganha **duas abas**. **Enviados**: as cargas enviadas por este navegador (o login é único do time, então "meu" = deste navegador até existirem contas individuais), com **"Limpar"**, que só tira da lista de Enviados (soft delete local; nada sai do banco). **Geral**: todas as cargas, **sem limpar**, com **busca** por nome do arquivo, competência, data da carga, tipo e versão. Hard delete fica para depois, se vier. |
+| D48 | Evolução em 6 competências | A Evolução mostra **exatamente as 6 competências mais recentes** (próprias + reconstruídas), coerente com o foco em curto prazo (R4). Confirmado pelo responsável em 14/10. |
+| D49 | Séries na legenda | R6: legenda clicável liga/desliga séries nos gráficos com 2+ séries (Evolução e Comparar), sem mudar dados, totais nem filtros; a última série visível não some; o estado volta ao padrão ao trocar de competência. |
+| D50 | Regras provisórias no MVP | D31, D34 e D35 seguem como estão; o Líder confirma ou corrige pela lista "Para validar" do artifact. Sem predição: as leituras só descrevem o mês (D35). |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 0.1 Requisitos de origem
@@ -67,7 +70,7 @@ Pedido do responsável, como chegou, e onde cada item está hoje (conferido no c
 | R3 | Muito apelo visual e facilitadores para a análise | Atende | Leituras do mês com modal (D35/D40), deltas vs mês anterior, rótulos diretos, selos de dado derivado (D41), números animados, botão "Filtrar por isto" |
 | R4 | Curto prazo (1–2 meses) + backlog | Atende | Mês da competência com delta vs anterior; backlog, atraso, envelhecimento; Evolução limitada às **6 últimas competências** |
 | R5 | Reuniões semanais (direção/coordenações) | Atende | Modo apresentação para TV, atalhos (←/→, 1–9, F, H, P, L, C, E, Esc), barra que some (D43) |
-| R6 | Habilitar/desabilitar séries | **Em parte** | Só no modo automático (botões por série). Falta nos gráficos de Chamados, Comparar e Evolução |
+| R6 | Habilitar/desabilitar séries | Atende | Legenda clicável na Evolução e no Comparar (gráficos com 2+ séries) e no modo automático; totais intactos |
 | R7 | Filtrar conjuntos por critérios | Atende | 7 dimensões em Chamados (D39), recalculam KPIs, gráficos, Leituras, Comparar e Evolução; chips e "Limpar filtros" |
 | R8 | Biblioteca gráfica e leitura do xlsx | Atende | Recharts 3 (via shadcn charts); SheetJS 0.20.3 do CDN oficial, no navegador; o servidor recebe os dados já normalizados |
 | R9 | Carga por competência, escolhida no upload e amarrada aos dados | Atende | Competência sugerida (aba → arquivo → datas → mês anterior) e confirmada pela pessoa (D28) |
@@ -95,7 +98,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 - Painel de Chamados estratégico: KPIs com variação vs mês anterior, distribuições, envelhecimento, leituras do mês (D31/D35/D36).
 - Comparar duas competências lado a lado e ver a evolução das últimas competências (D32).
 - Filtros por dimensão que recalculam tudo, com chips e "Limpar filtros" (D39).
-- Ocultar e mostrar séries nos gráficos (R6; hoje só no modo automático).
+- Ocultar e mostrar séries pela legenda na Evolução, no Comparar e no modo automático (R6).
 - Todo dado derivado sinalizado (D41) e números conferidos de forma independente (D42).
 - Visual legível em TV, acessível e com a marca Asten como acento.
 
@@ -142,7 +145,7 @@ Qualquer competência guardada abre de qualquer máquina com o login. Comparar p
 - Competência obrigatória, sugerida e confirmada; versão atribuída no servidor (D28/D37).
 - Painel por tipo registrado no código (D30); Chamados conforme D31, D34–D36, D39–D41.
 - Filtros por dimensão com chips e "Limpar filtros", valendo entre visões e competências do tipo (D39).
-- Ocultar e mostrar séries sem alterar dados nem totais (R6, pendente em Chamados).
+- Ocultar e mostrar séries sem alterar dados nem totais (R6).
 - Nenhuma linha excluída: todas classificadas e presentes no cálculo (D34).
 - Login com sessão de 14 dias ("lembrar") e API protegida em duas camadas (D38).
 - Estados de carregando, vazio, erro e dados insuficientes em cada área.
@@ -155,8 +158,7 @@ Construtor de cartões; contas individuais; exportação PNG/CSV; preferências 
 1. **Definições de Chamados** (D31): backlog, entradas, saídas, % SLA, atraso, sem SLA, aguardando aceite.
 2. **Corte da competência** (D34): KPIs reconstruídos "como estava no último dia do mês".
 3. **Limiares das leituras** (D35).
-4. **Dados na nuvem** (D1/D45): ok guardar as cargas no Neon (Vercel), atrás de login único?
-5. **Ocultar séries** nos gráficos de Chamados (R6): é necessário na reunião?
+4. **Dados na nuvem** (D1/D45): aprovado pelo responsável para o MVP de testes; o Líder confirma, e o produto definitivo reavalia.
 6. **Hospedagem definitiva** (D11): seguir na Vercel ou outro lugar.
 7. **Próximos tipos de conjunto** (R11): qual vem depois de Chamados e com que planilha.
 8. **Marca:** uso do logo e das cores como estão (D12).
