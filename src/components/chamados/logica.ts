@@ -311,19 +311,119 @@ export function linhasDeSerie(
   })
 }
 
-export type ItemAxB = { rotulo: string; a: number; b: number }
+/** Um item (categoria) com um valor por competência, na ordem cronológica das colunas. */
+export type ItemSerie = { rotulo: string; valores: number[] }
 
-export function agruparAxB(itens: ItemAxB[], max: number): ItemAxB[] {
+export function agruparSeries(itens: ItemSerie[], max: number): ItemSerie[] {
   if (itens.length <= max) return itens
   const resto = itens.slice(max)
+  const colunas = itens[0].valores.length
   return [
     ...itens.slice(0, max),
     {
       rotulo: "Outros",
-      a: resto.reduce((s, i) => s + i.a, 0),
-      b: resto.reduce((s, i) => s + i.b, 0),
+      valores: Array.from({ length: colunas }, (_, c) =>
+        resto.reduce((s, i) => s + i.valores[c], 0)
+      ),
     },
   ]
+}
+
+export type Sentido = "alta" | "queda" | "igual"
+
+/** Sentido de `anterior` para `atual`, com o mesmo arredondamento do Δ exibido; null se faltar dado. */
+export function sentidoEntre(
+  anterior: number | null,
+  atual: number | null,
+  formato: FormatoKpi
+): Sentido | null {
+  if (anterior === null || atual === null) return null
+  const d = atual - anterior
+  if (!Number.isFinite(d)) return null
+  const arred = formato === "inteiro" ? Math.round(d) : Math.round(d * 10) / 10
+  return arred > 0 ? "alta" : arred < 0 ? "queda" : "igual"
+}
+
+/** Competência a sugerir em "Adicionar": a mais próxima antes da mais antiga escolhida; senão a mais recente livre. */
+export function proximaParaAdicionar(
+  opcoes: { competencia: Competencia }[],
+  escolhidas: Competencia[]
+): Competencia | null {
+  const livres = opcoes.filter((o) => !escolhidas.includes(o.competencia))
+  if (livres.length === 0) return null
+  const maisAntiga = [...escolhidas].sort()[0]
+  const antes = livres.filter((o) => o.competencia < maisAntiga)
+  if (antes.length > 0)
+    return antes.reduce((x, y) => (x.competencia > y.competencia ? x : y)).competencia
+  return livres.reduce((x, y) => (x.competencia > y.competencia ? x : y)).competencia
+}
+
+export type KpiN = {
+  id: string
+  rotulo: string
+  formato: FormatoKpi
+  melhorQuando: KpiChamados["melhorQuando"]
+  valores: (number | null)[]
+  /** última − primeira; null se qualquer das duas não tiver dado. */
+  delta: number | null
+  /** Por coluna: sentido contra a coluna anterior (null na primeira ou sem dado). */
+  setas: (Sentido | null)[]
+}
+export type ComparacaoN = {
+  competencias: Competencia[]
+  kpis: KpiN[]
+  distribuicoes: { id: string; titulo: string; itens: ItemSerie[] }[]
+  envelhecimento: ItemSerie[]
+}
+
+const juntarItens = (listas: ItemDistribuicao[][], ordenar = true): ItemSerie[] => {
+  const mapas = listas.map((l) => new Map(l.map((i) => [i.rotulo, i.valor])))
+  const rotulos = [...new Set(listas.flatMap((l) => l.map((i) => i.rotulo)))]
+  const itens = rotulos.map((rotulo) => ({
+    rotulo,
+    valores: mapas.map((m) => m.get(rotulo) ?? 0),
+  }))
+  const total = (i: ItemSerie) => i.valores.reduce((s, v) => s + v, 0)
+  return ordenar ? itens.sort((x, y) => total(y) - total(x)) : itens
+}
+
+/** Compara N competências (já em ordem cronológica): valores por coluna, Δ = última − primeira e setas vs anterior. */
+export function compararN(metricas: MetricasChamados[]): ComparacaoN {
+  const ultima = metricas[metricas.length - 1]
+  const kpis = ultima.kpis.map((k) => {
+    const valores = metricas.map(
+      (m) => m.kpis.find((x) => x.id === k.id)?.valor ?? null
+    )
+    const primeiro = valores[0]
+    const fim = valores[valores.length - 1]
+    return {
+      id: k.id,
+      rotulo: k.rotulo,
+      formato: k.formato,
+      melhorQuando: k.melhorQuando,
+      valores,
+      delta: primeiro !== null && fim !== null ? fim - primeiro : null,
+      setas: valores.map((v, i) =>
+        i === 0 ? null : sentidoEntre(valores[i - 1], v, k.formato)
+      ),
+    }
+  })
+  const ids = [...new Set(metricas.flatMap((m) => m.distribuicoes.map((d) => d.id)))]
+  const distribuicoes = ids.map((id) => {
+    const ds = metricas.map((m) => m.distribuicoes.find((d) => d.id === id))
+    return {
+      id,
+      titulo: (ds[ds.length - 1] ?? ds.find(Boolean))!.titulo,
+      itens: juntarItens(ds.map((d) => d?.itens ?? [])),
+    }
+  })
+  return {
+    competencias: metricas.map((m) => m.competencia),
+    kpis,
+    distribuicoes,
+    // faixas de idade ficam na ordem do motor, não por total
+    envelhecimento: juntarItens(metricas.map((m) => m.envelhecimento), false),
+  }
 }
 
 /** Por que o delta é "—": o detalhe do motor, a exigência de carga própria ou falta de base. */

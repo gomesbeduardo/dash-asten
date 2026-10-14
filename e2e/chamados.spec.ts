@@ -137,16 +137,28 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   // O filtro persiste em Comparar; trocar os meses mostra o Δ
   await page.keyboard.press("c")
   await expect(page.getByRole("list", { name: "Filtros ativos" })).toContainText("Cli B")
-  await expect(page.getByRole("combobox", { name: "Competência A" })).toContainText("Agosto de 2026")
-  await expect(page.getByRole("combobox", { name: "Competência B" })).toContainText("Setembro de 2026")
+  await expect(page.getByRole("combobox", { name: "Competência 1" })).toContainText("Agosto de 2026")
+  await expect(page.getByRole("combobox", { name: "Competência 2" })).toContainText("Setembro de 2026")
   await page.getByRole("button", { name: "Limpar filtros" }).first().click()
   const linha = page.getByRole("row", { name: /Backlog aberto/ })
   await expect(linha).toContainText("+1")
-  await page.getByRole("combobox", { name: "Competência A" }).click()
-  await page.getByRole("option", { name: /Setembro de 2026/ }).click()
-  await page.getByRole("combobox", { name: "Competência B" }).click()
-  await page.getByRole("option", { name: /Agosto de 2026/ }).click()
-  await expect(linha).toContainText("-1")
+  // 2 é o mínimo; com só duas cargas não há terceira competência para adicionar
+  await expect(page.getByRole("button", { name: "Remover competência 1" })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Adicionar competência" })).toBeDisabled()
+  // a mesma competência não pode ser escolhida duas vezes
+  await page.getByRole("combobox", { name: "Competência 1" }).click()
+  await expect(page.getByRole("option", { name: /Setembro de 2026/ })).toHaveAttribute("aria-disabled", "true")
+  await page.keyboard.press("Escape")
+  // a leitura do Comparar abre o mesmo modal de detalhe; Esc devolve o foco ao cartão
+  await expect(page.getByRole("heading", { level: 2, name: "Leituras de set/26 contra ago/26" })).toBeVisible()
+  const cartao = page.getByRole("button", { name: /Ver detalhe/ }).first()
+  await cartao.click()
+  const modalCmp = page.getByRole("dialog")
+  await expect(modalCmp.getByRole("region", { name: "Regra que disparou" })).toBeVisible()
+  await expect(modalCmp.getByRole("region", { name: "Números que sustentam" })).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(modalCmp).toBeHidden()
+  await expect(cartao).toBeFocused()
 
   // Evolução: meses sem carga própria vêm marcados como reconstruídos
   // O seletor segue focado (como o select nativo): tira o foco para o atalho valer.

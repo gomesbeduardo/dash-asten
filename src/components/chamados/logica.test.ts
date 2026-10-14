@@ -3,7 +3,10 @@ import type { CargaMeta } from "@/cargas"
 import type { Leitura, MetricasChamados } from "@/chamados"
 import { sheetChamados } from "@/chamados/test-util"
 import {
-  agruparAxB,
+  agruparSeries,
+  compararN,
+  proximaParaAdicionar,
+  sentidoEntre,
   chipsDosFiltros,
   evidenciaDaLeitura,
   numerosDaLeitura,
@@ -329,20 +332,79 @@ describe("linhasDeSerie", () => {
   })
 })
 
-describe("agruparAxB", () => {
-  it("mantém os maiores e soma o resto em Outros", () => {
+describe("agruparSeries", () => {
+  it("mantém os maiores e soma o resto em Outros, coluna a coluna", () => {
     const itens = [
-      { rotulo: "A", a: 5, b: 9 },
-      { rotulo: "B", a: 4, b: 4 },
-      { rotulo: "C", a: 1, b: 2 },
-      { rotulo: "D", a: 1, b: 0 },
+      { rotulo: "A", valores: [5, 6, 9] },
+      { rotulo: "B", valores: [4, 4, 4] },
+      { rotulo: "C", valores: [1, 0, 2] },
+      { rotulo: "D", valores: [1, 1, 0] },
     ]
-    expect(agruparAxB(itens, 2)).toEqual([
-      { rotulo: "A", a: 5, b: 9 },
-      { rotulo: "B", a: 4, b: 4 },
-      { rotulo: "Outros", a: 2, b: 2 },
+    expect(agruparSeries(itens, 2)).toEqual([
+      { rotulo: "A", valores: [5, 6, 9] },
+      { rotulo: "B", valores: [4, 4, 4] },
+      { rotulo: "Outros", valores: [2, 1, 2] },
     ])
-    expect(agruparAxB(itens, 4)).toEqual(itens)
+    expect(agruparSeries(itens, 4)).toEqual(itens)
+  })
+})
+
+describe("sentidoEntre", () => {
+  it("sobe, desce ou igual (com o mesmo arredondamento do Δ); sem dado vira null", () => {
+    expect(sentidoEntre(3, 5, "inteiro")).toBe("alta")
+    expect(sentidoEntre(5, 3, "inteiro")).toBe("queda")
+    expect(sentidoEntre(5, 5, "inteiro")).toBe("igual")
+    expect(sentidoEntre(10.01, 10.04, "percentual")).toBe("igual")
+    expect(sentidoEntre(null, 5, "inteiro")).toBeNull()
+    expect(sentidoEntre(5, null, "inteiro")).toBeNull()
+  })
+})
+
+describe("proximaParaAdicionar", () => {
+  const ops = ["2026-09", "2026-08", "2026-07", "2026-06"].map((competencia) => ({ competencia }))
+  it("é a próxima mais antiga que a mais antiga escolhida", () => {
+    expect(proximaParaAdicionar(ops, ["2026-08", "2026-09"])).toBe("2026-07")
+    expect(proximaParaAdicionar(ops, ["2026-07", "2026-09", "2026-08"])).toBe("2026-06")
+  })
+  it("sem nada mais antigo, usa a mais recente ainda livre; sem livre, null", () => {
+    expect(proximaParaAdicionar(ops, ["2026-06", "2026-07"])).toBe("2026-09")
+    expect(proximaParaAdicionar(ops, ["2026-06", "2026-07", "2026-08", "2026-09"])).toBeNull()
+  })
+})
+
+describe("compararN", () => {
+  const m = (competencia: string, backlog: number | null, sla: number | null, itens: [string, number][]) =>
+    ({
+      competencia,
+      kpis: [
+        { id: "backlog", rotulo: "Backlog aberto", formato: "inteiro", valor: backlog, melhorQuando: "menor" },
+        { id: "sla", rotulo: "% no SLA", formato: "percentual", valor: sla, melhorQuando: "maior", detalhe: "sem dado" },
+      ],
+      distribuicoes: [{ id: "cliente", titulo: "Backlog por cliente", itens: itens.map(([rotulo, valor]) => ({ rotulo, valor })) }],
+      envelhecimento: [{ rotulo: "0–30 dias", valor: backlog ?? 0 }],
+    }) as unknown as MetricasChamados
+  const r = compararN([
+    m("2026-07", 4, null, [["Cli A", 4]]),
+    m("2026-08", 6, 50, [["Cli A", 4], ["Cli B", 2]]),
+    m("2026-09", 6, 40, [["Cli B", 5], ["Cli A", 1]]),
+  ])
+  it("uma coluna por competência; Δ = última − primeira; setas contra a coluna anterior", () => {
+    expect(r.competencias).toEqual(["2026-07", "2026-08", "2026-09"])
+    const b = r.kpis.find((k) => k.id === "backlog")!
+    expect(b.valores).toEqual([4, 6, 6])
+    expect(b.delta).toBe(2)
+    expect(b.setas).toEqual([null, "alta", "igual"])
+    const s = r.kpis.find((k) => k.id === "sla")!
+    expect(s.valores).toEqual([null, 50, 40])
+    expect(s.delta).toBeNull() // primeira sem dado
+    expect(s.setas).toEqual([null, null, "queda"])
+  })
+  it("distribuições unem os rótulos e ordenam pelo total", () => {
+    expect(r.distribuicoes[0].itens).toEqual([
+      { rotulo: "Cli A", valores: [4, 4, 1] },
+      { rotulo: "Cli B", valores: [0, 2, 5] },
+    ])
+    expect(r.envelhecimento).toEqual([{ rotulo: "0–30 dias", valores: [4, 6, 6] }])
   })
 })
 
