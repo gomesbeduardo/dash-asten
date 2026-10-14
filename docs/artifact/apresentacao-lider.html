@@ -178,10 +178,9 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
       <h2>Acesso</h2>
       <div class="access">
         <div><span class="k">Link</span><a class="v" href="https://dash-asten.vercel.app" target="_blank" rel="noopener">dash-asten.vercel.app</a></div>
-        <div><span class="k">Usuário</span><span class="v">asten</span></div>
-        <div><span class="k">Senha</span><span class="v" id="senha">SENHA_DO_TIME</span></div>
+        <div><span class="k">Login</span><span class="v">Não precisa no MVP</span></div>
       </div>
-      <p class="note">Marque "Lembrar login" na TV: a sessão vale 14 dias. O que for carregado aparece em qualquer computador com esse login.</p>
+      <p class="note">O app abre na tela de envio, com a lista do que já foi carregado. O que for carregado aparece em qualquer computador. O login já está pronto e volta quando a versão for aprovada.</p>
     </section>
 
     <section id="pedido">
@@ -191,7 +190,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
           <thead><tr><th scope="col">#</th><th scope="col">Pedido</th><th scope="col">Situação</th><th scope="col">Como ficou</th></tr></thead>
           <tbody>
             <tr><td class="rid">R1</td><td class="req">Subir um Excel e ver vários gráficos</td><td><span class="pill ok">Feito</span></td><td>A planilha é lida no navegador e vira painel, leituras, comparação e evolução.</td></tr>
-            <tr><td class="rid">R2</td><td class="req">Sem login nem banco de dados</td><td><span class="pill rev">Revisto</span></td><td>Para guardar o passado e ver o mesmo histórico na TV e nos notebooks, entrou um banco com login único do time. Vale para o MVP; o produto definitivo reavalia.</td></tr>
+            <tr><td class="rid">R2</td><td class="req">Sem login nem banco de dados</td><td><span class="pill rev">Revisto</span></td><td>Para guardar o passado e ver o mesmo histórico na TV e nos notebooks, entrou um banco. O login está pronto, mas fica desligado no MVP; volta depois da aprovação.</td></tr>
             <tr><td class="rid">R3</td><td class="req">Apelo visual e ajuda na análise</td><td><span class="pill ok">Feito</span></td><td>Leituras do mês, variação contra o mês anterior, rótulos nas barras, selos em todo número calculado, botão "Filtrar por isto".</td></tr>
             <tr><td class="rid">R4</td><td class="req">Curto prazo (1–2 meses) e backlog</td><td><span class="pill ok">Feito</span></td><td>Mês da competência contra o anterior; backlog, atraso e envelhecimento; evolução das últimas 6 competências.</td></tr>
             <tr><td class="rid">R5</td><td class="req">Reunião semanal com direção e coordenações</td><td><span class="pill ok">Feito</span></td><td>Modo apresentação para TV, atalhos de teclado e barra que só aparece quando chamada.</td></tr>
@@ -199,7 +198,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
             <tr><td class="rid">R7</td><td class="req">Filtrar por critérios</td><td><span class="pill ok">Feito</span></td><td>Cliente, Área Superior, Área, Atividade, Severidade, Operador e Situação. Tudo recalcula, inclusive comparação e evolução.</td></tr>
             <tr><td class="rid">R8</td><td class="req">Biblioteca de gráficos e leitura do Excel</td><td><span class="pill ok">Feito</span></td><td>Recharts para os gráficos; SheetJS lê o .xlsx no navegador.</td></tr>
             <tr><td class="rid">R9</td><td class="req">Carga por competência</td><td><span class="pill ok">Feito</span></td><td>Na carga, o app sugere o mês pela aba ou pelo nome do arquivo e a pessoa confirma.</td></tr>
-            <tr><td class="rid">R10</td><td class="req">Guardar o passado e comparar</td><td><span class="pill ok">Feito</span></td><td>Cada carga fica guardada com versão. Histórico com abas Enviados e Geral, busca e comparação entre dois meses.</td></tr>
+            <tr><td class="rid">R10</td><td class="req">Guardar o passado e comparar</td><td><span class="pill ok">Feito</span></td><td>Cada carga fica guardada com versão; versões do mesmo mês ficam agrupadas, com a mais recente por cima. Histórico com abas Enviados e Geral, busca e comparação entre dois meses.</td></tr>
             <tr><td class="rid">R11</td><td class="req">Outros conjuntos depois (projetos, OSs)</td><td><span class="pill ok">Pronto para receber</span></td><td>Cada tipo de planilha tem o próprio painel. Planilha não reconhecida ganha gráficos automáticos.</td></tr>
           </tbody>
         </table>
@@ -217,7 +216,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
           <button role="tab" id="t-evolucao" aria-controls="shot" aria-selected="false" tabindex="-1">Evolução</button>
           <button role="tab" id="t-filtros" aria-controls="shot" aria-selected="false" tabindex="-1">Filtros</button>
           <button role="tab" id="t-carga" aria-controls="shot" aria-selected="false" tabindex="-1">Nova carga</button>
-          <button role="tab" id="t-login" aria-controls="shot" aria-selected="false" tabindex="-1">Login</button>
+          <button role="tab" id="t-abertura" aria-controls="shot" aria-selected="false" tabindex="-1">Abertura</button>
         </div>
         <figure class="shot" id="shot" role="tabpanel" aria-labelledby="t-painel">
           <div class="frame">
@@ -247,7 +246,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
     <section id="mudou">
       <h2>O que mudou desde a proposta</h2>
       <div class="cards">
-        <div class="card"><h3>Banco e login</h3><p>O histórico fica num banco do app, atrás de login. Assim a TV e os notebooks veem as mesmas cargas.</p></div>
+        <div class="card"><h3>Histórico no banco</h3><p>O histórico fica num banco do app, e a TV e os notebooks veem as mesmas cargas. O login está pronto e fica desligado no MVP.</p></div>
         <div class="card"><h3>Sem tabela de linhas</h3><p>O painel mostra KPIs, gráficos e leituras. Se algum detalhe da planilha importar, ele vira gráfico ou indicador.</p></div>
         <div class="card"><h3>Leituras do mês</h3><p>Regras com limite fixo apontam o que merece atenção. Não fazem previsão; só mostram o que os números do mês dizem.</p></div>
         <div class="card"><h3>Número calculado tem selo</h3><p>Todo valor que não veio pronto da planilha leva um selo. Meses sem carga própria aparecem tracejados na evolução.</p></div>
@@ -280,7 +279,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
 
       <p class="group">Uso e próximos passos</p>
       <ol class="decisions">
-        <li><label><input type="checkbox" id="c8"><span><b>Dados no banco do app</b><small>As cargas ficam num banco na nuvem (Neon, pela Vercel), com login único do time. Ok para o MVP?</small></span></label></li>
+        <li><label><input type="checkbox" id="c8"><span><b>Dados no banco do app</b><small>As cargas ficam num banco na nuvem (Neon, pela Vercel), sem login no MVP: quem tiver o link vê e carrega. Ok até a aprovação?</small></span></label></li>
         <li><label><input type="checkbox" id="c9"><span><b>Visual na TV</b><small>Tamanho das informações, cores e a barra escondida funcionam na sala?</small></span></label></li>
         <li><label><input type="checkbox" id="c10"><span><b>Próximo conjunto de dados</b><small>Qual vem depois de Chamados (projetos, OSs) e com qual planilha.</small></span></label></li>
         <li><label><input type="checkbox" id="c11"><span><b>Uso da marca</b><small>Logo e cores da Asten como estão.</small></span></label></li>
@@ -328,7 +327,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
     ["img/v2/evolucao.png", "Evolução dos indicadores ao longo dos meses, com pontos reconstruídos tracejados", "Evolução das últimas competências. Pontos tracejados são meses sem carga própria, montados pelas datas."],
     ["img/v2/filtros.png", "Painel de filtros aberto com o filtro Cliente Beta aplicado", "Filtros: o recorte vale para tudo (KPIs, gráficos, leituras, comparação e evolução) e aparece como etiqueta."],
     ["img/v2/nova-carga.png", "Diálogo de confirmação da nova carga com tipo e competência", "Nova carga: o app reconhece o tipo e sugere a competência; a pessoa confirma."],
-    ["img/v2/login.png", "Tela de login com usuário, senha e lembrar login", "Login do time, com a opção de lembrar por 14 dias."]
+    ["img/v2/abertura.png", "Tela de envio com a lista de cargas agrupadas por mês", "Abertura: a tela de envio, com o que já existe agrupado por mês e a versão mais recente por cima."]
   ];
   const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
   const img = document.getElementById("shot-img");

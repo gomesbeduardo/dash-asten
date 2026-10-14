@@ -116,7 +116,7 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
   await expect(h1(page, "Projetos")).toBeVisible()
 })
 
-test("duas competências: recarregar abre a mais recente e o seletor troca", async ({ page }, testInfo) => {
+test("duas competências: recarregar abre na tela de envio, a lista abre a mais recente e o seletor troca", async ({ page }, testInfo) => {
   const cria = (nome: string, linhas: number) => {
     const path = testInfo.outputPath(nome)
     mkdirSync(dirname(path), { recursive: true })
@@ -144,8 +144,12 @@ test("duas competências: recarregar abre a mais recente e o seletor troca", asy
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
   await expect(linhas(page)).toContainText("6")
 
-  // Recarregar: abre direto a competência mais recente.
+  // Recarregar: abre na tela de envio, com a lista das cargas agrupada (setembro e agosto).
   await page.reload()
+  await expect(page.getByText("Carregar a planilha da competência")).toBeVisible()
+  await expect(h1(page, "Resumo")).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Abrir Agosto de 2026 v1" })).toBeVisible()
+  await page.getByRole("button", { name: /^Abrir a última/ }).click()
   await expect(h1(page, "Resumo")).toBeVisible()
   await expect(linhas(page)).toContainText("6")
   await page.mouse.move(400, 40)

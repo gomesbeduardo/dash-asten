@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { caminhoDa, DELETE, GET, POST } from "./rota.js"
 
 const req = (url: string, init?: RequestInit) => new Request(`https://x.test${url}`, init)
@@ -17,6 +17,28 @@ describe("roteador da API", () => {
     expect((await GET(req("/api/rota?r=cargas/abc"))).status).toBe(401)
     expect((await DELETE(req("/api/rota?r=cargas/abc"))).status).toBe(401)
     expect((await GET(req("/api/rota?r=sessao"))).status).toBe(401)
+  })
+
+  it("com LOGIN_DESATIVADO=1, rotas privadas passam sem cookie (login desligado no MVP)", async () => {
+    vi.stubEnv("LOGIN_DESATIVADO", "1")
+    try {
+      const r = await GET(req("/api/rota?r=sessao"))
+      expect(r.status).toBe(200)
+      // id inválido → 404 do handler, ou seja, passou pela sessão sem tocar o banco
+      expect((await GET(req("/api/rota?r=cargas/nao-e-id!"))).status).toBe(404)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect((await GET(req("/api/rota?r=sessao"))).status).toBe(401)
+  })
+
+  it("LOGIN_DESATIVADO com outro valor não desliga o login", async () => {
+    vi.stubEnv("LOGIN_DESATIVADO", "true")
+    try {
+      expect((await GET(req("/api/rota?r=cargas"))).status).toBe(401)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it("logout é público e apaga o cookie", async () => {

@@ -1,11 +1,19 @@
 import { useRef } from "react"
 import type { Ref } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { FolderOpenIcon, HistoryIcon, Trash2Icon, XIcon } from "lucide-react"
+import {
+  FolderOpenIcon,
+  HistoryIcon,
+  LogOutIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react"
 
 import logo from "@/assets/asten-logo-fundo-claro.png"
 import type { CargaMeta } from "@/cargas"
 import type { GrupoCompetencia, Visao } from "@/app/navegacao"
+import { loginEmUso } from "@/app/login-em-uso"
+import { useSessao } from "@/app/sessao/SessaoContext"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CompetenciaSelector } from "./CompetenciaSelector"
@@ -45,6 +53,7 @@ export type TopBarProps = {
 export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
   const arquivoInput = useRef<HTMLInputElement>(null)
   const reduce = useReducedMotion()
+  const { sair } = useSessao()
 
   return (
     <motion.header
@@ -133,6 +142,11 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
             )}{" "}
             {p.podeApagar ? "Limpar" : "Fechar carga"}
           </Button>
+          {loginEmUso() && (
+            <Button variant="ghost" size="lg" onClick={() => void sair()}>
+              <LogOutIcon aria-hidden /> Sair
+            </Button>
+          )}
         </div>
       </div>
       <div ref={onSlot} />

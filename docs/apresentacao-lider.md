@@ -2,7 +2,7 @@
 
 **13/10/2026 · validação até 16/10** · Versão publicada: https://claude.ai/artifact/5BJd74ABZhB6Js18p44Y24
 
-**Teste online:** https://dash-asten.vercel.app — entra com usuário `asten` e a senha do time. O primeiro painel pronto é o de Chamados/OS, com leituras do mês, comparação entre competências e evolução.
+**Teste online:** https://dash-asten.vercel.app — abre direto, sem login (MVP). O primeiro painel pronto é o de Chamados/OS, com leituras do mês, comparação entre competências e evolução.
 
 ## Primeira versão
 
