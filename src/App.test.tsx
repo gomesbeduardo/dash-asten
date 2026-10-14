@@ -186,7 +186,11 @@ describe("nova carga", () => {
     await h1("Projetos")
     expect(screen.queryByText(/Será a versão/)).not.toBeInTheDocument()
 
-    await user.upload(screen.getByLabelText(/Arquivo da nova carga/), outro())
+    await user.click(screen.getByRole("button", { name: /Nova carga/ }))
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da nova carga/),
+      outro()
+    )
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
@@ -207,6 +211,27 @@ describe("nova carga", () => {
       screen.getByRole("button", { name: "Competência" })
     ).toHaveTextContent("v2")
     expect((await repo.listar()).map((m) => m.versao)).toEqual([2, 1])
+  })
+
+  it("Nova carga abre o modal de envio; atalhos ficam ignorados e o envio fecha o modal", async () => {
+    const user = userEvent.setup()
+    const repo = criarRepositorioMemoria()
+    await salvar(repo, "reuniao-julho-2026.xlsx", "outro", "2026-07")
+    await montarAberto(repo)
+    await h1("Projetos")
+    await user.click(screen.getByRole("button", { name: /Nova carga/ }))
+    const envio = await screen.findByRole("dialog", { name: "Nova carga" })
+    expect(envio).toHaveTextContent("Arraste o arquivo .xlsx para cá")
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /Nova carga/ }))
+    await screen.findByRole("dialog", { name: "Nova carga" })
+    await user.upload(screen.getByLabelText(/Arquivo da nova carga/), outro())
+    await screen.findByRole("dialog", { name: "Confirmar a carga" })
+    expect(
+      screen.queryByRole("dialog", { name: "Nova carga" })
+    ).not.toBeInTheDocument()
   })
 
   it("o diálogo não fecha ao clicar fora; fecha com Esc", async () => {
@@ -495,3 +520,85 @@ describe("histórico e limpeza", () => {
     expect(await repo.listar()).toEqual([])
   })
 })
+
+describe("lote de planilhas", () => {
+  const trio = () => [
+    outro("reuniao-julho-2026.xlsx"),
+    outro("reuniao-setembro-2026.xlsx"),
+    outro("reuniao-setembro-2026-v2.xlsx"),
+  ]
+
+  it("2 ou mais arquivos abrem a confirmação em lote; guardar registra em Enviados e abre a competência mais recente", async () => {
+    const user = userEvent.setup()
+    const repo = montar()
+    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), trio())
+
+    const dialog = await screen.findByRole("dialog", { name: "Confirmar as cargas" })
+    expect(within(dialog).getAllByRole("row")).toHaveLength(4)
+    expect(within(dialog).getByText(/vira a versão 2/i)).toBeInTheDocument()
+    await user.click(within(dialog).getByRole("button", { name: "Confirmar 3 cargas" }))
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent(
+        "Setembro de 2026"
+      )
+    )
+    expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent("v2")
+    const metas = await repo.listar()
+    expect(metas.map((m) => `${m.competencia} v${m.versao}`).sort()).toEqual([
+      "2026-07 v1",
+      "2026-09 v1",
+      "2026-09 v2",
+    ])
+    for (const m of metas) expect(foiEnviada(m.id)).toBe(true)
+    expect(screen.getByText("3 de 3 guardadas")).toBeInTheDocument()
+  })
+
+  it("1 arquivo continua no fluxo de sempre", async () => {
+    const user = userEvent.setup()
+    montar()
+    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), [outro()])
+    expect(await screen.findByRole("dialog", { name: "Confirmar a carga" })).toBeInTheDocument()
+  })
+
+  it("mais de 12 arquivos: aviso e nenhum diálogo", async () => {
+    const user = userEvent.setup()
+    montar()
+    const muitos = Array.from({ length: 13 }, (_, i) => outro(`reuniao-agosto-2026-${i}.xlsx`))
+    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), muitos)
+    expect(await screen.findByRole("alert")).toHaveTextContent(/no máximo 12/)
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  it("falha numa linha não interrompe as outras; tentar de novo só as que falharam", async () => {
+    const user = userEvent.setup()
+    const base = criarRepositorioMemoria()
+    let falhar = true
+    const repo: RepositorioDeCargas = {
+      ...base,
+      salvar: async (n) => {
+        if (n.arquivo.includes("setembro") && falhar) throw new Error("rede")
+        return base.salvar(n)
+      },
+    }
+    montar(repo)
+    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), [
+      outro("reuniao-julho-2026.xlsx"),
+      outro("reuniao-setembro-2026.xlsx"),
+      outro("reuniao-agosto-2026.xlsx"),
+    ])
+    await user.click(await screen.findByRole("button", { name: "Confirmar 3 cargas" }))
+    expect(await screen.findByText("2 de 3 guardadas; 1 com erro")).toBeInTheDocument()
+    expect(await base.listar()).toHaveLength(2)
+
+    falhar = false
+    await user.click(screen.getByRole("button", { name: "Tentar de novo as que falharam" }))
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent(
+        "Setembro de 2026"
+      )
+    )
+    expect(await base.listar()).toHaveLength(3)
+  })
+})
+

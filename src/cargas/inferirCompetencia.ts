@@ -1,41 +1,84 @@
-import type { Workbook } from "@/core"
+import type { Column, Sheet, Workbook } from "@/core"
 import { competenciaAnterior, competenciaDe } from "./competencia"
+import { dataEmTexto, mesEmTexto } from "./mesEmTexto"
 import type { Competencia, OrigemCompetencia } from "./types"
 
-const NOMES: Record<string, number> = {
-  janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6,
-  julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12,
-  jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6, jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12,
-}
+const PALAVRA_CHAVE = /(?<![a-z])(competencia|referencia|mes|periodo)(?![a-z])/
+const LINHAS_DE_TITULO = 5
+const ROTULO_DE_DATA = /(?<![a-z])(data|dt|date)(?![a-z])/
+const MIN_ANO = 2000
 
-const pad = (n: number) => String(n).padStart(2, "0")
+const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
-/** Procura um mês pt-BR (palavra inteira) e, junto dele, um ano de 4 dígitos. */
-function mesNoTexto(texto: string, hoje: Date): Competencia | null {
-  const tokens = texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().match(/[a-z]+|\d+/g) ?? []
-  const idx = tokens.findIndex((t) => t in NOMES)
-  if (idx < 0) return null
-  const mes = NOMES[tokens[idx]]
-  const ano4 = tokens.find((t) => /^(19|20)\d{2}$/.test(t))
-  if (ano4) return `${ano4}-${pad(mes)}`
-  const mesHoje = hoje.getUTCMonth() + 1
-  const ano = mes <= mesHoje ? hoje.getUTCFullYear() : hoje.getUTCFullYear() - 1
-  return `${ano}-${pad(mes)}`
-}
-
-function dataMaxima(workbook: Workbook): Date | null {
-  let max: Date | null = null
+/** Rótulos de coluna (um único mês, com ano) e células "Competência/Referência/Mês/Período" nas primeiras linhas. */
+function mesNosTitulos(workbook: Workbook, hoje: Date): Competencia | null {
   for (const sheet of workbook.sheets) {
+    const doRotulo = new Set<Competencia>()
     for (const col of sheet.columns) {
-      if (col.type !== "date") continue
-      for (const row of sheet.rows) {
-        const v = row[col.key]
-        if (!(v instanceof Date) || Number.isNaN(v.getTime()) || v.getUTCFullYear() < 1901) continue
-        if (!max || v > max) max = v
+      const c = mesEmTexto(col.label, hoje)
+      // sem ano explícito (ex.: colunas Jan, Fev, Mar) não é competência
+      if (c && /\d/.test(col.label)) doRotulo.add(c)
+    }
+    if (doRotulo.size === 1) return [...doRotulo][0]
+  }
+  for (const sheet of workbook.sheets) {
+    for (const row of sheet.rows.slice(0, LINHAS_DE_TITULO)) {
+      const celulas = sheet.columns.map((c) => row[c.key])
+      for (const [i, v] of celulas.entries()) {
+        if (typeof v !== "string" || !PALAVRA_CHAVE.test(semAcento(v))) continue
+        const proprio = mesEmTexto(v, hoje)
+        if (proprio) return proprio
+        for (const outro of [...celulas.slice(i + 1), ...celulas.slice(0, i)]) {
+          if (outro instanceof Date && !Number.isNaN(outro.getTime()) && outro.getUTCFullYear() >= MIN_ANO) return competenciaDe(outro)
+          const c = typeof outro === "string" ? mesEmTexto(outro, hoje) : null
+          if (c) return c
+        }
       }
     }
   }
-  return max
+  return null
+}
+
+const SERIAL_MIN = 20000
+const SERIAL_MAX = 80000
+const serialParaData = (n: number) => new Date(Math.round((n - 25569) * 86400000))
+
+/** Datas válidas (>= 2000 e não futuras) de uma coluna, em qualquer dos formatos reconhecidos. */
+function datasDaColuna(sheet: Sheet, col: Column, hoje: Date): Date[] {
+  const valores = sheet.rows.map((r) => r[col.key]).filter((v) => v !== null && v !== undefined)
+  let datas: (Date | null)[]
+  if (col.type === "date") {
+    datas = valores.map((v) => (v instanceof Date ? v : null))
+  } else if (col.type === "text") {
+    datas = valores.map((v) => (typeof v === "string" ? dataEmTexto(v, hoje) : null))
+    if (datas.filter(Boolean).length < valores.length * 0.8) return []
+  } else if (col.type === "number" && ROTULO_DE_DATA.test(semAcento(col.label))) {
+    datas = valores.map((v) => (typeof v === "number" && v >= SERIAL_MIN && v <= SERIAL_MAX ? serialParaData(v) : null))
+  } else return []
+  const limite = hoje.getTime() + 86400000
+  return datas.filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()) && d.getUTCFullYear() >= MIN_ANO && d.getTime() < limite)
+}
+
+/**
+ * Mês mais recente com volume significativo na coluna de evento (a com mais datas válidas):
+ * conta por mês e pega o último mês com pelo menos 30% da mediana dos meses com dados.
+ */
+function mesDasDatas(workbook: Workbook, hoje: Date): Competencia | null {
+  let melhor: Date[] = []
+  for (const sheet of workbook.sheets) {
+    for (const col of sheet.columns) {
+      const datas = datasDaColuna(sheet, col, hoje)
+      if (datas.length > melhor.length) melhor = datas
+    }
+  }
+  if (melhor.length === 0) return null
+  const porMes = new Map<Competencia, number>()
+  for (const d of melhor) porMes.set(competenciaDe(d), (porMes.get(competenciaDe(d)) ?? 0) + 1)
+  const contagens = [...porMes.values()].sort((a, b) => a - b)
+  const meio = Math.floor(contagens.length / 2)
+  const mediana = contagens.length % 2 ? contagens[meio] : (contagens[meio - 1] + contagens[meio]) / 2
+  const meses = [...porMes.keys()].sort().reverse()
+  return meses.find((m) => porMes.get(m)! >= mediana * 0.3) ?? meses[0]
 }
 
 export function inferirCompetencia(
@@ -44,18 +87,17 @@ export function inferirCompetencia(
   hoje: Date = new Date(),
 ): { competencia: Competencia; origem: OrigemCompetencia } {
   for (const sheet of workbook.sheets) {
-    const c = mesNoTexto(sheet.name, hoje)
+    const c = mesEmTexto(sheet.name, hoje)
     if (c) return { competencia: c, origem: "aba" }
   }
-  const doArquivo = mesNoTexto(arquivo, hoje)
+  const doArquivo = mesEmTexto(arquivo, hoje)
   if (doArquivo) return { competencia: doArquivo, origem: "arquivo" }
 
-  const atual = competenciaDe(hoje)
-  const anterior = competenciaAnterior(atual)
-  const max = dataMaxima(workbook)
-  if (max) {
-    const c = competenciaDe(max)
-    if (c === atual || c === anterior) return { competencia: c, origem: "datas" }
-  }
-  return { competencia: anterior, origem: "mes-anterior" }
+  const doTitulo = mesNosTitulos(workbook, hoje)
+  if (doTitulo) return { competencia: doTitulo, origem: "titulo" }
+
+  const dasDatas = mesDasDatas(workbook, hoje)
+  if (dasDatas) return { competencia: dasDatas, origem: "datas" }
+
+  return { competencia: competenciaAnterior(competenciaDe(hoje)), origem: "mes-anterior" }
 }
