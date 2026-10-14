@@ -6,7 +6,7 @@
 !fixtures/**/*.xlsx
 !fixtures/**/*.csv
 
-node_modules/
+node_modules
 dist/
 .DS_Store
 *.log
@@ -21,3 +21,11 @@ test-results/
 .vscode/*
 !.vscode/extensions.json
 .vercel
+
+# Prisma client gerado (postinstall)
+api/_generated/
+# Skills de provedores instaladas localmente
+skills-lock.json
+
+# Handoff entre sessões (rascunho, não versionar)
+HANDOFF.md

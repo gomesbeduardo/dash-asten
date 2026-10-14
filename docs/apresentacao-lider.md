@@ -2,7 +2,7 @@
 
 **13/10/2026 · validação até 16/10** · Versão publicada: https://claude.ai/artifact/5BJd74ABZhB6Js18p44Y24
 
-**Teste online, sem login:** https://dash-asten.vercel.app — enquanto a planilha real não chega, o app monta KPIs e gráficos automáticos a partir das colunas; os painéis específicos de cada aba vêm depois.
+**Teste online:** https://dash-asten.vercel.app — entra com usuário `asten` e a senha do time. O primeiro painel pronto é o de Chamados/OS, com leituras do mês, comparação entre competências e evolução.
 
 ## Primeira versão
 
@@ -16,7 +16,7 @@
 
 **Fica para depois:** montar ou editar gráficos pela tela, renomear e reordenar abas, um filtro valendo para todas as abas, exportar imagem ou CSV, salvar preferências entre reuniões.
 
-Tudo roda no navegador. A planilha não sai do computador e some quando a aba é fechada.
+Cada carga é guardada por competência (mês de análise) num banco próprio do app, para revisitar e comparar depois em qualquer computador com o login. Carregar o mesmo mês de novo cria uma versão nova, sem apagar a anterior.
 
 ## Protótipo
 

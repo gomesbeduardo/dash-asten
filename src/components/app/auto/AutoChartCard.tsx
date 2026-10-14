@@ -13,6 +13,8 @@ import {
 } from "recharts"
 
 import type { AutoChart, ChartSeries } from "@/core"
+import { Toggle } from "@/components/ui/toggle"
+import { ToggleSerie } from "@/components/ui/toggle-serie"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { chartGrow } from "../motion/tokens"
 import { entryItem } from "../motion/variants"
@@ -279,11 +281,11 @@ export function AutoChartCard({
           <p className="text-base text-muted-foreground">{chart.subtitle}</p>
         </div>
         {!empty && (
-          <button
-            type="button"
-            aria-pressed={showTable}
-            onClick={() => setShowTable((v) => !v)}
-            className="press flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-base font-medium text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring aria-pressed:bg-accent"
+          <Toggle
+            variant="outline"
+            pressed={showTable}
+            onPressedChange={setShowTable}
+            className="press shrink-0 gap-2"
           >
             {showTable ? (
               <ChartColumnIcon className="size-5" aria-hidden />
@@ -291,7 +293,7 @@ export function AutoChartCard({
               <TableIcon className="size-5" aria-hidden />
             )}
             Ver dados
-          </button>
+          </Toggle>
         )}
       </header>
 
@@ -305,33 +307,19 @@ export function AutoChartCard({
             <ul className="flex flex-wrap gap-2" aria-label="Séries">
               {series.map(({ s, color, hide }) => (
                 <li key={s.key}>
-                  <button
-                    type="button"
-                    aria-pressed={!hide}
-                    onClick={() =>
+                  <ToggleSerie
+                    ligada={!hide}
+                    cor={color}
+                    tracejado={s.role === "meta"}
+                    rotulo={s.label}
+                    onAlternar={() =>
                       setHidden((h) =>
                         h.includes(s.key)
                           ? h.filter((k) => k !== s.key)
                           : [...h, s.key]
                       )
                     }
-                    className={cn(
-                      "press flex min-h-11 items-center gap-2 rounded-md border px-3 text-base focus-visible:outline-2 focus-visible:outline-ring",
-                      hide
-                        ? "text-muted-foreground line-through"
-                        : "bg-accent/50 font-medium"
-                    )}
-                  >
-                    <span
-                      aria-hidden
-                      className="inline-block h-0 w-6 border-t-[4px]"
-                      style={{
-                        borderColor: color,
-                        borderTopStyle: s.role === "meta" ? "dashed" : "solid",
-                      }}
-                    />
-                    {s.label}
-                  </button>
+                  />
                 </li>
               ))}
             </ul>

@@ -1,15 +1,26 @@
 import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 
-import { buildAutoDashboard } from "@/core"
-import type { PanelProps } from "@/panels/registry"
-import { GenericTable } from "../GenericTable"
+import {
+  buildAutoDashboard,
+  type Row,
+  type Sheet,
+  type SheetFilters,
+} from "@/core"
 import { entryContainer } from "../motion/variants"
 import { AutoChartCard } from "./AutoChartCard"
 import { complementGridClass } from "./chartTheme"
 import { KpiStrip } from "./KpiStrip"
 
-/** Painel da aba sem painel específico (D25): KPIs + gráficos automáticos + tabela. */
+export type PanelProps = {
+  sheet: Sheet
+  rows: Row[]
+  filters: SheetFilters
+  /** true na 1ª abertura da aba após importar: toca a entrada única (D26). */
+  entry?: boolean
+}
+
+/** Painel da aba sem painel específico (D25): KPIs + gráficos automáticos (sem tabela de linhas soltas, D36). */
 export function AutoPanel({
   sheet,
   rows,
@@ -46,10 +57,6 @@ export function AutoPanel({
           )}
         </motion.div>
       )}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-2xl text-primary">Dados</h2>
-        <GenericTable key={sheet.id} sheet={sheet} rows={rows} />
-      </div>
     </div>
   )
 }

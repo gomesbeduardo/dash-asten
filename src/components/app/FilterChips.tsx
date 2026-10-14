@@ -16,7 +16,24 @@ export function FilterChips({
   onRemove: (key: string) => void
   onClearAll: () => void
 }) {
-  const chips = chipsFor(sheet, filters)
+  return (
+    <ListaDeChips
+      chips={chipsFor(sheet, filters)}
+      onRemove={onRemove}
+      onClearAll={onClearAll}
+    />
+  )
+}
+
+export function ListaDeChips<K extends string>({
+  chips,
+  onRemove,
+  onClearAll,
+}: {
+  chips: { key: K; label: string; text: string }[]
+  onRemove: (key: K) => void
+  onClearAll: () => void
+}) {
   if (chips.length === 0) return null
   return (
     <ul
@@ -26,28 +43,28 @@ export function FilterChips({
       {chips.map((chip) => (
         <li
           key={chip.key}
-          className="flex max-w-full items-center gap-1 rounded-full border border-primary/30 bg-card py-1 pr-1 pl-4 text-base"
+          className="flex min-h-11 max-w-full items-center gap-1 rounded-full border border-ring bg-brand-soft py-1 pr-1 pl-4 text-brand-ink text-base"
         >
           <span className="truncate">
-            <span className="font-medium text-primary">{chip.label}:</span>{" "}
+            <span className="font-semibold">{chip.label}:</span>{" "}
             {chip.text}
           </span>
           <button
             type="button"
             onClick={() => onRemove(chip.key)}
             aria-label={`Remover filtro ${chip.label}`}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full text-brand-ink transition-colors duration-200 outline-none hover:bg-ring/15 motion-reduce:transition-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <XIcon className="size-4" aria-hidden />
+            <XIcon className="size-5" aria-hidden />
           </button>
         </li>
       ))}
       <li>
         <Button
-          variant="ghost"
+          variant="outline"
           size="lg"
           onClick={onClearAll}
-          className="text-primary underline"
+          className="text-primary"
         >
           Limpar filtros
         </Button>

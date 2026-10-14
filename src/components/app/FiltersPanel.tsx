@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon } from "lucide-react"
 
 import {
   clearFilter,
@@ -35,26 +35,26 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
-function ValuesFilter({
-  sheet,
-  column,
-  filter,
+/** Multisseleção com busca, sobre uma lista de opções já pronta. */
+export function MultiSelectFilter({
+  label,
+  options,
+  selected,
   onChange,
 }: {
-  sheet: Sheet
-  column: Column
-  filter: Extract<ColumnFilter, { kind: "values" }> | undefined
-  onChange: (next: ColumnFilter | null) => void
+  label: string
+  options: string[]
+  selected: string[]
+  onChange: (values: string[]) => void
 }) {
   const [open, setOpen] = useState(false)
-  const options = filterOptions(sheet, column.key)
-  const selected = filter?.values ?? []
 
   function toggle(value: string) {
-    const next = selected.includes(value)
-      ? selected.filter((v) => v !== value)
-      : [...selected, value]
-    onChange(next.length ? { kind: "values", values: next } : null)
+    onChange(
+      selected.includes(value)
+        ? selected.filter((v) => v !== value)
+        : [...selected, value]
+    )
   }
 
   return (
@@ -62,9 +62,11 @@ function ValuesFilter({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          size="lg"
           role="combobox"
+          aria-label={label}
           aria-expanded={open}
-          className="h-11 w-full justify-between text-base"
+          className="w-full justify-between font-normal"
         >
           <span className="truncate">
             {selected.length === 0
@@ -73,7 +75,7 @@ function ValuesFilter({
                 ? selected[0]
                 : `${selected.length} selecionados`}
           </span>
-          <ChevronsUpDownIcon className="size-4 opacity-60" aria-hidden />
+          <ChevronDownIcon className="text-muted-foreground" aria-hidden />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -81,7 +83,7 @@ function ValuesFilter({
         align="start"
       >
         <Command>
-          <CommandInput placeholder={`Buscar em ${column.label}`} />
+          <CommandInput placeholder={`Buscar em ${label}`} />
           <CommandList>
             <CommandEmpty>Nenhum valor encontrado.</CommandEmpty>
             <CommandGroup>
@@ -92,10 +94,10 @@ function ValuesFilter({
                     key={value}
                     value={value}
                     onSelect={() => toggle(value)}
-                    className="text-base"
+                    className={cn("text-base", on && "bg-brand-soft font-semibold text-brand-ink")}
                   >
                     <CheckIcon
-                      className={cn("size-4", on ? "opacity-100" : "opacity-0")}
+                      className={cn("size-5 text-ring", on ? "opacity-100" : "opacity-0")}
                       aria-hidden
                     />
                     <span>{value}</span>
@@ -108,6 +110,29 @@ function ValuesFilter({
         </Command>
       </PopoverContent>
     </Popover>
+  )
+}
+
+function ValuesFilter({
+  sheet,
+  column,
+  filter,
+  onChange,
+}: {
+  sheet: Sheet
+  column: Column
+  filter: Extract<ColumnFilter, { kind: "values" }> | undefined
+  onChange: (next: ColumnFilter | null) => void
+}) {
+  return (
+    <MultiSelectFilter
+      label={column.label}
+      options={filterOptions(sheet, column.key)}
+      selected={filter?.values ?? []}
+      onChange={(values) =>
+        onChange(values.length ? { kind: "values", values } : null)
+      }
+    />
   )
 }
 
@@ -143,7 +168,6 @@ function DateFilter({
         <Input
           id={`${column.key}-de`}
           type="date"
-          className="h-11 text-base"
           value={from}
           min={bounds?.min}
           max={to || bounds?.max}
@@ -157,7 +181,7 @@ function DateFilter({
         <Input
           id={`${column.key}-ate`}
           type="date"
-          className="h-11 text-base"
+          
           value={to}
           min={from || bounds?.min}
           max={bounds?.max}
@@ -236,7 +260,7 @@ export function FiltersPanel({
           <Button
             variant="outline"
             size="lg"
-            className="h-11 w-full text-base"
+            className="w-full"
             onClick={onClearAll}
           >
             Limpar filtros

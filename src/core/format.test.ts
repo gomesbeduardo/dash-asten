@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { formatCell } from "./format"
+import { formatCell, formatColumnValue } from "./format"
 
 describe("formatCell", () => {
   it("mostra traço para vazio, nunca zero", () => {
@@ -16,5 +16,16 @@ describe("formatCell", () => {
   })
   it("mantém texto como está", () => {
     expect(formatCell("abc", "text")).toBe("abc")
+  })
+})
+
+describe("formatColumnValue", () => {
+  const col = (format?: "id") => ({ key: "k", label: "K", type: "number" as const, filterable: false, distinctCount: 1, format })
+  it("id mostra o número sem separador de milhar", () => {
+    expect(formatColumnValue(123456, col("id"))).toBe("123456")
+    expect(formatColumnValue(null, col("id"))).toBe("—")
+  })
+  it("sem format delega a formatCell", () => {
+    expect(formatColumnValue(123456, col())).toBe("123.456")
   })
 })

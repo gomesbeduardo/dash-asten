@@ -57,6 +57,50 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Feito:** 94 testes de unidade/componente e 1 ponta a ponta passando; CI verde na `main`.
 
+## Fase 2C — Competência, histórico e tipos de conjunto (D28–D33) ← agora, na `staging`
+
+**Modelo:**
+- `Carga` = { id, tipo, competência `AAAA-MM`, versão, importadaEm, arquivo, workbook normalizado }. Tipo + competência + versão é único; versão nova a cada recarga do mesmo mês.
+- `RepositorioDeCargas` (interface): listar metadados, obter carga, salvar (atribui versão), excluir. Adaptadores: memória (testes) e IndexedDB (provisório, D29). Datas serializadas e revividas na leitura.
+- `TipoDeConjunto` (registro no código): id, nome, `reconhecer(workbook) → pontuação`, mapeamento de colunas por sinônimos (planilha ainda não definitiva), painel. Tipos: `chamados` e `outro` (modo automático).
+- Inferência de competência: mês por extenso em nome de aba/arquivo (pt-BR) + ano inferido das datas; senão mês anterior à data de hoje.
+
+**Fatias** (contratos fixados no brief antes de paralelizar):
+1. Núcleo de cargas (TDD): interface + adaptadores memória/IndexedDB, versão, serialização, inferência de competência, registro e reconhecimento de tipos.
+2. Métricas de Chamados (TDD): mapeamento de colunas, KPIs da D31 sobre a competência, variação vs competência anterior, dados de comparação (A×B) e de evolução (série por competência).
+3. Interface de carga e histórico: tela inicial com histórico (tipo, competência, versões), nova carga com passo de confirmação (tipo + competência), seletor de competência/versão no modo apresentação.
+4. Interface de Chamados: painel da D31 com deltas, tela Comparar (A×B lado a lado), tela Evolução; Motion e marca como hoje.
+
+**Pronto quando:** carregar a planilha do Líder (local, nunca no git) e uma fictícia de outro mês gera duas competências; painel, comparação e evolução funcionam; recarga cria versão; testes de unidade, componente e ponta a ponta passam; tudo testado localmente na `staging` antes de ir para a `main`.
+
+## Fase 2D — Banco, autenticação e painel estratégico (D36–D38) ← feita na `staging`, falta promover para a `main`
+
+**Infra (Opus — área sensível):**
+1. ✅ **Neon** pelo Marketplace no projeto `g0mes/dash-asten`. Um banco só; ambientes separados por **schema Postgres** (`public` = produção, `staging` = preview e local) via `DB_SCHEMA`.
+2. ✅ Esquema com **Prisma 7.10.0** (`db/schema.prisma`, migrações `0001_cargas` e `0002_ids_cuid` geradas por `prisma migrate diff`, aplicadas nos dois schemas): tabela `cargas` com id **CUID2**, tipo, competência, versão, importada_em, arquivo, linhas, dados jsonb, unique(tipo, competência, versão).
+3. ✅ API em Vercel Functions: `GET /api/cargas` (metadados), `POST /api/cargas` (corpo gzip, versão = max+1 com retry em conflito), `GET /api/cargas/:id`, `DELETE /api/cargas/:id`. Sem "apagar tudo" (405). Entradas validadas (id CUID2, tipo, tamanho até 4 MB).
+4. ✅ **Login próprio** (D38) no lugar do Basic Auth: `POST /api/login`, `/api/logout`, `/api/sessao`; token HMAC em cookie HttpOnly/Secure/Lax (14 dias com "lembrar"); duas camadas (Routing Middleware em `/api/*` + verificação em cada função; o middleware foi trocado pelo roteador único na fase 2E).
+5. ✅ Dev local: `vercel dev` (porta 3000) para o app completo.
+
+**Cliente (workers):**
+6. ✅ `criarRepositorioApi()` com o mesmo contrato da memória/IndexedDB; `VITE_REPOSITORIO` escolhe o repositório.
+7. ✅ D36: sem tabela de linhas brutas; filtros das leituras destacam KPIs e gráficos.
+8. ✅ Painel de Chamados (KPIs com delta, leituras, distribuições, envelhecimento), Comparar (A×B), Evolução (cargas próprias + reconstruídas, com selo) e base correta do "aguardando aceite". Tela de login.
+
+**Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`. **Falta:** promover para a `main`, CI verde, deploy de produção e validar com a planilha do Líder.
+
+## Fase 2E — Fechar os requisitos do MVP (14/10) ← agora
+
+- [x] Lentidão (D46): API numa função só, carga com cache imutável, abertura sem `/api/sessao`, cache e pré-carga no cliente, carregando em Comparar/Evolução. A frio: 6,1 s → ~2,8 s de rede (medido no preview).
+- [x] Histórico Enviados/Geral com busca e "Limpar" local (D47).
+- [x] Séries liga/desliga na Evolução e no Comparar (R6/D49).
+- [x] Evolução nas 6 competências mais recentes (D48).
+- [x] Barra sobreposta que some de verdade, verificada no navegador (D43).
+- [ ] Fundo e cartões menos claros para TV (em andamento).
+- [ ] PR da branch para a `staging` → validar no preview → PR `staging` → `main` → CI verde → deploy de produção → conferir com a planilha do Líder (D42).
+- [ ] Publicar o artifact (capturas novas, senha preenchida pelo responsável).
+- [ ] Depois (refinamento): semear o cache com a carga recém-enviada; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; contas individuais; hard delete.
+
 ## Fase 3 — Planilha real e contrato de dados
 
 1. Receber a planilha real ou uma cópia anonimizada de estrutura idêntica. Inspecionar sem copiar dados sensíveis para logs, commits ou fixtures.

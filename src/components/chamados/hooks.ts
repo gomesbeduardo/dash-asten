@@ -1,0 +1,162 @@
+import { useEffect, useMemo, useState } from "react"
+
+import type { Carga, CargaMeta } from "@/cargas"
+import {
+  calcularMetricas,
+  escolherAba,
+  gerarLeituras,
+  reconstruirAnteriores,
+  type EntradaCompetencia,
+} from "@/chamados"
+import type { Sheet } from "@/core"
+import { useFiltrosChamados } from "./filtros"
+import { filtrarSheet, metaAnterior, ultimasVersoes } from "./logica"
+
+export type CargaComAba = { meta: CargaMeta; sheet: Sheet }
+
+/** Carrega a aba de chamados da versão mais recente de cada competência. `null` enquanto carrega. */
+export function useCargasDoTipo(
+  historico: CargaMeta[],
+  obterCarga: (id: string) => Promise<Carga | null>
+): CargaComAba[] | null {
+  const versoes = useMemo(() => ultimasVersoes(historico), [historico])
+  const chave = versoes.map((m) => m.id).join("|")
+  const [pronto, setPronto] = useState<{
+    chave: string
+    itens: CargaComAba[]
+  } | null>(null)
+
+  useEffect(() => {
+    let cancelado = false
+    Promise.all(
+      versoes.map(async (meta) => {
+        try {
+          const carga = await obterCarga(meta.id)
+          const sheet = carga ? escolherAba(carga.workbook) : null
+          return sheet ? { meta, sheet } : null
+        } catch {
+          return null
+        }
+      })
+    ).then((itens) => {
+      if (!cancelado)
+        setPronto({
+          chave,
+          itens: itens.filter((i): i is CargaComAba => i !== null),
+        })
+    })
+    return () => {
+      cancelado = true
+    }
+  }, [versoes, chave, obterCarga])
+
+  return pronto?.chave === chave ? pronto.itens : null
+}
+
+export type Anterior = { entrada: EntradaCompetencia; propria: boolean }
+
+/** Mês anterior: a carga própria (versão mais recente) se existir; senão reconstruído pelas datas. `undefined` enquanto carrega. */
+export function useAnterior(
+  carga: Carga,
+  historico: CargaMeta[],
+  obterCarga: (id: string) => Promise<Carga | null>,
+  sheet: Sheet | null
+): Anterior | null | undefined {
+  const chave = `${carga.id}|${historico.map((m) => m.id).join(",")}`
+  const [pronto, setPronto] = useState<{
+    chave: string
+    valor: Anterior | null
+  } | null>(null)
+
+  useEffect(() => {
+    let cancelado = false
+    ;(async () => {
+      let valor: Anterior | null = null
+      try {
+        const meta = metaAnterior(historico, carga.competencia)
+        const anterior = meta ? await obterCarga(meta.id) : null
+        const aba = anterior ? escolherAba(anterior.workbook) : null
+        if (meta && aba)
+          valor = {
+            entrada: {
+              sheet: aba,
+              competencia: meta.competencia,
+              cargaPropria: true,
+            },
+            propria: true,
+          }
+      } catch {
+        valor = null
+      }
+      if (!valor && sheet)
+        valor = {
+          entrada: reconstruirAnteriores(sheet, carga.competencia, 1)[0],
+          propria: false,
+        }
+      if (!cancelado) setPronto({ chave, valor })
+    })()
+    return () => {
+      cancelado = true
+    }
+    // chave resume carga/historico; obterCarga e sheet são estáveis por carga.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chave, obterCarga, sheet])
+
+  return pronto?.chave === chave ? pronto.valor : undefined
+}
+
+/**
+ * O mês da carga com o recorte dos filtros aplicado ao mês e ao anterior (antes de calcular).
+ * `metricas` é `null` enquanto o mês anterior carrega.
+ */
+export function useMesDeChamados(
+  carga: Carga,
+  historico: CargaMeta[],
+  obterCarga: (id: string) => Promise<Carga | null>
+) {
+  const sheet = useMemo(() => escolherAba(carga.workbook), [carga.workbook])
+  const bruto = useAnterior(carga, historico, obterCarga, sheet)
+  const { filtros } = useFiltrosChamados()
+  const sheetFiltrada = useMemo(
+    () => (sheet ? filtrarSheet(sheet, filtros, carga.competencia) : null),
+    [sheet, filtros, carga.competencia]
+  )
+  const anterior = useMemo(
+    () =>
+      bruto
+        ? {
+            ...bruto,
+            entrada: {
+              ...bruto.entrada,
+              sheet: filtrarSheet(
+                bruto.entrada.sheet,
+                filtros,
+                bruto.entrada.competencia
+              ),
+            },
+          }
+        : bruto,
+    [bruto, filtros]
+  )
+  const atual = useMemo<EntradaCompetencia | null>(
+    () =>
+      sheetFiltrada
+        ? {
+            sheet: sheetFiltrada,
+            competencia: carga.competencia,
+            cargaPropria: true,
+          }
+        : null,
+    [sheetFiltrada, carga.competencia]
+  )
+  const pronto = atual !== null && anterior !== undefined
+  const metricas = useMemo(
+    () => (pronto ? calcularMetricas(atual, anterior?.entrada) : null),
+    [pronto, atual, anterior]
+  )
+  const leituras = useMemo(
+    () => (pronto ? gerarLeituras(atual, anterior?.entrada) : []),
+    [pronto, atual, anterior]
+  )
+  return { sheet, filtros, metricas, leituras, anterior }
+}

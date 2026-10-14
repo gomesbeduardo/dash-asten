@@ -1,264 +1,149 @@
-import { createElement, useCallback, useEffect, useMemo, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-import {
-  applyFilters,
-  clearFilter,
-  type SheetFilters,
-  type Workbook,
-} from "@/core"
-import { resolvePanel } from "@/panels/registry"
-import { crossfade } from "@/components/app/motion/tokens"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { FilterChips } from "@/components/app/FilterChips"
-import { FiltersPanel } from "@/components/app/FiltersPanel"
+import type { Carga, CargaMeta } from "@/cargas"
+import { registrarEnvio } from "@/cargas/enviados"
+import { ordenarMetas } from "@/cargas/repositorio-comum"
+import type { Workbook } from "@/core"
+import { escolherCargaInicial } from "@/app/navegacao"
+import { usePrecarga } from "@/app/precarga"
+import { useRepositorio } from "@/app/RepositorioContext"
+import { useListaInicial } from "@/app/sessao/SessaoContext"
+import { Apresentacao } from "@/components/app/Apresentacao"
 import { ImportScreen } from "@/components/app/ImportScreen"
-import { TopBar } from "@/components/app/TopBar"
-import { useBarVisibility } from "@/components/app/hooks/useBarVisibility"
-import { useShortcuts } from "@/components/app/hooks/useShortcuts"
+import { NovaCargaDialog } from "@/components/app/NovaCargaDialog"
 import { useWorkbookLoader } from "@/components/app/hooks/useWorkbookLoader"
-import {
-  hideSheet,
-  resolveActive,
-  showSheet,
-  stepSheet,
-  visibleIds,
-} from "@/components/app/tabs-state"
-
-type Presentation = {
-  workbook: Workbook
-  activeId: string
-  hidden: string[]
-  filters: Record<string, SheetFilters> // por aba (D6)
-}
-
-function Presenter({
-  initial,
-  onReplace,
-  onClear,
-  replaceError,
-  onDismissError,
-}: {
-  initial: Workbook
-  onReplace: (file: File) => void
-  onClear: () => void
-  replaceError: string | null
-  onDismissError: () => void
-}) {
-  const [state, setState] = useState<Presentation>({
-    workbook: initial,
-    activeId: initial.sheets[0].id,
-    hidden: [],
-    filters: {},
-  })
-  const [filtersOpen, setFiltersOpen] = useState(false)
-  const [tabsMenuOpen, setTabsMenuOpen] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const reduce = useReducedMotion()
-  // Abas já abertas desde a importação: a entrada escalonada toca uma vez só.
-  const [seen, setSeen] = useState<string[]>([])
-
-  const { workbook, hidden } = state
-  const allIds = useMemo(() => workbook.sheets.map((s) => s.id), [workbook])
-  const activeId = resolveActive(allIds, hidden, state.activeId)
-  const sheet =
-    workbook.sheets.find((s) => s.id === activeId) ?? workbook.sheets[0]
-  const filters = useMemo(
-    () => state.filters[sheet.id] ?? {},
-    [state.filters, sheet.id]
-  )
-  const rows = useMemo(() => applyFilters(sheet, filters), [sheet, filters])
-  const filterCount = Object.keys(filters).length
-
-  const overlayOpen = filtersOpen || tabsMenuOpen || confirmOpen
-  const bar = useBarVisibility({ hold: overlayOpen })
-
-  const select = useCallback(
-    (id: string) => setState((s) => ({ ...s, activeId: id })),
-    []
-  )
-  const setSheetFilters = (next: SheetFilters) =>
-    setState((s) => ({ ...s, filters: { ...s.filters, [sheet.id]: next } }))
-
-  useShortcuts({
-    onStep: (dir) => {
-      if (overlayOpen) return
-      select(stepSheet(visibleIds(allIds, hidden), activeId, dir))
-    },
-    onGoTo: (i) => {
-      if (overlayOpen) return
-      const id = visibleIds(allIds, hidden)[i]
-      if (id) select(id)
-    },
-    onToggleFilters: () => setFiltersOpen((o) => !o),
-    onEscape: () => {
-      setFiltersOpen(false)
-      setTabsMenuOpen(false)
-    },
-    onToggleBar: bar.toggle,
-  })
-
-  const panel = resolvePanel(sheet)
-  const entry = !seen.includes(sheet.id)
-  useEffect(() => {
-    const t = setTimeout(
-      () => setSeen((s) => (s.includes(activeId) ? s : [...s, activeId])),
-      0
-    )
-    return () => clearTimeout(t)
-  }, [activeId])
-
-  return (
-    <div className="min-h-svh">
-      <TopBar
-        visible={bar.visible}
-        sheets={workbook.sheets}
-        hidden={hidden}
-        activeId={activeId}
-        filterCount={filterCount}
-        onSelect={select}
-        onToggleSheet={(id, show) =>
-          setState((s) => {
-            const nextHidden = show
-              ? showSheet(s.hidden, id)
-              : hideSheet(allIds, s.hidden, id)
-            return {
-              ...s,
-              hidden: nextHidden,
-              activeId: resolveActive(allIds, nextHidden, s.activeId),
-            }
-          })
-        }
-        onOpenFilters={() => setFiltersOpen(true)}
-        onPickFile={onReplace}
-        onClear={() => setConfirmOpen(true)}
-        onTabsMenuOpenChange={setTabsMenuOpen}
-      />
-
-      <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[104px] pb-16">
-        {replaceError && (
-          <div
-            role="alert"
-            className="flex items-center justify-between gap-4 border-l-4 border-destructive bg-card py-3 pl-4 text-lg"
-          >
-            <span>
-              <span className="font-medium text-destructive">
-                {replaceError}
-              </span>{" "}
-              A planilha atual continua aberta.
-            </span>
-            <Button variant="ghost" size="lg" onClick={onDismissError}>
-              Fechar
-            </Button>
-          </div>
-        )}
-
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={sheet.id}
-            className="flex flex-col gap-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduce ? 0 : crossfade, ease: "linear" }}
-          >
-            <div className="flex flex-col gap-1">
-              <h1 className="text-6xl leading-none text-primary">
-                {sheet.name}
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                {workbook.fileName} · importada às{" "}
-                {workbook.importedAt.toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-
-            <FilterChips
-              sheet={sheet}
-              filters={filters}
-              onRemove={(key) => setSheetFilters(clearFilter(filters, key))}
-              onClearAll={() => setSheetFilters({})}
-            />
-
-            {createElement(panel, { sheet, rows, filters, entry })}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      <FiltersPanel
-        open={filtersOpen}
-        onOpenChange={setFiltersOpen}
-        sheet={sheet}
-        filters={filters}
-        onChange={setSheetFilters}
-        onClearAll={() => setSheetFilters({})}
-      />
-
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-primary">
-              Limpar a planilha?
-            </DialogTitle>
-            <DialogDescription className="text-base">
-              Os dados saem da tela e você volta ao início. O arquivo original
-              não é alterado.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" size="lg">
-                Cancelar
-              </Button>
-            </DialogClose>
-            <Button size="lg" onClick={onClear}>
-              Limpar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
 
 export function App() {
-  const [workbook, setWorkbook] = useState<Workbook | null>(null)
-  // `session` força um novo estado de apresentação a cada planilha carregada.
-  const [session, setSession] = useState(0)
-  const onLoaded = useCallback((wb: Workbook) => {
-    setWorkbook(wb)
-    setSession((n) => n + 1)
-  }, [])
+  const repo = useRepositorio()
+  // Lista que o porteiro já buscou ao verificar a sessão: poupa uma requisição na abertura.
+  const listaInicial = useRef(useListaInicial())
+  const [pronto, setPronto] = useState(false)
+  const [metas, setMetas] = useState<CargaMeta[]>([])
+  const [atual, setAtual] = useState<Carga | null>(null)
+  const [pendente, setPendente] = useState<{
+    workbook: Workbook
+    original: ArrayBuffer
+  } | null>(null)
+  const [erroRepo, setErroRepo] = useState<string | null>(null)
+
+  const onLoaded = useCallback(
+    (workbook: Workbook, original: ArrayBuffer) =>
+      setPendente({ workbook, original }),
+    []
+  )
   const loader = useWorkbookLoader(onLoaded)
 
-  if (!workbook)
-    return <ImportScreen state={loader.state} onFile={loader.load} />
+  // Abertura (TV): competência mais recente do tipo da última carga feita.
+  useEffect(() => {
+    let cancelado = false
+    ;(async () => {
+      try {
+        const ms = listaInicial.current ?? (await repo.listar())
+        const ini = escolherCargaInicial(ms)
+        const carga = ini ? await repo.obter(ini.id) : null
+        if (cancelado) return
+        setMetas(ms)
+        setAtual(carga)
+      } catch {
+        if (!cancelado)
+          setErroRepo("Não foi possível ler o histórico deste navegador.")
+      } finally {
+        if (!cancelado) setPronto(true)
+      }
+    })()
+    return () => {
+      cancelado = true
+    }
+  }, [repo])
+
+  const guardar = useCallback(
+    async (escolha: { tipo: string; competencia: string }) => {
+      if (!pendente) return
+      try {
+        const meta = await repo.salvar({
+          tipo: escolha.tipo,
+          competencia: escolha.competencia,
+          arquivo: pendente.workbook.fileName,
+          workbook: pendente.workbook,
+          original: pendente.original,
+        })
+        registrarEnvio(meta.id)
+        // Sem baixar de novo: a meta vem do servidor e o workbook é o local
+        // (o adaptador da API também revive datas para Date).
+        setMetas((ms) => ordenarMetas([...ms.filter((m) => m.id !== meta.id), meta]))
+        setAtual({ ...meta, workbook: pendente.workbook })
+        setErroRepo(null)
+      } catch {
+        setErroRepo("Não foi possível guardar a carga neste navegador.")
+      }
+      setPendente(null)
+    },
+    [repo, pendente]
+  )
+
+  const abrir = useCallback(
+    async (id: string) => {
+      const carga = await repo.obter(id)
+      if (carga) setAtual(carga)
+    },
+    [repo]
+  )
+
+  usePrecarga(repo, metas, atual?.tipo ?? null)
+
+  const apagarTudo = useCallback(async () => {
+    await repo.limparTudo?.()
+    setMetas([])
+    setAtual(null)
+    loader.dismiss()
+  }, [repo, loader])
+
+  // Banco compartilhado: só volta à tela inicial, sem apagar nada.
+  const fecharCarga = useCallback(() => {
+    setAtual(null)
+    loader.dismiss()
+  }, [loader])
+
+  if (!pronto) return null
+
+  const erro =
+    erroRepo ?? (loader.state.status === "error" ? loader.state.message : null)
 
   return (
-    <Presenter
-      key={session}
-      initial={workbook}
-      onReplace={loader.load}
-      onClear={() => {
-        setWorkbook(null)
-        loader.dismiss()
-      }}
-      replaceError={
-        loader.state.status === "error" ? loader.state.message : null
-      }
-      onDismissError={loader.dismiss}
-    />
+    <>
+      {atual ? (
+        <Apresentacao
+          key={atual.tipo}
+          carga={atual}
+          metas={metas}
+          obterCarga={repo.obter}
+          onAbrir={abrir}
+          onNovaCarga={loader.load}
+          onApagarTudo={repo.limparTudo ? apagarTudo : undefined}
+          onFecharCarga={fecharCarga}
+          erro={erro}
+          onDismissErro={() => {
+            loader.dismiss()
+            setErroRepo(null)
+          }}
+        />
+      ) : (
+        <ImportScreen
+          state={
+            erroRepo ? { status: "error", message: erroRepo } : loader.state
+          }
+          onFile={loader.load}
+        />
+      )}
+      {pendente && (
+        <NovaCargaDialog
+          workbook={pendente.workbook}
+          metas={metas}
+          onConfirm={guardar}
+          onCancel={() => setPendente(null)}
+        />
+      )}
+    </>
   )
 }
 
