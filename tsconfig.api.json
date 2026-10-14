@@ -14,6 +14,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["api/**/*.ts", "middleware.ts", "db/prisma.config.ts"],
+  "include": ["api/**/*.ts", "db/prisma.config.ts"],
   "exclude": ["api/_generated/**"]
 }

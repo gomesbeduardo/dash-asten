@@ -18,6 +18,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const MESES = [
   "Janeiro",
@@ -40,9 +48,6 @@ const DICA_ORIGEM: Record<OrigemCompetencia, string> = {
   datas: "pelas datas",
   "mes-anterior": "mês anterior",
 }
-
-const campo =
-  "h-11 rounded-md border border-input bg-card px-3 text-base focus-visible:outline-2 focus-visible:outline-ring"
 
 export function NovaCargaDialog({
   workbook,
@@ -102,21 +107,24 @@ export function NovaCargaDialog({
             <label htmlFor="carga-tipo" className="text-base font-medium">
               Tipo
             </label>
-            <select
-              id="carga-tipo"
-              className={campo}
+            <Select
               value={tipo}
-              onChange={(e) => {
-                setTipo(e.target.value)
+              onValueChange={(v) => {
+                setTipo(v)
                 setEditado(true)
               }}
             >
-              {tipos.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nome}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="carga-tipo">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {tipos.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {inicial.reconhecido && tipo === inicial.tipo && !editado && (
               <p className="text-sm text-muted-foreground">
                 reconhecido pelas colunas
@@ -129,22 +137,25 @@ export function NovaCargaDialog({
               Competência
             </legend>
             <div className="flex gap-3">
-              <select
-                aria-label="Mês"
-                className={`${campo} flex-1`}
-                value={mes}
-                onChange={(e) => setMes(Number(e.target.value))}
+              <Select
+                value={String(mes)}
+                onValueChange={(v) => setMes(Number(v))}
               >
-                {MESES.map((nome, i) => (
-                  <option key={nome} value={i + 1}>
-                    {nome}
-                  </option>
-                ))}
-              </select>
-              <input
+                <SelectTrigger aria-label="Mês" className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MESES.map((nome, i) => (
+                    <SelectItem key={nome} value={String(i + 1)}>
+                      {nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
                 aria-label="Ano"
                 inputMode="numeric"
-                className={`${campo} w-28 tabular-nums`}
+                className="w-28 tabular-nums"
                 value={ano}
                 onChange={(e) => setAno(e.target.value)}
               />

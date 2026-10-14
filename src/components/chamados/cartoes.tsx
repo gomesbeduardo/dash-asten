@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
 import {
   descreverDelta,
@@ -29,7 +30,7 @@ import {
   motivoSemDelta,
   type SeloTipo,
 } from "./logica"
-import { Selo, Selos } from "./selos"
+import { SeloSimbolo, Selos } from "./selos"
 
 const TOM = {
   bom: "text-[#00694b]",
@@ -83,7 +84,15 @@ export function KpiCartao({
             destaque ? "text-xl" : "text-lg"
           )}
         >
-          {kpi.rotulo}
+          {kpi.reconstruivel ? (
+            kpi.rotulo
+          ) : (
+            /* símbolo antes do texto; o texto quebra à parte, então a 2ª linha fica alinhada ao texto (D41) */
+            <span className="flex items-start gap-1.5">
+              <SeloSimbolo tipo="calculado" className="-my-px" />
+              <span>{kpi.rotulo}</span>
+            </span>
+          )}
         </h3>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -142,11 +151,6 @@ export function KpiCartao({
         </p>
       )}
       {extra && <p className="text-base text-muted-foreground">{extra}</p>}
-      {!kpi.reconstruivel && (
-        <div>
-          <Selo tipo="calculado" />
-        </div>
-      )}
     </motion.article>
   )
 }
@@ -226,7 +230,7 @@ export function LeituraCartao({
   return (
     <motion.li
       variants={reduce ? undefined : entryItem}
-      className="flex min-w-0 flex-col gap-2"
+      className="relative flex min-w-0 flex-col gap-2"
       data-leitura={leitura.id}
     >
       {onAbrir ? (
@@ -244,7 +248,10 @@ export function LeituraCartao({
       ) : (
         <article className={base}>{corpo}</article>
       )}
-      <Selos tipos={selos} />
+      {/* símbolos sobre o canto do cartão, na linha da severidade: não mudam a altura nem alinham diferente */}
+      <div className="absolute top-4 right-4">
+        <Selos tipos={selos} />
+      </div>
     </motion.li>
   )
 }
@@ -327,18 +334,26 @@ export function GraficoCartao({
     >
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="font-display text-2xl font-semibold text-primary">
-            {titulo}
-          </h3>
+          <div className="flex items-start gap-2">
+            {/* símbolos antes do título, centrados na 1ª linha (leading-8 = h-8) */}
+            {selos.length > 0 && (
+              <span className="flex h-8 shrink-0 items-center">
+                <Selos tipos={selos} />
+              </span>
+            )}
+            <h3 className="font-display text-2xl leading-8 font-semibold text-primary">
+              {titulo}
+            </h3>
+          </div>
           {subtitulo && (
             <p className="text-base text-muted-foreground">{subtitulo}</p>
           )}
         </div>
-        <button
-          type="button"
-          aria-pressed={verTabela}
-          onClick={() => setVerTabela((v) => !v)}
-          className="press flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-base font-medium text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring aria-pressed:bg-accent"
+        <Toggle
+          variant="outline"
+          pressed={verTabela}
+          onPressedChange={setVerTabela}
+          className="press shrink-0 gap-2"
         >
           {verTabela ? (
             <ChartColumnIcon className="size-5" aria-hidden />
@@ -346,9 +361,8 @@ export function GraficoCartao({
             <TableIcon className="size-5" aria-hidden />
           )}
           Ver dados
-        </button>
+        </Toggle>
       </header>
-      <Selos tipos={selos} />
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
       <div hidden={verTabela}>{children}</div>
       {nota && <p className="text-base text-muted-foreground">{nota}</p>}

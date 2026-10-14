@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
@@ -27,7 +27,6 @@ export type ApresentacaoProps = {
   metas: CargaMeta[]
   obterCarga: (id: string) => Promise<Carga | null>
   onAbrir: (id: string) => void
-  onExcluir: (meta: CargaMeta) => void
   onNovaCarga: (file: File) => void
   /** Ausente no banco compartilhado: não há como apagar tudo. */
   onApagarTudo?: () => void
@@ -75,7 +74,8 @@ export function Apresentacao(p: ApresentacaoProps) {
         : visoes.Painel
 
   const overlay = historicoOpen || limparOpen || seletorOpen || painelHold
-  const bar = useBarVisibility({ hold: overlay })
+  const barRef = useRef<HTMLElement>(null)
+  const bar = useBarVisibility({ hold: overlay, barRef })
 
   const pedirVisao = useCallback(
     (v: Visao) => {
@@ -109,6 +109,8 @@ export function Apresentacao(p: ApresentacaoProps) {
       <div className="min-h-svh">
         <TopBar
           visible={bar.visible}
+          fixa={bar.fixa}
+          barRef={barRef}
           tipoNome={tipoNome}
           atual={atualMeta}
           grupos={competenciasDoTipo(metas, carga.tipo)}
@@ -127,7 +129,7 @@ export function Apresentacao(p: ApresentacaoProps) {
           onSelectorOpenChange={setSeletorOpen}
         />
 
-        <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-40 pb-16">
+        <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16">
           {p.erro && (
             <div
               role="alert"
@@ -170,7 +172,6 @@ export function Apresentacao(p: ApresentacaoProps) {
           metas={metas}
           atualId={carga.id}
           onAbrir={p.onAbrir}
-          onExcluir={p.onExcluir}
         />
 
         <Dialog open={limparOpen} onOpenChange={setLimparOpen}>

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useReducer, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from "react"
 
+import { criarRepositorioApi, ErroDeCarga, type CargaMeta, type RepositorioDeCargas } from "@/cargas"
 import { LoginScreen, type ResultadoLogin } from "@/components/login/LoginScreen"
-import { SessaoContext } from "./SessaoContext"
+import { ListaInicialContext, SessaoContext } from "./SessaoContext"
 import { estadoInicial, EVENTO_SESSAO_EXPIRADA, reduzir } from "./sessao"
 
 const MSG_FALHA_LOGIN = "Não foi possível entrar. Verifique a conexão e tente de novo."
@@ -28,6 +29,9 @@ async function entrar(usuario: string, senha: string, lembrar: boolean): Promise
   }
 }
 
+let padrao: RepositorioDeCargas | undefined
+const repositorioPadrao = () => (padrao ??= criarRepositorioApi())
+
 function Aguardando({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-svh place-items-center bg-background p-6 text-center text-lg text-muted-foreground">
@@ -36,26 +40,36 @@ function Aguardando({ children }: { children: ReactNode }) {
   )
 }
 
-function Porteiro({ children }: { children: ReactNode }) {
+function Porteiro({
+  children,
+  repositorio,
+}: {
+  children: ReactNode
+  repositorio: RepositorioDeCargas
+}) {
   const [estado, despachar] = useReducer(reduzir, estadoInicial)
+  const [listaInicial, setListaInicial] = useState<CargaMeta[] | null>(null)
 
   useEffect(() => {
     if (estado.fase !== "verificando") return
     let cancelado = false
-    fetch("/api/sessao", { credentials: "same-origin" })
-      .then((resp) => {
+    // A própria listagem prova a sessão: 401 = sem sessão; sucesso = autenticado e a lista já vem pronta.
+    repositorio
+      .listar()
+      .then((lista) => {
         if (cancelado) return
-        if (resp.ok) despachar({ tipo: "sessao-valida" })
-        else if (resp.status === 401) despachar({ tipo: "sem-sessao" })
-        else despachar({ tipo: "rede-falhou" })
+        setListaInicial(lista)
+        despachar({ tipo: "sessao-valida" })
       })
-      .catch(() => {
-        if (!cancelado) despachar({ tipo: "rede-falhou" })
+      .catch((erro: unknown) => {
+        if (cancelado) return
+        if (erro instanceof ErroDeCarga && erro.status === 401) despachar({ tipo: "sem-sessao" })
+        else despachar({ tipo: "rede-falhou" })
       })
     return () => {
       cancelado = true
     }
-  }, [estado.fase])
+  }, [estado.fase, repositorio])
 
   useEffect(() => {
     const aoExpirar = () => despachar({ tipo: "expirou" })
@@ -69,6 +83,7 @@ function Porteiro({ children }: { children: ReactNode }) {
     } catch {
       /* sem rede: sai do app mesmo assim; o cookie vence sozinho */
     }
+    setListaInicial(null)
     despachar({ tipo: "saiu" })
   }, [])
   const api = useMemo(() => ({ sair }), [sair])
@@ -76,7 +91,10 @@ function Porteiro({ children }: { children: ReactNode }) {
   const aoEntrar = useCallback(
     async (usuario: string, senha: string, lembrar: boolean) => {
       const r = await entrar(usuario, senha, lembrar)
-      if (r.ok) despachar({ tipo: "login-ok" })
+      if (r.ok) {
+        setListaInicial(null)
+        despachar({ tipo: "login-ok" })
+      }
       return r
     },
     []
@@ -103,11 +121,13 @@ function Porteiro({ children }: { children: ReactNode }) {
 
   return (
     <SessaoContext.Provider value={api}>
-      {appVivo && (
-        <div inert={coberto} aria-hidden={coberto || undefined}>
-          {children}
-        </div>
-      )}
+      <ListaInicialContext.Provider value={listaInicial}>
+        {appVivo && (
+          <div inert={coberto} aria-hidden={coberto || undefined}>
+            {children}
+          </div>
+        )}
+      </ListaInicialContext.Provider>
       {estado.fase === "login" && (
         <LoginScreen aviso={estado.aviso} entrar={aoEntrar} sobreposta={appVivo} />
       )}
@@ -116,7 +136,14 @@ function Porteiro({ children }: { children: ReactNode }) {
 }
 
 /** Só protege o app quando o repositório é a API (VITE_REPOSITORIO=api); nos demais, passa direto. */
-export function SessaoGate({ children }: { children: ReactNode }) {
+export function SessaoGate({
+  children,
+  repositorio,
+}: {
+  children: ReactNode
+  /** O mesmo repositório do app (com cache); por padrão, um repositório da API. */
+  repositorio?: RepositorioDeCargas
+}) {
   if (import.meta.env.VITE_REPOSITORIO !== "api") return <>{children}</>
-  return <Porteiro>{children}</Porteiro>
+  return <Porteiro repositorio={repositorio ?? repositorioPadrao()}>{children}</Porteiro>
 }

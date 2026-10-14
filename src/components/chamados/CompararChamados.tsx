@@ -10,6 +10,13 @@ import {
   type FormatoKpi,
 } from "@/chamados"
 import { entryContainer } from "@/components/app/motion/variants"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { Sheet } from "@/core"
@@ -17,7 +24,8 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, LeituraCartao } from "./cartoes"
 import { BarrasAxB } from "./graficos"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
-import { Selo } from "./selos"
+import { LegendaSimbolos, SeloSimbolo } from "./selos"
+import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
 import {
   agruparAxB,
@@ -32,8 +40,8 @@ import {
   type OpcaoCompetencia,
 } from "./logica"
 
-const campo =
-  "h-11 rounded-md border border-input bg-card px-3 text-base focus-visible:outline-2 focus-visible:outline-ring"
+// O rótulo da opção traz "(reconstruído)"; no seletor ele vira um rótulo secundário.
+const SUFIXO_RECONSTRUIDO = / \(reconstruído\)$/
 const TOM = {
   bom: "text-[#00694b]",
   ruim: "text-late",
@@ -78,7 +86,14 @@ export function CompararChamados({
         </p>
       </div>
     )
-  if (!cargas || opcoes.length === 0)
+  if (!cargas)
+    return (
+      <div className="flex flex-col gap-4">
+        {cabecalho}
+        <Carregando />
+      </div>
+    )
+  if (opcoes.length === 0)
     return <div className="flex flex-col gap-4">{cabecalho}</div>
 
   return (
@@ -124,7 +139,9 @@ function ComparacaoVisao({
   const onB = (v: string) => setEscolha((e) => ({ ...e, b: v }))
   const entradaDe = (o: OpcaoCompetencia): EntradaCompetencia => ({
     sheet: filtrarSheet(
-      o.propria ? (sheets.get(o.competencia) ?? sheetAtual) : sheetAtual,
+      o.propria
+        ? (sheets.get(o.competencia) ?? sheetAtual)
+        : ((o.deCarga ? sheets.get(o.deCarga) : undefined) ?? sheetAtual),
       filtros,
       o.competencia
     ),
@@ -149,6 +166,15 @@ function ComparacaoVisao({
   const detalhe = (lado: "a" | "b", id: string) =>
     cmp[lado].kpis.find((k) => k.id === id)?.detalhe
   const fmt = (v: number | null, f: FormatoKpi) => formatarKpi(v, f)
+  // símbolos que aparecem nesta tela, para a legenda
+  const tiposNaTela: SeloTipo[] = [
+    ...(algumReconstruido ? (["reconstruido"] as const) : []),
+    ...(cmp.b.kpis.some((k) => k.reconstruivel === false) ? (["calculado"] as const) : []),
+    ...leituras.flatMap((l) => selosDaLeitura(l, opA.propria)),
+    ...(cmp.distribuicoes.some((d) => d.id !== "situacao" && temOutros(agruparAxB(d.itens, MAX_ITENS)))
+      ? (["outros"] as const)
+      : []),
+  ]
 
   const dists = cmp.distribuicoes.filter((d) => d.id !== "situacao")
   const envel = cmp.b.envelhecimento.map((i, k) => ({
@@ -183,18 +209,23 @@ function ComparacaoVisao({
                 <label htmlFor={id} className="text-base font-medium">
                   {rotulo}
                 </label>
-                <select
-                  id={id}
-                  className={cn(campo, "min-w-64")}
-                  value={valor}
-                  onChange={(e) => onChange(e.target.value)}
-                >
-                  {opcoes.map((o) => (
-                    <option key={o.competencia} value={o.competencia}>
-                      {o.rotulo}
-                    </option>
-                  ))}
-                </select>
+                <Select value={valor} onValueChange={onChange}>
+                  <SelectTrigger id={id} className="min-w-72">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcoes.map((o) => (
+                      <SelectItem key={o.competencia} value={o.competencia}>
+                        {o.rotulo.replace(SUFIXO_RECONSTRUIDO, "")}
+                        {!o.propria && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            reconstruído
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ))}
             <p className="pb-2 text-base text-muted-foreground">
@@ -202,6 +233,7 @@ function ComparacaoVisao({
               planilha mais recente.
             </p>
           </div>
+          <LegendaSimbolos tipos={tiposNaTela} />
         </header>
 
         <section aria-label="Indicadores lado a lado">
@@ -215,20 +247,16 @@ function ComparacaoVisao({
                   Indicador
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
-                  A · {rotA}
-                  {!opA.propria && (
-                    <span className="mt-1 flex justify-end font-sans">
-                      <Selo tipo="reconstruido" />
-                    </span>
-                  )}
+                  <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
+                    {!opA.propria && <SeloSimbolo tipo="reconstruido" />}
+                    <span>A · {rotA}</span>
+                  </span>
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
-                  B · {rotB}
-                  {!opB.propria && (
-                    <span className="mt-1 flex justify-end font-sans">
-                      <Selo tipo="reconstruido" />
-                    </span>
-                  )}
+                  <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
+                    {!opB.propria && <SeloSimbolo tipo="reconstruido" />}
+                    <span>B · {rotB}</span>
+                  </span>
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
                   Δ
@@ -249,12 +277,15 @@ function ComparacaoVisao({
                 return (
                   <tr key={k.id} className="border-b bg-card">
                     <th scope="row" className="px-4 py-3 font-medium">
-                      {k.rotulo}
-                      {cmp.b.kpis.find((x) => x.id === k.id)?.reconstruivel === false && (
-                        <span className="mt-1 flex font-sans">
-                          <Selo tipo="calculado" />
+                      {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
+                      <span className="flex items-start gap-2">
+                        <span className="flex size-6 shrink-0 items-center justify-center">
+                          {cmp.b.kpis.find((x) => x.id === k.id)?.reconstruivel === false && (
+                            <SeloSimbolo tipo="calculado" />
+                          )}
                         </span>
-                      )}
+                        <span>{k.rotulo}</span>
+                      </span>
                     </th>
                     {([["a", k.a], ["b", k.b]] as const).map(([lado, v]) => (
                       <td key={lado} className="num px-4 py-3 text-right font-display font-semibold text-primary">

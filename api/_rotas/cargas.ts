@@ -37,6 +37,7 @@ function validar(corpo: unknown): NovaCargaDto {
   if (typeof c.tipo !== "string" || !/^[a-z0-9-]{1,40}$/.test(c.tipo)) throw new ErroDeEntrada("Tipo inválido.", 400)
   if (typeof c.competencia !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(c.competencia))
     throw new ErroDeEntrada("Competência inválida (use AAAA-MM).", 400)
+  // eslint-disable-next-line no-control-regex -- recusa caracteres de controle no nome do arquivo
   if (typeof c.arquivo !== "string" || c.arquivo.length === 0 || c.arquivo.length > 255 || /[\u0000-\u001f\u007f/\\<>]/.test(c.arquivo))
     throw new ErroDeEntrada("Nome de arquivo inválido.", 400)
   const sheets = c.workbook?.sheets

@@ -4,16 +4,17 @@ import { createRoot } from "react-dom/client"
 import "./index.css"
 import App from "./App.tsx"
 import { criarRepositorioPadrao } from "@/cargas/escolherRepositorio"
+import { comCache } from "@/cargas/comCache"
 import { registrarTiposDoApp } from "@/app/bootstrap"
 import { RepositorioProvider } from "@/app/RepositorioContext"
 import { SessaoGate } from "@/app/sessao/SessaoGate"
 
 registrarTiposDoApp()
-const repositorio = criarRepositorioPadrao()
+const repositorio = comCache(criarRepositorioPadrao())
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <SessaoGate>
+    <SessaoGate repositorio={repositorio}>
       <RepositorioProvider repositorio={repositorio}>
         <App />
       </RepositorioProvider>

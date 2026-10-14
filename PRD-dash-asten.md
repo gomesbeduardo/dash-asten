@@ -1,14 +1,14 @@
 # PRD — Painel de análise de planilhas (Asten)
 
-**Versão:** v2, 13/10/2026, revisada após sessão de grilling. A v1 está no histórico do Git.
-**Status:** esqueleto neutro do produto em construção (D19). Painéis e métricas só depois da validação do Líder (meta: 16/10/2026).
-**Escopo:** painel local, numa página única, para conduzir a reunião semanal interna a partir de uma planilha `.xlsx` de estrutura fixa.
+**Versão:** v3, 14/10/2026. Alinha o PRD ao app construído (fases 2C/2D) e aos requisitos de origem (§0.1). A v2 está no histórico do Git.
+**Status:** app funcional na `staging` (cargas por competência, histórico no banco, login, painel de Chamados com Leituras, Comparar e Evolução). Produção ainda na versão antiga, até a promoção pela `main`. Definições de Chamados aguardam o Líder (D31/D34/D35).
+**Escopo:** app web interno para conduzir as reuniões das coordenações da Asten, exibido em TV, a partir de planilhas `.xlsx` carregadas por competência.
 
-## 0. Decisões do grilling 13/10
+## 0. Decisões (grilling 13/10 e revisões seguintes)
 
 | # | Tema | Decisão |
 |---|---|---|
-| D1 | Por que construir | Ferramentas como Power BI, Looker Studio e Excel projetado foram descartadas por dois motivos: **privacidade** (a planilha não pode sair da máquina) e **UX de reunião** (essas ferramentas não servem para conduzir uma conversa projetada). |
+| D1 | Por que construir | Ferramentas como Power BI, Looker Studio e Excel projetado foram descartadas por dois motivos: **privacidade** (a planilha não pode sair da máquina) e **UX de reunião** (essas ferramentas não servem para conduzir uma conversa projetada). ~~a planilha não pode sair da máquina~~ — **revisto por D37/D45**: para guardar e comparar o passado entre máquinas, as cargas vão para o banco do app (Neon), atrás de login (D38). A UX de reunião continua sendo o motivo central. |
 | D2 | Estrutura da planilha | **Mesma estrutura toda semana**, só os dados mudam. O produto é um painel para *essa* planilha-modelo, não um BI genérico. |
 | D3 | Planilha real | **Ainda não existe** amostra. O conteúdo provável mistura **indicadores** (meta vs. realizado) e **projetos/atividades** (status, prazo, % de conclusão). Nem o usuário nem o Líder têm certeza ainda. |
 | D4 | Edição do dashboard | **Edição rara.** O MVP traz **só filtros**. Construtor de cartões (adicionar, remover, configurar, redimensionar) fica para depois. Prioridade: bonito, funcional e simples de usar. |
@@ -33,57 +33,84 @@
 | D24 | Testes e CI | Vitest (TDD) e Testing Library; um teste Playwright ponta a ponta com `.xlsx` gerado no próprio teste. GitHub Actions **só em push na `main`**. Sem deploy até decidir a hospedagem. |
 | D25 | Modo automático | Revisa a D5 e a D22: com qualquer planilha, cada aba ganha **KPIs e gráficos automáticos** a partir dos tipos de coluna, acima da tabela. Escopo "mais livre": contagens, período, média e total por coluna numérica, contagem por categoria e por mês, média por mês, e também comparação entre colunas numéricas quando os nomes sugerirem (meta × realizado, previsto × executado) com percentual de atingimento, e distribuição de status. Cada bloco leva o selo "automático". Painéis específicos registrados por aba continuam tendo prioridade. |
 | D26 | Animação | Biblioteca **Motion** (13.4.4, fixa). Regras de movimento herdadas do `lp_centraleng` (DESIGN.md "Movimento", feito com impeccable): tokens 150/250/400 ms, curvas standard `cubic-bezier(0.4,0,0.2,1)` e emphasized `cubic-bezier(0.2,0,0,1)`; entrada única escalonada (~110 ms); números contam até o valor (~1 s, valor final sempre no texto); barras e linhas crescem ao entrar; troca de aba em fade cruzado de 200 ms; mudança de filtro só transita valores; só transform e opacity; nada em loop; com movimento reduzido tudo aparece pronto. |
-| D27 | Deploy de teste | Revisa D11/D24 só para teste: projeto Vercel `g0mes/dash-asten`, publicado pela CLI depois do CI verde, **acesso aberto sem login** (coerente com o PRD sem autenticação; o app não guarda dados). Link: https://dash-asten.vercel.app (ver `docs/acesso-teste.md`). Deploy automático a cada push depende de instalar o app da Vercel no GitHub. A hospedagem definitiva continua com o Líder. |
+| D27 | Deploy de teste | Revisa D11/D24 só para teste: projeto Vercel `g0mes/dash-asten`, publicado pela CLI depois do CI verde, ~~acesso aberto sem login~~ — **revisto por D38**: o app passou a guardar as cargas no banco (D37) e exige login. Link: https://dash-asten.vercel.app (ver `docs/acesso-teste.md`). Deploy automático a cada push depende de instalar o app da Vercel no GitHub. A hospedagem definitiva continua com o Líder. |
 | D28 | Competência | Cada carga é feita **por competência** (mês/ano de análise), amarrada à massa de dados. Após escolher o arquivo, um passo pede tipo + competência, pré-preenchida pelo nome da aba/arquivo (ex.: "Setembro" → 09/2026) ou, sem pista, pelo mês anterior; a pessoa confirma. Recarregar o mesmo tipo + competência gera **nova versão**; as anteriores ficam acessíveis e a mais recente é a padrão. |
-| D29 | Histórico de cargas | Toda carga fica guardada (tipo, competência, versão, data da carga, arquivo, dados normalizados) para revisitar e comparar. Revisa D9/§4 (sem persistência). **Onde guardar está em discussão** (navegador × nuvem com login). O código acessa o armazenamento por uma interface única; a implementação provisória é **IndexedDB no navegador** (nada sai da máquina; o link aberto segue seguro). Se for nuvem, troca-se só o adaptador e entra login. |
+| D29 | Histórico de cargas | Toda carga fica guardada (tipo, competência, versão, data da carga, arquivo, dados normalizados) para revisitar e comparar. Revisa D9/§4 (sem persistência). **Fechado pela D37** (banco na nuvem com login). O código acessa o armazenamento por uma interface única; o adaptador IndexedDB ficou para testes e uso offline. |
 | D30 | Tipos de conjunto | **Registro de tipos no código**: cada tipo tem nome, colunas que o identificam e painel próprio. O app reconhece o tipo pelas colunas e a pessoa confirma. Primeiro tipo: **Chamados/OS** (planilha do Líder, "ainda não definitiva, mas nessa linha"). Sem tipo reconhecido → "Outro", com o modo automático (D25). Formato em teste; pode mudar. |
 | D31 | Painel de Chamados | Definições provisórias até validação do Líder, sobre o mês da competência: **backlog aberto** (Situação ≠ Finalizado); **entradas** (Data Abertura no mês); **saídas** (Data de Solução no mês); **% no SLA** (solucionados no mês com SLA: Data de Solução ≤ SLA Renegociado, senão SLA Previsto); **em atraso** (abertos com Tempo em Atraso > 0); **sem SLA** (abertos sem SLA); **distribuição** do backlog por Cliente, Área Superior, Atividade e Situação; **envelhecimento** do backlog (0–30, 31–90, 91–180, >180 dias da abertura ao fim da competência); **tempo médio de resolução** e **% reabertos** (entre os solucionados no mês); **aguardando aceite** (Situação contém "aceite"). |
 | D32 | Passado e comparativo | Seletor de competência e versão; KPIs com variação vs competência anterior; **tela de comparação** lado a lado entre duas competências; **evolução** de cada KPI ao longo das competências carregadas. |
-| D33 | Branches | Desenvolvimento na `staging`, testado localmente; vai para a `main` (CI + produção) só quando aprovado. |
+| D33 | Branches | Desenvolvimento a partir da `staging`, testado localmente; vai para a `main` (CI + produção) só quando aprovado. **Revisto 14/10 (D44):** nada de push direto em `staging` nem `main`. |
 | D34 | Corte da competência | **Nenhum chamado é excluído**: todas as linhas ficam presentes e tratadas. Cada linha ganha a classificação **"Situação na competência"** (aberto no fim do mês · resolvido no mês · resolvido antes do mês · aberto após a competência). Os KPIs do mês refletem **como estava no último dia da competência**, reconstruído pelas datas (backlog = aberto até o fim do mês e sem solução até lá; atraso = SLA vigente vencido antes do fim do mês sem solução até lá); os abertos depois do fim do mês aparecem num KPI próprio, "Abertos após a competência". A Situação original da planilha fica na tabela como "Situação atual (na exportação)". KPIs que dependem de colunas da data da exportação (aguardando aceite, reabertos, SLA renegociado) só são comparáveis entre competências que tenham carga própria. "Aguardando aceite" conta como aberto. **Pendente de validação do Líder.** |
 | D35 | Leituras estratégicas | Além dos números, cada competência ganha **"Leituras do mês"** (2 a 4 cartões entre os KPIs e o gráfico principal), geradas por regras com limite numérico, cada uma com a conclusão, os números que a sustentam e um link que filtra a tabela: (1) **fluxo** — saídas ≥ 1,5× entradas com backlog caindo → "mês de redução de estoque"; com tempo médio subindo junto → "fechou chamados antigos" (explica SLA em queda); (2) **concentração** — um cliente com ≥ 40% do backlog, e quantos dele têm > 180 dias; (3) **envelhecimento** — > 25% do backlog com mais de 180 dias; (4) **gargalo no cliente** — aguardando aceite ≥ 30% do backlog; (5) **sem SLA** — ≥ 20% do backlog sem SLA. **Sem projeção** de quando o backlog zera; só tendência. Limites provisórios até o Líder. |
 | D36 | Sem tabela de dados soltos | O painel **não mostra a tabela de linhas brutas**: só KPIs, gráficos e leituras, para uso estratégico nas reuniões das coordenações. Revisa D8 (escolher colunas) e o "link para a tabela" da D35 (os filtros das leituras passam a destacar KPIs/gráficos). Se algum detalhe for importante, vira gráfico ou KPI. Todos os dados continuam presentes no cálculo (D34). |
-| D37 | Persistência em banco | Fecha a D29: histórico de cargas num **banco Postgres (Neon, via Vercel Marketplace)**, compartilhado entre máquinas. Tabela `cargas` (id, tipo, competência, versão, importada_em, arquivo, linhas, dados normalizados em JSONB), versão atribuída no servidor com unicidade (tipo, competência, versão). API em Vercel Functions (`/api/cargas`). O adaptador IndexedDB fica só para testes/offline. Produção usa o banco principal; local e `staging` usam um **branch `staging` do Neon**. Dev local com `vercel dev` (porta 3000). |
-| D38 | Autenticação | **Tela de login própria** (logo + card com usuário e senha + "lembrar login"), com **usuário e senha únicos do time** (variáveis secretas na Vercel). Login gera um token assinado (HMAC) em cookie HttpOnly/Secure/SameSite=Lax: com "lembrar", vale **14 dias**; sem, termina ao fechar o navegador. A chave de assinatura deriva do segredo + usuário + senha, então **trocar o login ou a senha invalida todos os tokens** e força a volta à tela de login. A API (onde estão os dados) é protegida em duas camadas: Routing Middleware e verificação em cada função. A casca estática do app é pública (não contém dados). Revisa D27. Contas individuais ficam para depois. |
+| D37 | Persistência em banco | Fecha a D29: histórico de cargas num **banco Postgres (Neon, via Vercel Marketplace)**, compartilhado entre máquinas. Tabela `cargas` (id, tipo, competência, versão, importada_em, arquivo, linhas, dados normalizados em JSONB), versão atribuída no servidor com unicidade (tipo, competência, versão). API em Vercel Functions (`/api/cargas`). O adaptador IndexedDB fica só para testes/offline. Ambientes separados por **schema Postgres** no mesmo banco (`public` = produção; `staging` = preview e local), via `DB_SCHEMA`; ids **CUID2**; esquema e migrações com **Prisma 7** (nada de SQL à mão). Dev local com `vercel dev` (porta 3000). |
+| D38 | Autenticação | **Tela de login própria** (logo + card com usuário e senha + "lembrar login"), com **usuário e senha únicos do time** (variáveis secretas na Vercel). Login gera um token assinado (HMAC) em cookie HttpOnly/Secure/SameSite=Lax: com "lembrar", vale **14 dias**; sem, termina ao fechar o navegador. A chave de assinatura deriva do segredo + usuário + senha, então **trocar o login ou a senha invalida todos os tokens** e força a volta à tela de login. A API (onde estão os dados) é protegida em duas camadas: o roteador da API confere a sessão antes de qualquer rota privada e cada handler confere de novo (o Routing Middleware saiu na D46). A casca estática do app é pública (não contém dados). Revisa D27. Contas individuais ficam para depois. |
 | D39 | Filtros no painel de Chamados | Os filtros (D6) valem também para Chamados: Cliente, Área Superior, Área, Atividade, Severidade, Operador e Situação na competência. O filtro recorta as linhas **antes** do cálculo, então KPIs, deltas, leituras, gráficos, Comparação e Evolução refletem o recorte. Tecla F, painel lateral, chips sempre visíveis e "Limpar filtros"; o filtro persiste entre visões e competências do mesmo tipo. |
 | D40 | Leituras em visão própria | "Leituras do mês" ficam numa **visão própria** (Painel · Comparar · Evolução · Leituras; atalho L). Cada leitura abre o detalhe num **modal** (regra e limite, números, mini-gráfico de evidência, ação), sem navegar nem rolar a página. No Painel, só um indicador discreto que leva às Leituras. Revisa a posição da D35. |
 | D41 | Dado derivado sempre sinalizado | Todo número que **não é dado original puro** leva um selo claro com ícone e texto, igual em todas as visões, nunca só cor nem só tooltip: reconstruído pelas datas, calculado sobre colunas da data da exportação, classificação derivada (Situação na competência) e agrupamento "Outros". Na Evolução, pontos reconstruídos ficam vazados ou tracejados, com legenda. |
 | D42 | Conferência independente | Antes de dar um número como certo, ele é **conferido por um cálculo independente** do motor do app (feito do zero sobre a planilha) e as diferenças são explicadas. Não presumir. |
+| D43 | Barra auto-ocultável | Revisa a D20: a barra superior fica **escondida por padrão** (aparece 3 s ao abrir), **sobreposta** ao conteúdo (não reserva espaço; sai inteira para cima). Aparece quando o mouse chega na faixa dela no topo e some 0,8 s depois que ele sai. **H fixa** a barra (H de novo solta). Menus abertos e foco de teclado dentro dela também a mostram. Filtros ativos continuam visíveis como chips. |
+| D44 | Fluxo de Git | Trabalho numa branch própria (push livre) → **PR para a `staging`** → PR `staging` → `main`. **Nunca push direto** em `staging` nem em `main`. Deploy de produção só depois do CI verde na `main`. |
+| D45 | Requisito original revisto | O pedido original dizia "sem autenticação, base de dados, nem nada". O requisito seguinte, **guardar o passado carregado para revisitar e comparar**, junto com o uso por várias máquinas (TV, notebooks), levou ao banco (D37) e, por consequência, ao login (D38). Fica registrado como revisão consciente do pedido original. **14/10: aprovado pelo responsável para o MVP de testes**; o produto definitivo, que vem depois da validação, reavalia banco, login e hospedagem. |
+| D46 | Desempenho da abertura | Abrir o app com cargas salvas levava **~8 s** na Vercel. Medição (14/10): índices não são o gargalo (leitura por chave primária, tabela pequena); a rede em série (sessão → lista → carga) soma 2–3 s quente e **6,1 s a frio** (sessão 2,3 s sem nem tocar o banco: cada função e o middleware acordam separados). Correção: **API numa função só** com a checagem de login dentro dela (substitui o Routing Middleware da D38, que era mais uma partida a frio por chamada); carga com **cache permanente** no navegador (versão nunca muda); abertura sem a chamada separada de sessão; cargas já baixadas reaproveitadas entre Painel, Comparar e Evolução, com pré-carga e estado de carregamento. Meta: abrir a frio em ~3 s. |
+| D47 | Histórico: Enviados e Geral | O histórico ganha **duas abas**. **Enviados**: as cargas enviadas por este navegador (o login é único do time, então "meu" = deste navegador até existirem contas individuais), com **"Limpar"**, que só tira da lista de Enviados (soft delete local; nada sai do banco). **Geral**: todas as cargas, **sem limpar**, com **busca** por nome do arquivo, competência, data da carga, tipo e versão. Hard delete fica para depois, se vier. |
+| D48 | Evolução em 6 competências | A Evolução mostra **exatamente as 6 competências mais recentes** (próprias + reconstruídas), coerente com o foco em curto prazo (R4). Confirmado pelo responsável em 14/10. |
+| D49 | Séries na legenda | R6: legenda clicável liga/desliga séries nos gráficos com 2+ séries (Evolução e Comparar), sem mudar dados, totais nem filtros; a última série visível não some; o estado volta ao padrão ao trocar de competência. |
+| D50 | Regras provisórias no MVP | D31, D34 e D35 seguem como estão; o Líder confirma ou corrige pela lista "Para validar" do artifact. Sem predição: as leituras só descrevem o mês (D35). |
+| D51 | De onde vem cada mês | Mês com carga própria usa sempre a **própria (versão mais recente)**; nunca reconstrói por cima. Mês sem carga **antes da primeira** é reconstruído pela planilha mais antiga; mês sem carga **no meio** (ex.: jul e set carregados, ago não) é reconstruído pela planilha da **carga seguinte**, a exportação mais próxima depois dele. Reconstruídos sempre com selo e tracejado (D41), na Evolução (6 competências de calendário, sem buracos) e como opção no Comparar. Decidido pelo responsável em 14/10. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
+
+## 0.1 Requisitos de origem
+
+Pedido do responsável, como chegou, e onde cada item está hoje (conferido no código em 14/10).
+
+| # | Requisito | Situação | Onde |
+|---|---|---|---|
+| R1 | Upload de um `.xlsx` e, a partir dele, vários gráficos | Atende | Leitura no navegador (SheetJS); Chamados tem Painel, Leituras, Comparar e Evolução; tipo desconhecido usa o modo automático (D25) |
+| R2 | Sem autenticação, base de dados, nem nada | **Revisto** | Banco (D37) e login (D38) entraram por causa do R10 e do uso em várias máquinas. Ver D45 |
+| R3 | Muito apelo visual e facilitadores para a análise | Atende | Leituras do mês com modal (D35/D40), deltas vs mês anterior, rótulos diretos, selos de dado derivado (D41), números animados, botão "Filtrar por isto" |
+| R4 | Curto prazo (1–2 meses) + backlog | Atende | Mês da competência com delta vs anterior; backlog, atraso, envelhecimento; Evolução limitada às **6 últimas competências** |
+| R5 | Reuniões semanais (direção/coordenações) | Atende | Modo apresentação para TV, atalhos (←/→, 1–9, F, H, P, L, C, E, Esc), barra que some (D43) |
+| R6 | Habilitar/desabilitar séries | Atende | Legenda clicável na Evolução e no Comparar (gráficos com 2+ séries) e no modo automático; totais intactos |
+| R7 | Filtrar conjuntos por critérios | Atende | 7 dimensões em Chamados (D39), recalculam KPIs, gráficos, Leituras, Comparar e Evolução; chips e "Limpar filtros" |
+| R8 | Biblioteca gráfica e leitura do xlsx | Atende | Recharts 3 (via shadcn charts); SheetJS 0.20.3 do CDN oficial, no navegador; o servidor recebe os dados já normalizados |
+| R9 | Carga por competência, escolhida no upload e amarrada aos dados | Atende | Competência sugerida (aba → arquivo → datas → mês anterior) e confirmada pela pessoa (D28) |
+| R10 | Guardar o passado para revisitar e comparar | Atende | Histórico no banco com versões, seletor de competência/versão, Comparar A×B, Evolução (D29/D32/D37) |
+| R11 | Outros conjuntos no futuro, cada um com seu dash | Atende (estrutura) | Registro de tipos no código (D30); hoje só Chamados/OS; sem tipo reconhecido → "Outro" com modo automático |
+
+Referência visual citada: https://www.youtube.com/watch?v=en0GuyhieQk
 
 ## 1. Visão
 
-Transformar a planilha Excel de acompanhamento operacional da reunião semanal em um painel visual, rápido e apresentável para Direção e Coordenações. A facilitadora importa o arquivo da semana. Todas as abas viram visões na mesma tela, e cada visão abre com um dashboard pronto e filtros para recortar os dados durante a conversa.
+Transformar as planilhas de acompanhamento operacional em painéis visuais, rápidos e apresentáveis para Direção e Coordenações. A pessoa carrega o `.xlsx` de uma competência; o app guarda a carga, reconhece o tipo de conjunto (hoje, Chamados/OS) e abre um painel estratégico com KPIs, leituras do mês, comparação entre competências e evolução, com filtros para recortar durante a conversa.
 
-O produto não é sistema de gestão, não guarda histórico e não substitui a planilha. É uma ferramenta de leitura e conversa.
+É uma ferramenta de leitura e conversa: não edita dados nem substitui a planilha de origem.
 
 ## 2. Problema
 
-Hoje a planilha é projetada direto no Excel. As comparações são montadas à mão, os filtros são desajeitados ao vivo e a narrativa visual fica dispersa. A equipe precisa alternar rápido entre a visão executiva e o detalhe sem mexer no arquivo-fonte.
+Hoje a planilha é projetada direto no Excel. As comparações são montadas à mão, os filtros são desajeitados ao vivo, o mês anterior não está à mão e a narrativa visual fica dispersa. A equipe precisa alternar rápido entre a visão executiva e o detalhe, e comparar com meses anteriores, sem mexer no arquivo-fonte.
 
-**Por que não uma ferramenta pronta (D1):** os dados não podem ir para nuvem ou serviço de terceiros, e Excel ou BI projetados não oferecem uma experiência fluida para conduzir a reunião.
+**Por que não uma ferramenta pronta (D1):** Excel ou BI projetados não oferecem uma experiência fluida para conduzir a reunião. A restrição original de privacidade foi revista (D45): os dados ficam no banco do app, atrás de login.
 
-## 3. Objetivos do MVP
+## 3. Objetivos
 
-- Importar o `.xlsx` da competência localmente, informando tipo e competência (D28); enquanto o histórico for local (D29), nada sai do navegador.
-- Carregar todas as abas com conteúdo e exibi-las como visões numa barra de abas, sem trocar de página.
-- Em cada aba, abrir um **dashboard fixo** (cartões-resumo, gráficos e tabela de detalhe) definido para a planilha-modelo.
-- Oferecer **filtros por aba**, combináveis, com chips removíveis e "limpar filtros".
-- Ocultar e mostrar séries pela legenda.
-- Ocultar e reexibir abas da navegação.
-- Escolher as colunas visíveis na tabela de detalhe.
-- Visual sóbrio, legível em projeção e acessível.
+- Carregar um `.xlsx` informando tipo e competência; a carga fica guardada com versão (D28/D37).
+- Abrir na TV direto na competência mais recente, com o painel do tipo.
+- Painel de Chamados estratégico: KPIs com variação vs mês anterior, distribuições, envelhecimento, leituras do mês (D31/D35/D36).
+- Comparar duas competências lado a lado e ver a evolução das últimas competências (D32).
+- Filtros por dimensão que recalculam tudo, com chips e "Limpar filtros" (D39).
+- Ocultar e mostrar séries pela legenda na Evolução, no Comparar e no modo automático (R6).
+- Todo dado derivado sinalizado (D41) e números conferidos de forma independente (D42).
+- Visual legível em TV, acessível e com a marca Asten como acento.
 
-## 4. Não objetivos (MVP)
+## 4. Não objetivos (por ora)
 
-- Construtor de dashboard: adicionar, remover, configurar, mover ou redimensionar cartões (pós-MVP, D4).
-- Renomear ou reordenar abas (D7).
-- Filtros que atravessam abas (D6).
+- Construtor de dashboard pela tela (D4).
+- Renomear ou reordenar abas (D7); filtros que atravessam tipos de conjunto (D6).
 - Exportação PNG/CSV/PDF e handoff para Claude Motion (D10).
-- Links compartilháveis. (Persistência deixou de ser não-objetivo: histórico de cargas, D29.)
-- Autenticação, backend, API, banco, telemetria de conteúdo e colaboração.
-- Suporte genérico a qualquer planilha: o produto atende à planilha-modelo (D2).
-- Gráficos ou KPIs inferidos automaticamente, previsões e IA.
+- Tabela de linhas brutas no painel de Chamados (D36).
+- Contas individuais e permissões por pessoa (D38: login único do time por enquanto).
+- Projeções e IA (D35: só tendência).
 - Edição da planilha ou dos dados.
 
 ## 5. Pessoas e contexto
@@ -91,132 +118,114 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 | Pessoa | Necessidade |
 |---|---|
 | Direção | Ver rápido cenário, tendência, gargalos e o que exige decisão. |
-| Coordenações | Recortar por área, comparar e explicar variações. |
-| Facilitadora | Importar a planilha da semana em minutos e conduzir filtros e navegação ao vivo. |
-| Líder | Aprova escopo, métricas e layout. Também é dono das definições de negócio pendentes (§8). |
+| Coordenações | Recortar por cliente, área e atividade; comparar com o mês anterior e explicar variações. |
+| Facilitadora | Carregar a planilha da competência em minutos e conduzir filtros e navegação ao vivo. |
+| Líder | Aprova escopo, métricas e layout; dono das definições de negócio pendentes (§8). |
 
-**Cenário:** computador ligado a uma TV ou tela grande (às vezes projetor). A facilitadora abre o painel, importa a planilha da semana e conduz a reunião. As cargas ficam no histórico (D29); numa máquina compartilhada, use "Limpar" para apagar o histórico daquele navegador.
+**Cenário:** notebook com mouse e teclado ligado a uma TV (D20). A facilitadora abre o link, entra com o login do time (lembrado por 14 dias) e o app abre na competência mais recente. A barra fica escondida e aparece com o mouse no topo ou com H (D43).
 
 ## 6. Fluxos
 
-### 6.1 Importar
-1. Estado vazio com área de upload e orientação.
-2. A pessoa seleciona ou arrasta um `.xlsx`.
-3. Leitura local de todas as abas, com status por aba (ok, aviso, vazia, não reconhecida).
-4. As abas com conteúdo entram na barra de navegação. Abas auxiliares ou sem layout podem ser ocultadas.
-5. Como a planilha chega validada (D18), não há etapa de mapeamento nem diagnóstico por aba. Se o arquivo escolhido não for a planilha da reunião, aparece uma mensagem simples pedindo o arquivo certo.
+### 6.1 Carregar uma competência
+1. "Nova carga" na barra → escolher o `.xlsx`.
+2. O app lê a planilha no navegador, reconhece o tipo e sugere a competência; a pessoa confirma ou corrige (D28).
+3. A carga vai para o banco com a próxima versão daquele tipo + competência; o painel abre nela.
 
 ### 6.2 Conduzir a reunião
-1. A tela única mostra a barra de abas e o dashboard fixo da aba selecionada.
-2. A pessoa aplica filtros da aba; cartões, gráficos e tabela refletem o recorte; os chips mostram o que está ativo.
-3. Tooltip, legenda e realce respondem às perguntas pontuais. Séries podem ser ocultadas.
-4. A tabela de detalhe permite escolher colunas visíveis.
-5. "Limpar filtros" volta ao estado inicial da aba.
+1. Painel (P) com KPIs, deltas e gráficos; Leituras (L) com o detalhe de cada uma num modal; Comparar (C); Evolução (E).
+2. Filtros (F) recortam as linhas antes do cálculo; os chips mostram o recorte ativo.
+3. Seletor de competência e versão na barra; Histórico para abrir ou excluir uma carga.
 
-### 6.3 Trocar ou limpar arquivo
-"Substituir planilha" ou "limpar sessão", com confirmação só quando há filtros ou estado que serão perdidos. Tudo é descartado da memória.
+### 6.3 Revisitar e comparar
+Qualquer competência guardada abre de qualquer máquina com o login. Comparar põe duas competências lado a lado; Evolução mostra as últimas 6, com pontos reconstruídos pelas datas marcados (D41).
 
-## 7. Requisitos funcionais (MVP)
+## 7. Requisitos funcionais
 
-- Aceitar só `.xlsx`, com uma mensagem simples se o arquivo não for a planilha da reunião.
-- Ler o arquivo no dispositivo, sem nenhuma requisição de rede com os dados.
-- Carregar todas as abas com conteúdo e preservar o nome de origem.
-- Ler cada aba conforme o **contrato da planilha-modelo**, que vive no código e é tipado. A planilha já chega validada (D18).
-- Normalizar texto, número, data e vazio. Mostrar ausente como ausente, nunca como zero.
-- Ter um painel específico por aba conhecida (registrado no código) e, nas abas sem painel, o **modo automático** (D25): KPIs e gráficos a partir dos tipos de coluna, com a tabela de detalhe embaixo.
-- Filtros por aba, só em dimensões aprovadas no contrato, com busca e multisseleção quando fizer sentido, chips removíveis e "limpar filtros".
-- Ocultar e mostrar séries sem alterar o conjunto de dados nem os totais.
-- Ocultar e reexibir abas da navegação.
-- Escolher as colunas visíveis na tabela de detalhe.
+- Aceitar `.xlsx`; mensagem simples se não for reconhecido (cai no modo automático, D25).
+- Ler o arquivo no navegador; enviar ao servidor só os dados normalizados (e o original, para reprocessar).
+- Competência obrigatória, sugerida e confirmada; versão atribuída no servidor (D28/D37).
+- Painel por tipo registrado no código (D30); Chamados conforme D31, D34–D36, D39–D41.
+- Filtros por dimensão com chips e "Limpar filtros", valendo entre visões e competências do tipo (D39).
+- Ocultar e mostrar séries sem alterar dados nem totais (R6).
+- Nenhuma linha excluída: todas classificadas e presentes no cálculo (D34).
+- Login com sessão de 14 dias ("lembrar") e API protegida em duas camadas (D38).
 - Estados de carregando, vazio, erro e dados insuficientes em cada área.
 
 ### Pós-MVP (só se validado)
-Construtor de cartões; renomear e reordenar abas; persistência local de preferências; exportação PNG/CSV; handoff para Claude Motion; filtro de período global; modo tela cheia.
+Construtor de cartões; contas individuais; exportação PNG/CSV; preferências salvas; outros tipos de conjunto (projetos, OSs); modo tela cheia.
 
-## 8. Pendências com o Líder (bloqueiam o produto, não o protótipo)
+## 8. Pendências com o Líder
 
-1. **A planilha real**, ou uma cópia anonimizada com estrutura idêntica: abas, linha de cabeçalho, colunas, tipos, mesclagens e fórmulas.
-2. **O que a planilha acompanha:** indicadores, projetos/atividades ou os dois (D3)?
-3. **Métricas e perguntas:** que pergunta de reunião cada gráfico responde? Quais são as fórmulas, metas e comparativos?
-4. **Definições:** backlog, atraso, concluído, janela de 1–2 meses e semana de corte.
-5. **Filtros:** quais dimensões filtram cada aba?
-6. **Layout:** fica no código (tendência) ou é gerado automaticamente (D5)?
-7. **Hospedagem:** Vercel protegida, intranet ou arquivo local (D11)?
-8. **Volume:** linhas e abas no pior caso, que definem os limites de arquivo e se é preciso Web Worker.
-9. **Marca:** logo, cor principal e fonte (D12).
-10. **Aprovação** do escopo enxuto deste PRD e do protótipo.
+1. **Definições de Chamados** (D31): backlog, entradas, saídas, % SLA, atraso, sem SLA, aguardando aceite.
+2. **Corte da competência** (D34): KPIs reconstruídos "como estava no último dia do mês".
+3. **Limiares das leituras** (D35).
+4. **Dados na nuvem** (D1/D45): aprovado pelo responsável para o MVP de testes; o Líder confirma, e o produto definitivo reavalia.
+6. **Hospedagem definitiva** (D11): seguir na Vercel ou outro lugar.
+7. **Próximos tipos de conjunto** (R11): qual vem depois de Chamados e com que planilha.
+8. **Marca:** uso do logo e das cores como estão (D12).
 
 ## 9. Experiência visual
 
 - **Tom:** executivo, contemporâneo e calmo. Os dados vêm antes da decoração.
-- **Estrutura:** cabeçalho compacto (arquivo, aba, momento da importação); barra de abas; faixa de filtros com chips; cartões-resumo; um gráfico principal mais complementares menores; tabela de detalhe recolhível.
-- **Hierarquia:** uma visualização principal por aba. Nada de "muro de gráficos".
-- **Cores:** base neutra clara para projeção; a cor da Asten só como acento; paleta de séries curta, acessível e consistente (mesma série, mesma cor). Cor nunca é o único canal de informação.
-- **Legibilidade em projeção:** tipografia e alvos de clique generosos; escala, unidade e período sempre visíveis.
-- **Confiança:** sempre visíveis a origem (arquivo e aba), os avisos de qualidade e os valores ausentes.
+- **Estrutura:** tela quase toda de informação (D20/D21); barra superior escondida até ser chamada (D43); filtros ativos sempre visíveis como chips.
+- **Hierarquia:** KPIs no topo com delta; um gráfico principal e complementares; leituras numa visão própria (D40). Nada de "muro de gráficos" nem tabela de linhas soltas (D36).
+- **Cores:** base neutra clara; a cor da Asten só como acento; paleta de séries curta e consistente; cor nunca é o único canal (D41).
+- **Legibilidade em TV:** tipografia grande, rótulos diretos nas barras, escala e período sempre visíveis.
+- **Movimento:** Motion com regras próprias e respeito a `prefers-reduced-motion` (D26).
 
 ## 10. Acessibilidade
 
-Teclado em upload, abas, filtros, legenda e tabela; rótulos acessíveis; erros associados aos controles; contraste WCAG AA; alternativa textual ou tabela para cada gráfico; respeito a `prefers-reduced-motion`.
+Teclado em todo o fluxo (atalhos ignorados em campos de texto); rótulos acessíveis; foco visível; contraste WCAG AA; alternativa em tabela para os gráficos; selos com texto, não só cor; `prefers-reduced-motion`.
 
 ## 11. Requisitos não funcionais
 
-- **Privacidade:** processamento estritamente local; nenhum log ou telemetria com conteúdo.
-- **Desempenho:** filtro responsivo. Os limites são medidos com o arquivo real (§8.8), e Web Worker só entra se a medição pedir.
-- **Compatibilidade:** Chrome, Edge, Firefox e Safari recentes, em desktop e projeção.
-- **Robustez:** a planilha chega validada (D18). Basta não travar e avisar de forma simples se o arquivo escolhido for outro.
-- **Manutenibilidade:** módulos separados para ingestão, contrato e modelo normalizado, filtros, agregações, configuração de layout e componentes visuais. Nenhuma métrica fica embutida em componente de gráfico.
-- **Build:** estático e agnóstico de host (D11).
+- **Segurança:** login com token HMAC em cookie HttpOnly/Secure/Lax; IDs CUID2; entradas validadas; nenhum segredo no bundle nem em logs; Prisma (sem SQL à mão).
+- **Privacidade:** nenhum log com conteúdo das planilhas; planilhas reais nunca no Git.
+- **Desempenho:** abrir o app com cargas salvas em **poucos segundos** mesmo a frio (hoje ~8 s, D46); filtros respondem na hora.
+- **Compatibilidade:** Chrome, Edge, Firefox e Safari recentes, em desktop e TV.
+- **Manutenibilidade:** motor de Chamados puro e testado (métricas, leituras, comparação, evolução), separado dos componentes; repositório de cargas atrás de uma interface (memória, IndexedDB, API).
+- **Qualidade:** lint, typecheck, testes (Vitest) e e2e (Playwright) no CI; deploy só com CI verde (D44).
 
-## 12. Arquitetura (provisória)
+## 12. Arquitetura
 
 ```text
-.xlsx local
+.xlsx no navegador
+   ↓  SheetJS (só leitura) → workbook normalizado
+Reconhecer tipo + confirmar competência
+   ↓  POST /api/cargas (gzip) → Vercel Function → Prisma → Neon (tabela cargas, versão max+1)
+Abertura: /api/cargas (metadados; 401 = login) → /api/cargas/:id (dados, cache imutável)
    ↓
-Leitor (só leitura, sem fórmulas/macros/HTML) → abas brutas
+Motor do tipo (Chamados): mapeamento de colunas → classificação por linha → métricas, leituras, comparação, evolução
    ↓
-Contrato da planilha-modelo (por aba) → modelo normalizado + avisos
-   ↓
-Filtros por aba (estado serializável) → seletores/agregações puros
-   ↓
-Registro de painéis: painel específico da aba, ou motor automático (D25) → KPIs e gráficos
-   ↓
-Tela (modo apresentação, Motion) → cartões, gráficos, tabela
+Tela (modo apresentação, Recharts + Motion)
 ```
 
-Tudo fica na memória da página. Trocar de arquivo reinicia a sessão. A fronteira entre leitor e contrato permite adaptar a planilha real sem reescrever os gráficos.
+Login: `/api/login` gera o cookie de sessão. Toda a API é uma função só (`api/rota.ts`, `/api/*` reescrito para ela): o roteador confere a sessão antes das rotas privadas e cada handler confere de novo. Ambientes por schema Postgres (`public`, `staging`).
 
-## 13. Stack e protótipo
+## 13. Stack
 
-**Stack aprovada (D13):** React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 via shadcn charts · TanStack Table · SheetJS CE ≥ 0.20.3 pelo CDN oficial, nunca o `xlsx` do npm · Motion 13.4.4 para animação (D26) · Vitest + Playwright · estado local com seletores puros. ECharts é o plano B para gráficos. Comparação e fontes em `docs/comparacao-stack.md`.
+React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 via shadcn charts · SheetJS CE 0.20.3 pelo CDN oficial · Motion 13.4.4 (D26) · Vercel Functions (uma função para a API) · Neon Postgres (Vercel Marketplace) · Prisma 7.10.0 · Vitest + Testing Library + Playwright. O protótipo descartável segue congelado na branch `prototipo` (D15/D23).
 
-O protótipo descartável (D15) fica na branch `prototipo`, pasta `prototype/`, usa essa stack e dados **fictícios marcados como tal**, e cobre as duas hipóteses de conteúdo:
+## 14. Privacidade e dados
 
-- aba **"Indicadores"**: meta vs. realizado por mês e área;
-- aba **"Projetos"**: status, prazo, % de conclusão e atrasos;
+- As cargas (dados normalizados e o `.xlsx` original) ficam no banco Neon do projeto, acessível só pela API com login (D37/D38/D45).
+- O app só lê valores, sem executar fórmulas ou macros.
+- Nenhum log de células ou nomes; nenhuma planilha real no repositório, em fixtures, capturas ou mensagens de erro. Capturas e testes usam dados fictícios.
+- Nenhuma carga é apagada em massa: não existe "apagar tudo" no banco compartilhado.
 
-com filtros por aba, ocultar aba, escolher colunas e estados vazio/erro. Ele serve para o Líder reagir ao visual e à interação. **Não é código de produto** e não define métricas reais.
+## 15. Critérios de aceite
 
-## 14. Privacidade
-
-- A planilha chega validada e consolidada (D18); o painel só lê os valores, sem executar fórmulas ou macros, e mostra células como texto, que é o comportamento padrão das bibliotecas escolhidas.
-- Nenhum log de células ou nomes.
-- Nenhuma planilha real entra no repositório, em snapshots, URLs ou mensagens de erro.
-
-## 15. Critérios de aceite do MVP
-
-- Importar um `.xlsx` carrega todas as abas com conteúdo localmente, sem tráfego de dados.
-- Todas as abas aparecem numa única tela, cada uma com sua origem clara, e podem ser ocultadas e reexibidas.
-- Um arquivo que não é a planilha da reunião gera uma mensagem simples, sem quebrar a interface.
-- Cada aba conhecida abre com o dashboard fixo acordado: título, unidade, período, legenda e estado sem dados.
-- Alterar um filtro atualiza tudo o que depende dele na aba; os filtros ativos ficam visíveis; "limpar" restaura o estado inicial.
-- Ocultar uma série não corrompe filtros nem totais.
-- A tabela de detalhe permite escolher colunas visíveis.
-- O que é essencial funciona por teclado e não depende só de cor ou tooltip.
-- Há testes automatizados de leitura e contrato, filtros e agregações, e o fluxo de importação é verificado no navegador.
-- Há revisão visual em resolução de projeção e numa largura menor, com dados fictícios ou anonimizados.
-- O Líder aprova.
+- Login pedido em staging e produção; "lembrar" mantém a sessão por 14 dias.
+- Carregar a planilha de uma competência cria a carga com versão; recarregar cria nova versão.
+- Uma carga feita numa máquina aparece em outra.
+- Painel, Leituras, Comparar e Evolução de Chamados mostram os números conferidos de forma independente (D42) e os selos de dado derivado (D41).
+- Filtro recalcula tudo o que depende dele; chips visíveis; "limpar" restaura.
+- Ocultar uma série não altera filtros nem totais.
+- Abrir o app com cargas salvas leva poucos segundos (D46).
+- O essencial funciona por teclado e não depende só de cor.
+- Lint, typecheck, testes e e2e verdes no CI antes de produção.
+- O Líder aprova as definições (§8).
 
 ## 16. Referências
 
-Ver `docs/comparacao-stack.md` para versões, licenças e fontes verificadas em 13/10/2026. Claude Motion: [Help Center](https://support.claude.com/en/articles/17454997-get-started-with-claude-motion), registrado como ideia pós-MVP.
+`plan-dash-asten.md` (fases), `docs/acesso-teste.md` (acesso e ambientes), `docs/comparacao-stack.md` (versões e licenças verificadas em 13/10/2026). Claude Motion: [Help Center](https://support.claude.com/en/articles/17454997-get-started-with-claude-motion), ideia pós-MVP.

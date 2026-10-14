@@ -14,7 +14,7 @@ export type EventoSessao =
   | { tipo: "expirou" }
   | { tipo: "saiu" }
 
-export const AVISO_EXPIRADA = "Sua sessão expirou. Entre de novo."
+export const AVISO_EXPIRADA = "Sua sessão expirou. Entre novamente!"
 export const EVENTO_SESSAO_EXPIRADA = "asten:sessao-expirada"
 
 export const estadoInicial: EstadoSessao = { fase: "verificando" }
@@ -32,7 +32,9 @@ export function reduzir(e: EstadoSessao, ev: EventoSessao): EstadoSessao {
     case "login-ok":
       return e.fase === "login" ? { fase: "autenticado" } : e
     case "expirou":
-      return e.fase === "autenticado" ? { fase: "login", aviso: AVISO_EXPIRADA } : e
+      return e.fase === "autenticado"
+        ? { fase: "login", aviso: AVISO_EXPIRADA }
+        : e
     case "saiu":
       return e.fase === "autenticado" ? { fase: "login" } : e
   }

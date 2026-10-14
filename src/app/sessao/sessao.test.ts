@@ -24,7 +24,7 @@ describe("máquina de estados da sessão", () => {
       fase: "login",
       aviso: AVISO_EXPIRADA,
     })
-    expect(AVISO_EXPIRADA).toBe("Sua sessão expirou. Entre de novo.")
+    expect(AVISO_EXPIRADA).toBe("Sua sessão expirou. Entre novamente!")
   })
   it("expirou fora do app não muda nada", () => {
     const e: EstadoSessao = { fase: "login" }

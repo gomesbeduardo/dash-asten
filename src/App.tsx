@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import type { Carga, CargaMeta } from "@/cargas"
+import { registrarEnvio } from "@/cargas/enviados"
+import { ordenarMetas } from "@/cargas/repositorio-comum"
 import type { Workbook } from "@/core"
-import { escolherCargaInicial, sucessorAposExcluir } from "@/app/navegacao"
+import { escolherCargaInicial } from "@/app/navegacao"
+import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
+import { useListaInicial } from "@/app/sessao/SessaoContext"
 import { Apresentacao } from "@/components/app/Apresentacao"
 import { ImportScreen } from "@/components/app/ImportScreen"
 import { NovaCargaDialog } from "@/components/app/NovaCargaDialog"
@@ -11,6 +15,8 @@ import { useWorkbookLoader } from "@/components/app/hooks/useWorkbookLoader"
 
 export function App() {
   const repo = useRepositorio()
+  // Lista que o porteiro já buscou ao verificar a sessão: poupa uma requisição na abertura.
+  const listaInicial = useRef(useListaInicial())
   const [pronto, setPronto] = useState(false)
   const [metas, setMetas] = useState<CargaMeta[]>([])
   const [atual, setAtual] = useState<Carga | null>(null)
@@ -32,7 +38,7 @@ export function App() {
     let cancelado = false
     ;(async () => {
       try {
-        const ms = await repo.listar()
+        const ms = listaInicial.current ?? (await repo.listar())
         const ini = escolherCargaInicial(ms)
         const carga = ini ? await repo.obter(ini.id) : null
         if (cancelado) return
@@ -61,8 +67,11 @@ export function App() {
           workbook: pendente.workbook,
           original: pendente.original,
         })
-        setMetas(await repo.listar())
-        setAtual(await repo.obter(meta.id))
+        registrarEnvio(meta.id)
+        // Sem baixar de novo: a meta vem do servidor e o workbook é o local
+        // (o adaptador da API também revive datas para Date).
+        setMetas((ms) => ordenarMetas([...ms.filter((m) => m.id !== meta.id), meta]))
+        setAtual({ ...meta, workbook: pendente.workbook })
         setErroRepo(null)
       } catch {
         setErroRepo("Não foi possível guardar a carga neste navegador.")
@@ -80,18 +89,7 @@ export function App() {
     [repo]
   )
 
-  const excluir = useCallback(
-    async (meta: CargaMeta) => {
-      await repo.excluir(meta.id)
-      const restantes = await repo.listar()
-      setMetas(restantes)
-      if (atual?.id === meta.id) {
-        const suc = sucessorAposExcluir(restantes, meta)
-        setAtual(suc ? await repo.obter(suc.id) : null)
-      }
-    },
-    [repo, atual]
-  )
+  usePrecarga(repo, metas, atual?.tipo ?? null)
 
   const apagarTudo = useCallback(async () => {
     await repo.limparTudo?.()
@@ -120,7 +118,6 @@ export function App() {
           metas={metas}
           obterCarga={repo.obter}
           onAbrir={abrir}
-          onExcluir={excluir}
           onNovaCarga={loader.load}
           onApagarTudo={repo.limparTudo ? apagarTudo : undefined}
           onFecharCarga={fecharCarga}

@@ -19,6 +19,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { LeituraCartao } from "./cartoes"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
 import { BarrasRanking, COR } from "./graficos"
+import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
 import {
   evidenciaDaLeitura,
@@ -30,7 +31,7 @@ import {
   temOutros,
   type SeloTipo,
 } from "./logica"
-import { Selos } from "./selos"
+import { LegendaSimbolos, Selos } from "./selos"
 
 const SEV_ROTULO = { critico: "Crítico", atencao: "Atenção", destaque: "Destaque" }
 
@@ -68,7 +69,12 @@ export function LeiturasChamados({
       </div>
     )
   if (!metricas || anterior === undefined)
-    return <div className="flex flex-col gap-6">{cabecalho}</div>
+    return (
+      <div className="flex flex-col gap-6">
+        {cabecalho}
+        <Carregando texto="Carregando as leituras…" />
+      </div>
+    )
 
   const play = entrada && !reduce
   const anteriorPropria = anterior?.propria ?? false
@@ -81,6 +87,8 @@ export function LeiturasChamados({
         ...(evidencia && temOutros(evidencia.itens) ? (["outros"] as const) : []),
       ]
     : []
+
+  const tiposNaTela: SeloTipo[] = leituras.flatMap((l) => selosDaLeitura(l, anteriorPropria))
 
   return (
     <TooltipProvider>
@@ -95,6 +103,7 @@ export function LeiturasChamados({
           Leituras automáticas do mês, com regras de limite fixo: não projetam o
           futuro. Clique numa para ver a regra, os números e a evidência.
         </p>
+        <LegendaSimbolos tipos={tiposNaTela} />
         {leituras.length > 0 ? (
           <ul className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {leituras.map((l) => (
@@ -151,8 +160,15 @@ export function LeiturasChamados({
 
             {evidencia && (
               <section aria-label="Evidência" className="flex flex-col gap-2">
-                <h3 className="text-xl text-primary">{evidencia.titulo}</h3>
-                <Selos tipos={selosGrafico} />
+                <div className="flex items-start gap-2">
+                  {selosGrafico.length > 0 && (
+                    <span className="flex h-7 shrink-0 items-center">
+                      <Selos tipos={selosGrafico} />
+                    </span>
+                  )}
+                  <h3 className="text-xl leading-7 text-primary">{evidencia.titulo}</h3>
+                </div>
+                <LegendaSimbolos tipos={selosGrafico} />
                 <BarrasRanking
                   itens={evidencia.itens}
                   corDoItem={(i) =>

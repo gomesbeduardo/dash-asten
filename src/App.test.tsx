@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { criarRepositorioMemoria, type RepositorioDeCargas } from "@/cargas"
+import { foiEnviada } from "@/cargas/enviados"
 import { readWorkbook } from "@/core"
 import { registrarTiposDoApp } from "@/app/bootstrap"
 import { RepositorioProvider } from "@/app/RepositorioContext"
@@ -83,7 +84,10 @@ const tituloVisivel = (name: string | RegExp) =>
   )
 const h1 = (name: string | RegExp) => screen.findByRole("heading", { level: 1, name })
 
-beforeEach(() => registrarTiposDoApp())
+beforeEach(() => {
+  registrarTiposDoApp()
+  localStorage.clear()
+})
 
 describe("nova carga", () => {
   it("passo de confirmação: competência inferida do arquivo, tipo Outro, troca de mês e salvar abre a carga", async () => {
@@ -97,15 +101,16 @@ describe("nova carga", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
-    expect(within(dialog).getByLabelText("Tipo")).toHaveValue("outro")
-    expect(within(dialog).getByLabelText("Mês")).toHaveValue("8")
+    expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toHaveTextContent(/outro/i)
+    expect(within(dialog).getByRole("combobox", { name: "Mês" })).toHaveTextContent("Agosto")
     expect(within(dialog).getByLabelText("Ano")).toHaveValue("2026")
     expect(within(dialog).getByText("pelo nome do arquivo")).toBeInTheDocument()
     expect(
       within(dialog).getByText(/reuniao-agosto-2026\.xlsx/)
     ).toBeInTheDocument()
 
-    await user.selectOptions(within(dialog).getByLabelText("Mês"), "9")
+    await user.click(within(dialog).getByRole("combobox", { name: "Mês" }))
+    await user.click(await screen.findByRole("option", { name: "Setembro" }))
     await user.click(
       within(dialog).getByRole("button", { name: "Confirmar carga" })
     )
@@ -135,7 +140,7 @@ describe("nova carga", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
-    expect(within(dialog).getByLabelText("Tipo")).toHaveValue("chamados")
+    expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toHaveTextContent(/chamados/i)
     expect(
       within(dialog).getByText("reconhecido pelas colunas")
     ).toBeInTheDocument()
@@ -361,9 +366,10 @@ describe("histórico e limpeza", () => {
     expect(await repo.listar()).toHaveLength(1)
   })
 
-  it("Histórico lista por tipo/competência/versão e exclui com confirmação", async () => {
+  it("Histórico não oferece excluir e a Geral lista todas as cargas", async () => {
     const user = userEvent.setup()
     const repo = criarRepositorioMemoria()
+    const excluir = vi.spyOn(repo, "excluir")
     await salvar(repo, "jul.xlsx", "outro", "2026-07", { Antigo: OUTRO })
     await salvar(repo, "ago.xlsx", "outro", "2026-08", { Agosto: OUTRO })
     montar(repo)
@@ -371,23 +377,15 @@ describe("histórico e limpeza", () => {
 
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
     const painel = await screen.findByRole("dialog", { name: "Histórico" })
-    await user.click(
-      within(painel).getByRole("button", { name: "Excluir Julho de 2026 v1" })
-    )
-    expect(await repo.listar()).toHaveLength(2) // ainda não confirmou
-    await user.click(
-      within(painel).getByRole("button", {
-        name: "Confirmar exclusão de Julho de 2026 v1",
-      })
-    )
-    expect((await repo.listar()).map((m) => m.competencia)).toEqual(["2026-08"])
-    expect(within(painel).queryByText("Julho de 2026")).not.toBeInTheDocument()
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Agosto", hidden: true })
-    ).toBeInTheDocument()
+    await user.click(within(painel).getByRole("tab", { name: "Geral" }))
+    expect(within(painel).getByText("jul.xlsx")).toBeInTheDocument()
+    expect(within(painel).getByText("ago.xlsx")).toBeInTheDocument()
+    expect(within(painel).queryByRole("button", { name: /Excluir/ })).toBeNull()
+    expect(excluir).not.toHaveBeenCalled()
+    expect(await repo.listar()).toHaveLength(2)
   })
 
-  it("Histórico abre uma carga antiga; excluir a aberta cai na sucessora", async () => {
+  it("Histórico abre uma carga antiga", async () => {
     const user = userEvent.setup()
     const repo = criarRepositorioMemoria()
     await salvar(repo, "jul.xlsx", "outro", "2026-07", { Antigo: OUTRO })
@@ -395,21 +393,38 @@ describe("histórico e limpeza", () => {
     montar(repo)
     await h1("Agosto")
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
+    await user.click(await screen.findByRole("tab", { name: "Geral" }))
     await user.click(
       await screen.findByRole("button", { name: "Abrir Julho de 2026 v1" })
     )
     expect(await h1("Antigo")).toBeInTheDocument()
+  })
+
+  it("guardar registra o envio deste navegador e não baixa a carga de novo", async () => {
+    const user = userEvent.setup()
+    const repo = criarRepositorioMemoria()
+    const listar = vi.spyOn(repo, "listar")
+    const excluir = vi.spyOn(repo, "excluir")
+    montar(repo)
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      outro()
+    )
+    await user.click(
+      await screen.findByRole("button", { name: "Confirmar carga" })
+    )
+    expect(await h1("Projetos")).toBeInTheDocument()
+    // só a listagem de abertura: guardar não relista (a precarga em segundo plano pode chamar obter)
+    expect(listar).toHaveBeenCalledTimes(1)
+    const [meta] = await repo.listar()
+    expect(foiEnviada(meta.id)).toBe(true)
+    expect(excluir).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
-    await user.click(
-      await screen.findByRole("button", { name: "Excluir Julho de 2026 v1" })
-    )
-    await user.click(
-      screen.getByRole("button", {
-        name: "Confirmar exclusão de Julho de 2026 v1",
-      })
-    )
-    expect(await h1("Agosto")).toBeInTheDocument()
+    const painel = await screen.findByRole("dialog", { name: "Histórico" })
+    expect(
+      within(painel).getByRole("button", { name: /Abrir Setembro de 2026 v1|Abrir Agosto de 2026 v1/ })
+    ).toBeInTheDocument()
   })
 
   it("Limpar apaga o histórico e volta à importação", async () => {
