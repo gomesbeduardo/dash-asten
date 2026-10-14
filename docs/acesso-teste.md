@@ -7,7 +7,7 @@
 
 1. Abra o link num computador (de preferência ligado à TV). O app abre na tela de envio, com a lista do que já foi carregado.
 2. Clique em "Nova carga" e escolha a planilha `.xlsx`. Confira o tipo (Chamados/OS) e a competência (mês de análise) e confirme.
-3. A carga fica guardada no banco: abre em qualquer computador com o mesmo login. Carregar de novo a mesma competência cria uma nova versão, sem apagar a anterior.
+3. A carga fica guardada no banco: abre em qualquer computador. Carregar de novo a mesma competência cria uma nova versão, sem apagar a anterior.
 4. No painel de Chamados: **Leituras** traz os destaques do mês, **Comparar** põe duas competências lado a lado e **Evolução** mostra a série mês a mês.
 
 Planilha fictícia para teste: `docs/exemplos/planilha-ficticia.xlsx` (fora do git; peça para quem tem o repo local).
