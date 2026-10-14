@@ -106,7 +106,7 @@ td.pick { font-family: var(--font-mono); font-size: 14.5px; color: var(--brand-i
 .tabs button:hover { color: var(--fg); background: var(--surface); }
 .tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: inset 0 -2px 0 var(--brand); }
 .shot { margin: 0; padding: 18px; display: grid; gap: 12px; }
-.shot .frame { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); overflow: hidden; }
+.shot .frame { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); max-height: 72vh; overflow-y: auto; }
 .shot img { display: block; width: 100%; height: auto; }
 .shot figcaption { font-size: 15px; color: var(--muted); max-width: 80ch; }
 .flag { display: inline-block; margin-right: 8px; font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; background: var(--brand-soft); color: var(--brand-ink); vertical-align: 1px; }
@@ -151,13 +151,14 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
 <header class="masthead">
   <img class="logo light" src="img/asten-logo-fundo-claro.png" alt="Asten by AVMB Group" width="153" height="40">
   <img class="logo dark" src="img/asten-logo-fundo-escuro.png" alt="Asten" width="153" height="40">
-  <div class="stamp"><span>MVP para validar · 14/10/2026</span><span>Chamados/OS</span></div>
+  <div class="stamp"><span>Apresentação · 15/10/2026</span><span>MVP em produção</span></div>
 </header>
 
 <div class="page">
   <nav class="rail" aria-label="Seções">
     <ol>
       <li><a href="#acesso">Acesso</a></li>
+      <li><a href="#feito">O que foi feito</a></li>
       <li><a href="#pedido">O que foi pedido</a></li>
       <li><a href="#telas">Telas</a></li>
       <li><a href="#reuniao">Na reunião</a></li>
@@ -171,7 +172,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
   <main>
     <div class="intro">
       <h1>Painel das reuniões de coordenação</h1>
-      <p>A primeira versão já roda com a planilha de Chamados/OS: carga por competência, histórico guardado, painel do mês, leituras, comparação e evolução. É um MVP para validar as regras e o jeito de usar na TV antes do produto definitivo.</p>
+      <p>A primeira versão está no ar e roda com a planilha de Chamados/OS: carga por competência (uma ou várias de uma vez), histórico guardado, painel do mês, leituras, comparação de até 6 meses e evolução. É um MVP para validar as regras e o jeito de usar na TV antes do produto definitivo.</p>
     </div>
 
     <section id="acesso">
@@ -183,13 +184,28 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
       <p class="note">O app abre na tela de envio, com a lista do que já foi carregado. O que for carregado aparece em qualquer computador. O login já está pronto e volta quando a versão for aprovada.</p>
     </section>
 
+
+    <section id="feito">
+      <h2>O que foi feito</h2>
+      <ol class="steps">
+        <li><div><b>13/10 · Proposta e protótipo</b><span>Escopo, stack e protótipo com dados fictícios para validar o visual.</span></div></li>
+        <li><div><b>13/10 · Carga por competência e histórico</b><span>Cada planilha entra com o mês de análise e fica guardada com versão; o passado pode ser revisitado e comparado.</span></div></li>
+        <li><div><b>14/10 · Painel estratégico de Chamados</b><span>KPIs com variação contra o mês anterior, leituras automáticas do mês, comparação e evolução, filtros que recalculam tudo, selos em todo número calculado. Números conferidos por um cálculo independente da planilha real.</span></div></li>
+        <li><div><b>14/10 · Banco e publicação</b><span>Histórico num banco do app, visto igual em qualquer computador; publicação só depois de todos os testes automáticos passarem.</span></div></li>
+        <li><div><b>14/10 · Abertura 3× mais rápida</b><span>Abrir o app a frio caiu de cerca de 8 s para cerca de 2,5 s.</span></div></li>
+        <li><div><b>14/10 · Uso na TV</b><span>Barra que só aparece quando chamada, cores menos claras, símbolos com legenda, seletores e abas com cor e transição.</span></div></li>
+        <li class="now"><div><b>14/10 · Fechamento do MVP</b><span>Comparar de 2 a 6 meses, leituras clicáveis em toda parte, histórico com versões agrupadas, nova carga arrastando o arquivo e envio de várias planilhas de uma vez.</span></div></li>
+      </ol>
+      <p class="note">Mais de 400 testes automáticos rodam a cada publicação. As capturas usam dados fictícios.</p>
+    </section>
+
     <section id="pedido">
       <h2>O que foi pedido</h2>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col">#</th><th scope="col">Pedido</th><th scope="col">Situação</th><th scope="col">Como ficou</th></tr></thead>
           <tbody>
-            <tr><td class="rid">R1</td><td class="req">Subir um Excel e ver vários gráficos</td><td><span class="pill ok">Feito</span></td><td>A planilha é lida no navegador e vira painel, leituras, comparação e evolução.</td></tr>
+            <tr><td class="rid">R1</td><td class="req">Subir um Excel e ver vários gráficos</td><td><span class="pill ok">Feito</span></td><td>A planilha é lida no navegador e vira painel, leituras, comparação e evolução. Dá para soltar uma ou várias de uma vez.</td></tr>
             <tr><td class="rid">R2</td><td class="req">Sem login nem banco de dados</td><td><span class="pill rev">Revisto</span></td><td>Para guardar o passado e ver o mesmo histórico na TV e nos notebooks, entrou um banco. O login está pronto, mas fica desligado no MVP; volta depois da aprovação.</td></tr>
             <tr><td class="rid">R3</td><td class="req">Apelo visual e ajuda na análise</td><td><span class="pill ok">Feito</span></td><td>Leituras do mês, variação contra o mês anterior, rótulos nas barras, selos em todo número calculado, botão "Filtrar por isto".</td></tr>
             <tr><td class="rid">R4</td><td class="req">Curto prazo (1–2 meses) e backlog</td><td><span class="pill ok">Feito</span></td><td>Mês da competência contra o anterior; backlog, atraso e envelhecimento; evolução das últimas 6 competências.</td></tr>
@@ -197,8 +213,8 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
             <tr><td class="rid">R6</td><td class="req">Ligar e desligar séries</td><td><span class="pill ok">Feito</span></td><td>Legenda clicável na Evolução e no Comparar; os totais não mudam.</td></tr>
             <tr><td class="rid">R7</td><td class="req">Filtrar por critérios</td><td><span class="pill ok">Feito</span></td><td>Cliente, Área Superior, Área, Atividade, Severidade, Operador e Situação. Tudo recalcula, inclusive comparação e evolução.</td></tr>
             <tr><td class="rid">R8</td><td class="req">Biblioteca de gráficos e leitura do Excel</td><td><span class="pill ok">Feito</span></td><td>Recharts para os gráficos; SheetJS lê o .xlsx no navegador.</td></tr>
-            <tr><td class="rid">R9</td><td class="req">Carga por competência</td><td><span class="pill ok">Feito</span></td><td>Na carga, o app sugere o mês pela aba ou pelo nome do arquivo e a pessoa confirma.</td></tr>
-            <tr><td class="rid">R10</td><td class="req">Guardar o passado e comparar</td><td><span class="pill ok">Feito</span></td><td>Cada carga fica guardada com versão; versões do mesmo mês ficam agrupadas, com a mais recente por cima. Histórico com abas Enviados e Geral, busca e comparação entre dois meses.</td></tr>
+            <tr><td class="rid">R9</td><td class="req">Carga por competência</td><td><span class="pill ok">Feito</span></td><td>Na carga, o app sugere o mês pela aba ou pelo nome do arquivo e a pessoa confirma; num lote, cada arquivo tem a sua linha para conferir.</td></tr>
+            <tr><td class="rid">R10</td><td class="req">Guardar o passado e comparar</td><td><span class="pill ok">Feito</span></td><td>Cada carga fica guardada com versão; versões do mesmo mês ficam agrupadas, com a mais recente por cima. Histórico com abas Enviados e Geral, busca, e comparação de 2 a 6 meses.</td></tr>
             <tr><td class="rid">R11</td><td class="req">Outros conjuntos depois (projetos, OSs)</td><td><span class="pill ok">Pronto para receber</span></td><td>Cada tipo de planilha tem o próprio painel. Planilha não reconhecida ganha gráficos automáticos.</td></tr>
           </tbody>
         </table>
@@ -216,11 +232,12 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
           <button role="tab" id="t-evolucao" aria-controls="shot" aria-selected="false" tabindex="-1">Evolução</button>
           <button role="tab" id="t-filtros" aria-controls="shot" aria-selected="false" tabindex="-1">Filtros</button>
           <button role="tab" id="t-carga" aria-controls="shot" aria-selected="false" tabindex="-1">Nova carga</button>
+          <button role="tab" id="t-lote" aria-controls="shot" aria-selected="false" tabindex="-1">Várias de uma vez</button>
           <button role="tab" id="t-abertura" aria-controls="shot" aria-selected="false" tabindex="-1">Abertura</button>
           <button role="tab" id="t-historico" aria-controls="shot" aria-selected="false" tabindex="-1">Histórico</button>
         </div>
         <figure class="shot" id="shot" role="tabpanel" aria-labelledby="t-painel">
-          <div class="frame">
+          <div class="frame" tabindex="0" aria-label="Captura da tela; role para ver a tela inteira">
             <img id="shot-img" src="img/v2/painel-limpo.png" alt="Painel de Chamados de setembro com KPIs e variação contra agosto" width="1920" height="1080">
           </div>
           <figcaption id="shot-cap"><span class="flag">Dados fictícios</span>Painel do mês na TV, com a barra escondida: KPIs com a variação contra o mês anterior e os gráficos do backlog.</figcaption>
@@ -240,6 +257,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
         <li><span><kbd>H</kbd></span><span>Fixar ou soltar a barra</span></li>
         <li><span><kbd>←</kbd><kbd>→</kbd></span><span>Visão anterior e seguinte</span></li>
         <li><span><kbd>Esc</kbd></span><span>Fecha o que estiver aberto</span></li>
+        <li><span><kbd>Arrastar</kbd></span><span>Solte planilhas na tela para carregar</span></li>
       </ul>
       <p class="note">A barra de cima fica escondida para a tela mostrar só informação. Ela aparece quando o mouse chega no topo ou com <kbd>H</kbd>. Os filtros ativos continuam visíveis como etiquetas.</p>
     </section>
@@ -252,6 +270,8 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
         <div class="card"><h3>Leituras do mês</h3><p>Regras com limite fixo apontam o que merece atenção. Não fazem previsão; só mostram o que os números do mês dizem.</p></div>
         <div class="card"><h3>Número calculado tem selo</h3><p>Todo valor que não veio pronto da planilha leva um selo. Meses sem carga própria aparecem tracejados na evolução.</p></div>
         <div class="card"><h3>Histórico com duas abas</h3><p>Enviados mostra o que saiu deste computador, e dá para limpar a lista sem apagar nada. Geral mostra tudo, com busca.</p></div>
+        <div class="card"><h3>Comparar até 6 meses</h3><p>Escolha de 2 a 6 competências. A tabela mostra a variação entre o primeiro e o último mês e uma setinha de mês a mês; as leituras abrem o detalhe.</p></div>
+        <div class="card"><h3>Várias planilhas de uma vez</h3><p>Solte até 12 arquivos; uma tabela confere tipo e mês de cada um antes de guardar.</p></div>
         <div class="card"><h3>Nada é descartado</h3><p>Todos os chamados da planilha entram no cálculo, cada um com a sua situação no mês.</p></div>
       </div>
     </section>
@@ -324,10 +344,11 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
     ["img/v2/painel-limpo.png", "Painel de Chamados de setembro com KPIs e variação contra agosto", "Painel do mês na TV, com a barra escondida: KPIs com a variação contra o mês anterior e os gráficos do backlog."],
     ["img/v2/leituras.png", "Leituras do mês com um cartão crítico e um de atenção", "Leituras do mês: cada cartão diz o que chamou atenção e por quê, do mais grave ao menos grave."],
     ["img/v2/leitura-modal.png", "Detalhe de uma leitura com a regra, os números e o gráfico de envelhecimento", "Detalhe de uma leitura: a regra que disparou, os números que a sustentam e um gráfico de evidência."],
-    ["img/v2/comparar.png", "Comparação entre agosto e setembro com indicadores lado a lado", "Comparar: dois meses lado a lado, com o que melhorou e o que piorou. A legenda liga e desliga cada mês."],
+    ["img/v2/comparar.png", "Comparação entre julho, agosto e setembro com indicadores lado a lado", "Comparar: de 2 a 6 meses lado a lado, com a variação entre o primeiro e o último e uma setinha mês a mês. As leituras abaixo abrem o detalhe; a legenda liga e desliga cada mês."],
     ["img/v2/evolucao.png", "Evolução dos indicadores ao longo dos meses, com pontos reconstruídos tracejados", "Evolução das últimas competências. Pontos tracejados são meses sem carga própria, montados pelas datas."],
     ["img/v2/filtros.png", "Painel de filtros aberto com o filtro Cliente Beta aplicado", "Filtros: o recorte vale para tudo (KPIs, gráficos, leituras, comparação e evolução) e aparece como etiqueta."],
-    ["img/v2/nova-carga.png", "Diálogo de confirmação da nova carga com tipo e competência", "Nova carga: o app reconhece o tipo e sugere a competência; a pessoa confirma."],
+    ["img/v2/nova-carga.png", "Modal de nova carga com a área para soltar a planilha", "Nova carga: solte a planilha na área (ou arraste sobre a tela); o app reconhece o tipo e sugere a competência."],
+    ["img/v2/lote.png", "Confirmação de várias planilhas numa tabela, uma linha por arquivo", "Várias de uma vez: até 12 planilhas; cada linha mostra tipo e competência para conferir, e avisa quando o mês vira uma nova versão."],
     ["img/v2/abertura.png", "Tela de envio com a lista de cargas agrupadas por mês", "Abertura: a tela de envio, com o que já existe agrupado por mês e a versão mais recente por cima."],
     ["img/v2/historico.png", "Histórico na aba Geral com o grupo de setembro expandido", "Histórico: Enviados (o que saiu deste computador) e Geral (tudo, com busca). Versões do mesmo mês ficam num grupo, a mais recente por cima."]
   ];
@@ -337,7 +358,7 @@ footer { max-width: 1120px; margin: 52px auto 0; border-top: 1px solid var(--lin
   const panel = document.getElementById("shot");
   function show(i, focus) {
     const [src, alt, text] = shots[i];
-    img.src = src; img.alt = alt;
+    img.src = src; img.alt = alt; img.parentElement.scrollTop = 0;
     cap.replaceChildren(Object.assign(document.createElement("span"), { className: "flag", textContent: "Dados fictícios" }), text);
     tabs.forEach((t, j) => { t.setAttribute("aria-selected", String(j === i)); t.tabIndex = j === i ? 0 : -1; });
     panel.setAttribute("aria-labelledby", tabs[i].id);
