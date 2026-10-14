@@ -16,6 +16,7 @@ import {
 import type { ItemDistribuicao, FormatoKpi } from "@/chamados"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { chartGrow } from "@/components/app/motion/tokens"
+import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 import { formatarKpi, type ItemAxB, type LinhaSerie } from "./logica"
 
 export const COR = {
@@ -47,7 +48,12 @@ function animacao(animar: boolean) {
 type TipProps = {
   active?: boolean
   label?: string | number
-  payload?: { name?: string; dataKey?: string | number; value?: unknown; color?: string }[]
+  payload?: {
+    name?: string
+    dataKey?: string | number
+    value?: unknown
+    color?: string
+  }[]
   formatar?: (v: number) => string
 }
 
@@ -113,10 +119,7 @@ export function BarrasRanking({
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip
-          content={<Dica />}
-          cursor={{ fill: "#e6edf2" }}
-        />
+        <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
         <Bar
           dataKey="valor"
           name={nome}
@@ -158,7 +161,10 @@ export function BarrasFaixas({
       role="img"
       aria-label={`Envelhecimento do backlog: ${itens.map((i) => `${i.rotulo} ${i.valor}`).join("; ")}`}
     >
-      <BarChart data={itens} margin={{ top: 40, right: 12, left: 12, bottom: 8 }}>
+      <BarChart
+        data={itens}
+        margin={{ top: 40, right: 12, left: 12, bottom: 8 }}
+      >
         <CartesianGrid vertical={false} stroke={GRADE} />
         <XAxis dataKey="rotulo" tick={EIXO} tickMargin={8} tickLine={false} />
         <YAxis hide />
@@ -171,7 +177,10 @@ export function BarrasFaixas({
           {...animacao(animar)}
         >
           {itens.map((i) => (
-            <Cell key={i.rotulo} fill={critica(i) ? COR.atraso : COR.principal} />
+            <Cell
+              key={i.rotulo}
+              fill={critica(i) ? COR.atraso : COR.principal}
+            />
           ))}
           <LabelList
             dataKey="valor"
@@ -236,82 +245,100 @@ export function BarrasAxB({
 }) {
   const uid = useId().replace(/:/g, "")
   const preenchimento = (k: "a" | "b", cor: string) =>
-    (k === "a" ? reconstruidoA : reconstruidoB) ? `url(#hachura-${uid}-${k})` : cor
+    (k === "a" ? reconstruidoA : reconstruidoB)
+      ? `url(#hachura-${uid}-${k})`
+      : cor
   const altura = Math.max(220, itens.length * 58 + 24)
+  const { ocultas, alternar } = useSeriesOcultas(`${rotuloA}|${rotuloB}`, [
+    "a",
+    "b",
+  ])
   return (
-    <ChartContainer
-      config={Cfg(["a", rotuloA, COR.cinza], ["b", rotuloB, COR.principal])}
-      className="aspect-auto w-full"
-      style={{ height: altura }}
-      role="img"
-      aria-label={`${rotuloA} contra ${rotuloB}: ${itens.map((i) => `${i.rotulo} ${i.a} e ${i.b}`).join("; ")}`}
-    >
-      <BarChart
-        data={itens}
-        layout="vertical"
-        margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
-        barGap={3}
+    <div className="flex flex-col gap-3">
+      <LegendaSeries
+        itens={[
+          { id: "a", rotulo: rotuloA, cor: COR.cinza },
+          { id: "b", rotulo: rotuloB, cor: COR.principal },
+        ]}
+        ocultas={ocultas}
+        onAlternar={alternar}
+      />
+      <ChartContainer
+        config={Cfg(["a", rotuloA, COR.cinza], ["b", rotuloB, COR.principal])}
+        className="aspect-auto w-full"
+        style={{ height: altura }}
+        role="img"
+        aria-label={`${rotuloA} contra ${rotuloB}: ${itens.map((i) => `${i.rotulo} ${i.a} e ${i.b}`).join("; ")}`}
       >
-        <defs>
+        <BarChart
+          data={itens}
+          layout="vertical"
+          margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
+          barGap={3}
+        >
+          <defs>
+            {(
+              [
+                ["a", COR.cinza],
+                ["b", COR.principal],
+              ] as const
+            ).map(([k, cor]) => (
+              <pattern
+                key={k}
+                id={`hachura-${uid}-${k}`}
+                patternUnits="userSpaceOnUse"
+                width="8"
+                height="8"
+                patternTransform="rotate(45)"
+              >
+                <rect width="8" height="8" fill="#ffffff" />
+                <rect width="4" height="8" fill={cor} />
+              </pattern>
+            ))}
+          </defs>
+          <CartesianGrid horizontal={false} stroke={GRADE} />
+          <XAxis type="number" hide />
+          <YAxis
+            type="category"
+            dataKey="rotulo"
+            width={220}
+            tick={EIXO}
+            tickFormatter={(v) => curto(v)}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
           {(
             [
-              ["a", COR.cinza],
-              ["b", COR.principal],
+              ["a", rotuloA, COR.cinza],
+              ["b", rotuloB, COR.principal],
             ] as const
-          ).map(([k, cor]) => (
-            <pattern
-              key={k}
-              id={`hachura-${uid}-${k}`}
-              patternUnits="userSpaceOnUse"
-              width="8"
-              height="8"
-              patternTransform="rotate(45)"
-            >
-              <rect width="8" height="8" fill="#ffffff" />
-              <rect width="4" height="8" fill={cor} />
-            </pattern>
-          ))}
-        </defs>
-        <CartesianGrid horizontal={false} stroke={GRADE} />
-        <XAxis type="number" hide />
-        <YAxis
-          type="category"
-          dataKey="rotulo"
-          width={220}
-          tick={EIXO}
-          tickFormatter={(v) => curto(v)}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
-        {(
-          [
-            ["a", rotuloA, COR.cinza],
-            ["b", rotuloB, COR.principal],
-          ] as const
-        ).map(([k, nome, cor]) => (
-          <Bar
-            key={k}
-            dataKey={k}
-            name={nome}
-            fill={preenchimento(k, cor)}
-            stroke={cor}
-            strokeWidth={2}
-            radius={[0, 4, 4, 0]}
-            barSize={18}
-            {...animacao(animar)}
-          >
-            <LabelList
-              dataKey={k}
-              position="right"
-              className="num fill-foreground"
-              style={{ fontSize: 15, fontWeight: 600 }}
-              formatter={(v) => inteiro.format(Number(v))}
-            />
-          </Bar>
-        ))}
-      </BarChart>
-    </ChartContainer>
+          )
+            .filter(([k]) => !ocultas.includes(k))
+            .map(([k, nome, cor]) => (
+              <Bar
+                key={k}
+                dataKey={k}
+                name={nome}
+                fill={preenchimento(k, cor)}
+                stroke={cor}
+                strokeWidth={2}
+                radius={[0, 4, 4, 0]}
+                barSize={18}
+                {...animacao(animar)}
+              >
+                <LabelList
+                  dataKey={k}
+                  position="right"
+                  className="num fill-foreground"
+                  style={{ fontSize: 15, fontWeight: 600 }}
+                  formatter={(v) => inteiro.format(Number(v))}
+                />
+              </Bar>
+            ))}
+        </BarChart>
+      </ChartContainer>
+    </div>
   )
 }
 
@@ -330,105 +357,126 @@ export function LinhaMini({
   animar: boolean
 }) {
   const ultimo = linhas.length - 1
+  const { ocultas, alternar } = useSeriesOcultas(
+    `${series.map((s) => s.id).join(",")}|${linhas.map((l) => l.rotulo).join(",")}`,
+    series.map((s) => s.id)
+  )
+  const visiveis = series.filter((s) => !ocultas.includes(s.id))
+  // Eixo Y se ajusta às séries visíveis (escala legível; valores não mudam).
   const tudo = linhas.flatMap((l) =>
-    series.flatMap((s) => [l[`${s.id}_p`], l[`${s.id}_r`]])
+    visiveis.flatMap((s) => [l[`${s.id}_p`], l[`${s.id}_r`]])
   )
   const nums = tudo.filter((v): v is number => typeof v === "number")
   const max = nums.length ? Math.max(...nums) : 1
-  const topo = formato === "percentual" ? 100 : Math.max(1, Math.ceil(max * 1.15))
+  const topo =
+    formato === "percentual" ? 100 : Math.max(1, Math.ceil(max * 1.15))
   return (
-    <ChartContainer
-      config={Object.fromEntries(
-        series.map((s) => [s.id, { label: s.rotulo, color: s.cor }])
-      )}
-      className="aspect-auto w-full"
-      style={{ height: 220 }}
-      role="img"
-      aria-label={series
-        .map(
-          (s) =>
-            `${s.rotulo}: ${linhas.map((l) => `${l.rotulo} ${formatarKpi((l[`${s.id}_p`] ?? l[`${s.id}_r`]) as number | null, formato)}`).join(", ")}`
-        )
-        .join(". ")}
-    >
-      <LineChart data={linhas} margin={{ top: 12, right: 20, left: 4, bottom: 4 }}>
-        <CartesianGrid vertical={false} stroke={GRADE} />
-        <XAxis dataKey="rotulo" tick={EIXO} tickMargin={8} tickLine={false} />
-        <YAxis
-          tick={EIXO}
-          width={52}
-          domain={[0, topo]}
-          tickCount={3}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(v) =>
-            formato === "percentual" ? `${v}%` : inteiro.format(Number(v))
-          }
-        />
-        <Tooltip
-          content={
-            <Dica formatar={(v) => formatarKpi(v, formato)} />
-          }
-        />
-        {series.flatMap((s) => [
-          <Line
-            key={`${s.id}_r`}
-            dataKey={`${s.id}_r`}
-            name={`${s.rotulo} (reconstruído)`}
-            type="linear"
-            stroke={s.cor}
-            strokeWidth={3}
-            strokeDasharray="6 5"
-            connectNulls={false}
-            legendType="none"
-            dot={(p: { cx?: number; cy?: number; index?: number; payload?: LinhaSerie }) =>
-              p.payload &&
-              !p.payload.propria &&
-              p.payload[`${s.id}_r`] !== null &&
-              Number.isFinite(p.cy) ? (
-                <circle
-                  key={`r${p.index}`}
-                  cx={p.cx}
-                  cy={p.cy}
-                  r={5}
-                  fill="#ffffff"
-                  stroke={s.cor}
-                  strokeWidth={2.5}
-                />
-              ) : (
-                <g key={`r${p.index}`} />
-              )
+    <div className="flex flex-col gap-3">
+      <LegendaSeries itens={series} ocultas={ocultas} onAlternar={alternar} />
+      <ChartContainer
+        config={Object.fromEntries(
+          series.map((s) => [s.id, { label: s.rotulo, color: s.cor }])
+        )}
+        className="aspect-auto w-full"
+        style={{ height: 220 }}
+        role="img"
+        aria-label={series
+          .map(
+            (s) =>
+              `${s.rotulo}: ${linhas.map((l) => `${l.rotulo} ${formatarKpi((l[`${s.id}_p`] ?? l[`${s.id}_r`]) as number | null, formato)}`).join(", ")}`
+          )
+          .join(". ")}
+      >
+        <LineChart
+          data={linhas}
+          margin={{ top: 12, right: 20, left: 4, bottom: 4 }}
+        >
+          <CartesianGrid vertical={false} stroke={GRADE} />
+          <XAxis dataKey="rotulo" tick={EIXO} tickMargin={8} tickLine={false} />
+          <YAxis
+            tick={EIXO}
+            width={52}
+            domain={[0, topo]}
+            tickCount={3}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v) =>
+              formato === "percentual" ? `${v}%` : inteiro.format(Number(v))
             }
-            activeDot={false}
-            {...animacao(animar)}
-          />,
-          <Line
-            key={`${s.id}_p`}
-            dataKey={`${s.id}_p`}
-            name={s.rotulo}
-            type="linear"
-            stroke={s.cor}
-            strokeWidth={3}
-            connectNulls={false}
-            dot={(p: { cx?: number; cy?: number; index?: number; payload?: LinhaSerie }) =>
-              p.payload?.[`${s.id}_p`] !== null && Number.isFinite(p.cy) ? (
-                <circle
-                  key={`p${p.index}`}
-                  cx={p.cx}
-                  cy={p.cy}
-                  r={p.index === ultimo ? 8 : 5}
-                  fill={s.cor}
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
-              ) : (
-                <g key={`p${p.index}`} />
-              )
-            }
-            {...animacao(animar)}
-          />,
-        ])}
-      </LineChart>
-    </ChartContainer>
+          />
+          <Tooltip
+            content={<Dica formatar={(v) => formatarKpi(v, formato)} />}
+          />
+          {visiveis.flatMap((s) => [
+            <Line
+              key={`${s.id}_r`}
+              dataKey={`${s.id}_r`}
+              name={`${s.rotulo} (reconstruído)`}
+              type="linear"
+              stroke={s.cor}
+              strokeWidth={3}
+              strokeDasharray="6 5"
+              connectNulls={false}
+              legendType="none"
+              dot={(p: {
+                cx?: number
+                cy?: number
+                index?: number
+                payload?: LinhaSerie
+              }) =>
+                p.payload &&
+                !p.payload.propria &&
+                p.payload[`${s.id}_r`] !== null &&
+                Number.isFinite(p.cy) ? (
+                  <circle
+                    key={`r${p.index}`}
+                    cx={p.cx}
+                    cy={p.cy}
+                    r={5}
+                    fill="#ffffff"
+                    stroke={s.cor}
+                    strokeWidth={2.5}
+                  />
+                ) : (
+                  <g key={`r${p.index}`} />
+                )
+              }
+              activeDot={false}
+              {...animacao(animar)}
+            />,
+            <Line
+              key={`${s.id}_p`}
+              dataKey={`${s.id}_p`}
+              name={s.rotulo}
+              type="linear"
+              stroke={s.cor}
+              strokeWidth={3}
+              connectNulls={false}
+              dot={(p: {
+                cx?: number
+                cy?: number
+                index?: number
+                payload?: LinhaSerie
+              }) =>
+                p.payload?.[`${s.id}_p`] !== null && Number.isFinite(p.cy) ? (
+                  <circle
+                    key={`p${p.index}`}
+                    cx={p.cx}
+                    cy={p.cy}
+                    r={p.index === ultimo ? 8 : 5}
+                    fill={s.cor}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                ) : (
+                  <g key={`p${p.index}`} />
+                )
+              }
+              {...animacao(animar)}
+            />,
+          ])}
+        </LineChart>
+      </ChartContainer>
+    </div>
   )
 }
