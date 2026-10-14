@@ -25,7 +25,7 @@ function barra(visible: boolean) {
       onSlot={() => {}}
       onAbrir={() => {}}
       onVisao={() => {}}
-      onPickFile={() => {}}
+      onNovaCarga={() => {}}
       onHistorico={() => {}}
       podeApagar={false}
       onClear={() => {}}
@@ -36,6 +36,32 @@ function barra(visible: boolean) {
 }
 
 describe("TopBar", () => {
+  it("Nova carga só pede para abrir o envio (não abre o seletor do sistema)", async () => {
+    const onNovaCarga = vi.fn()
+    render(
+      <TopBar
+        visible
+        tipoNome="Chamados"
+        atual={atual}
+        grupos={[]}
+        visoes={["painel"]}
+        visao="painel"
+        onSlot={() => {}}
+        onAbrir={() => {}}
+        onVisao={() => {}}
+        onNovaCarga={onNovaCarga}
+        onHistorico={() => {}}
+        podeApagar={false}
+        onClear={() => {}}
+        onSelectorOpenChange={() => {}}
+        dica={null}
+      />
+    )
+    await userEvent.click(screen.getByRole("button", { name: /Nova carga/ }))
+    expect(onNovaCarga).toHaveBeenCalledTimes(1)
+    expect(screen.queryByLabelText(/Arquivo da nova carga/)).toBeNull()
+  })
+
   it("escondida sai inteira para cima (-100%), sem eventos de ponteiro", () => {
     const h = barra(false)
     expect(h.dataset.visible).toBe("false")
@@ -64,7 +90,7 @@ describe("TopBar", () => {
             onSlot={() => {}}
             onAbrir={() => {}}
             onVisao={() => {}}
-            onPickFile={() => {}}
+            onNovaCarga={() => {}}
             onHistorico={() => {}}
             podeApagar={false}
             onClear={() => {}}

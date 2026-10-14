@@ -1,14 +1,11 @@
-import { useRef, useState, type DragEvent } from "react"
-import { FileSpreadsheetIcon } from "lucide-react"
-
 import { formatarCompetencia, tiposRegistrados, type CargaMeta } from "@/cargas"
 import { escolherCargaInicial } from "@/app/navegacao"
 import { modoApi } from "@/app/modo-api"
 import logo from "@/assets/asten-logo-fundo-claro.png"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { rotuloVersao } from "./formatoCarga"
 import type { LoadState } from "./hooks/useWorkbookLoader"
+import { AreaDeEnvio } from "./AreaDeEnvio"
 import { ListaCargasAgrupada } from "./ListaCargasAgrupada"
 
 export function ImportScreen({
@@ -28,16 +25,7 @@ export function ImportScreen({
   const nomeDoTipo = (id: string) =>
     tiposRegistrados().find((t) => t.id === id)?.nome ?? id
   const ultima = escolherCargaInicial(metas)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [dragging, setDragging] = useState(false)
   const loading = state.status === "loading"
-
-  function onDrop(e: DragEvent) {
-    e.preventDefault()
-    setDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) onFile(file)
-  }
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center gap-10 px-6 py-12">
@@ -55,44 +43,7 @@ export function ImportScreen({
         </p>
       </div>
 
-      <div
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragging(true)
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          "flex flex-col items-start gap-5 rounded-xl border-2 border-dashed border-input bg-card p-8 transition-colors motion-reduce:transition-none",
-          dragging && "border-brand bg-brand-soft"
-        )}
-      >
-        <FileSpreadsheetIcon className="size-10 text-primary" aria-hidden />
-        <p className="text-xl font-medium">
-          {loading ? "Lendo a planilha…" : "Arraste o arquivo .xlsx para cá"}
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx"
-          className="sr-only"
-          tabIndex={-1}
-          aria-label="Arquivo da planilha (.xlsx)"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) onFile(file)
-            e.target.value = ""
-          }}
-        />
-        <Button
-          size="lg"
-          className="h-12 px-6 text-base"
-          disabled={loading}
-          onClick={() => inputRef.current?.click()}
-        >
-          Escolher arquivo
-        </Button>
-      </div>
+      <AreaDeEnvio onFile={onFile} loading={loading} />
 
       {state.status === "error" && (
         <div

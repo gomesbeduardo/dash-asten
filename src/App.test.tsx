@@ -186,7 +186,11 @@ describe("nova carga", () => {
     await h1("Projetos")
     expect(screen.queryByText(/Será a versão/)).not.toBeInTheDocument()
 
-    await user.upload(screen.getByLabelText(/Arquivo da nova carga/), outro())
+    await user.click(screen.getByRole("button", { name: /Nova carga/ }))
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da nova carga/),
+      outro()
+    )
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
@@ -207,6 +211,27 @@ describe("nova carga", () => {
       screen.getByRole("button", { name: "Competência" })
     ).toHaveTextContent("v2")
     expect((await repo.listar()).map((m) => m.versao)).toEqual([2, 1])
+  })
+
+  it("Nova carga abre o modal de envio; atalhos ficam ignorados e o envio fecha o modal", async () => {
+    const user = userEvent.setup()
+    const repo = criarRepositorioMemoria()
+    await salvar(repo, "reuniao-julho-2026.xlsx", "outro", "2026-07")
+    await montarAberto(repo)
+    await h1("Projetos")
+    await user.click(screen.getByRole("button", { name: /Nova carga/ }))
+    const envio = await screen.findByRole("dialog", { name: "Nova carga" })
+    expect(envio).toHaveTextContent("Arraste o arquivo .xlsx para cá")
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /Nova carga/ }))
+    await screen.findByRole("dialog", { name: "Nova carga" })
+    await user.upload(screen.getByLabelText(/Arquivo da nova carga/), outro())
+    await screen.findByRole("dialog", { name: "Confirmar a carga" })
+    expect(
+      screen.queryByRole("dialog", { name: "Nova carga" })
+    ).not.toBeInTheDocument()
   })
 
   it("o diálogo não fecha ao clicar fora; fecha com Esc", async () => {

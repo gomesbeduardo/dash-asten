@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { BarraContext } from "./BarraContext"
 import { HistoricoSheet } from "./HistoricoSheet"
+import { NovoEnvioDialog } from "./NovoEnvioDialog"
 import { TopBar } from "./TopBar"
 import { useBarVisibility } from "./hooks/useBarVisibility"
 import { useShortcuts } from "./hooks/useShortcuts"
@@ -47,6 +48,7 @@ export function Apresentacao(p: ApresentacaoProps) {
   const [historicoOpen, setHistoricoOpen] = useState(false)
   const [limparOpen, setLimparOpen] = useState(false)
   const [seletorOpen, setSeletorOpen] = useState(false)
+  const [envioOpen, setEnvioOpen] = useState(false)
   const [painelHold, setPainelHold] = useState(false)
   const [dica, setDica] = useState<string | null>(null)
   const [slot, setSlot] = useState<HTMLElement | null>(null)
@@ -73,9 +75,20 @@ export function Apresentacao(p: ApresentacaoProps) {
         ? visoes.Evolucao!
         : visoes.Painel
 
-  const overlay = historicoOpen || limparOpen || seletorOpen || painelHold
+  const overlay = historicoOpen || limparOpen || seletorOpen || envioOpen || painelHold
   const barRef = useRef<HTMLElement>(null)
   const bar = useBarVisibility({ hold: overlay, barRef })
+
+  // Arrastar um arquivo sobre a janela abre o modal de envio (sem outro diálogo aberto).
+  useEffect(() => {
+    const aoArrastar = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes("Files")) return
+      if (document.querySelector('[role="dialog"]')) return
+      setEnvioOpen(true)
+    }
+    window.addEventListener("dragenter", aoArrastar)
+    return () => window.removeEventListener("dragenter", aoArrastar)
+  }, [])
 
   const pedirVisao = useCallback(
     (v: Visao) => {
@@ -120,7 +133,7 @@ export function Apresentacao(p: ApresentacaoProps) {
           dica={dica}
           onAbrir={p.onAbrir}
           onVisao={setVisaoPedida}
-          onPickFile={p.onNovaCarga}
+          onNovaCarga={() => setEnvioOpen(true)}
           onHistorico={() => setHistoricoOpen(true)}
           podeApagar={!!p.onApagarTudo}
           onClear={() =>
@@ -165,6 +178,12 @@ export function Apresentacao(p: ApresentacaoProps) {
           </AnimatePresence>
           </Envoltorio>
         </main>
+
+        <NovoEnvioDialog
+          open={envioOpen}
+          onOpenChange={setEnvioOpen}
+          onFile={p.onNovaCarga}
+        />
 
         <HistoricoSheet
           open={historicoOpen}

@@ -1,4 +1,3 @@
-import { useRef } from "react"
 import type { Ref } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import {
@@ -37,7 +36,8 @@ export type TopBarProps = {
   onSlot: (el: HTMLElement | null) => void
   onAbrir: (id: string) => void
   onVisao: (v: Visao) => void
-  onPickFile: (file: File) => void
+  /** Abre o modal de envio da nova carga. */
+  onNovaCarga: () => void
   onHistorico: () => void
   /** true: o botão apaga o histórico local (Limpar); false: só fecha a carga. */
   podeApagar: boolean
@@ -51,7 +51,6 @@ export type TopBarProps = {
 }
 
 export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
-  const arquivoInput = useRef<HTMLInputElement>(null)
   const reduce = useReducedMotion()
   const { sair } = useSessao()
 
@@ -111,23 +110,10 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <input
-            ref={arquivoInput}
-            type="file"
-            accept=".xlsx"
-            className="sr-only"
-            tabIndex={-1}
-            aria-label="Arquivo da nova carga (.xlsx)"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) p.onPickFile(file)
-              e.target.value = ""
-            }}
-          />
           <Button
             variant="default"
             size="lg"
-            onClick={() => arquivoInput.current?.click()}
+            onClick={p.onNovaCarga}
           >
             <FolderOpenIcon aria-hidden /> Nova carga
           </Button>

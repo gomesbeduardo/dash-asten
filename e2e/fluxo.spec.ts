@@ -110,9 +110,13 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
   await expect(page.getByRole("tab", { name: /Projetos/ })).toBeVisible()
 
   // Arquivo inválido: mensagem, e a planilha atual continua.
+  await page.getByRole("button", { name: /Nova carga/ }).click()
   await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(txtPath)
-  await expect(page.getByRole("alert")).toContainText("não parece ser a planilha")
-  await expect(page.getByRole("alert")).toContainText("A carga atual continua aberta")
+  // O modal de envio recusa o que não é .xlsx e continua aberto.
+  const envio = page.getByRole("dialog", { name: "Nova carga" })
+  await expect(envio.getByRole("alert")).toContainText(".xlsx")
+  await page.keyboard.press("Escape")
+  await expect(envio).toHaveCount(0)
   await expect(h1(page, "Projetos")).toBeVisible()
 })
 
@@ -139,6 +143,7 @@ test("duas competências: recarregar abre na tela de envio, a lista abre a mais 
   await expect(linhas(page)).toContainText("4")
 
   await page.mouse.move(400, 40)
+  await page.getByRole("button", { name: /Nova carga/ }).click()
   await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(setembro)
   await expect(confirmar.getByRole("combobox", { name: "Mês" })).toHaveText("Setembro")
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
