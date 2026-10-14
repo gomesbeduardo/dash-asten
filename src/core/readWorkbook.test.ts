@@ -137,3 +137,27 @@ describe("readWorkbook", () => {
     expect(run).toThrow(expect.objectContaining({ code: "empty" }))
   })
 })
+
+describe("readWorkbook: só hora e identificadores", () => {
+  it("tipa como texto HH:MM a coluna cujas datas caem todas em 1899", () => {
+    const h = (hh: number, mm: number) => new Date(Date.UTC(1899, 11, 30, hh, mm))
+    const wb = readWorkbook(makeXlsx({ A: [["Hora", "Qtd"], [h(9, 5), 1], [h(14, 30), 2], [null, 3]] }), "x.xlsx")
+    const col = wb.sheets[0].columns[0]
+    expect(col.type).toBe("text")
+    expect(wb.sheets[0].rows.map((r) => r.hora)).toEqual(["09:05", "14:30", null])
+  })
+
+  it("marca format id por rótulo e por valores distintos inteiros >= 1000", () => {
+    const rows: unknown[][] = [["Chamado", "Código X", "Valor", "Seq"]]
+    for (let i = 0; i < 20; i++) rows.push([5000 + i, 1 + (i % 3), 1.5 * i, 2000 + i])
+    const cols = readWorkbook(makeXlsx({ A: rows }), "x.xlsx").sheets[0].columns
+    expect(cols.map((c) => c.format)).toEqual(["id", undefined, undefined, "id"])
+  })
+
+  it("não marca id em número decimal nem com poucos distintos", () => {
+    const rows: unknown[][] = [["Total", "Nota"]]
+    for (let i = 0; i < 20; i++) rows.push([3000.5 + i, 4000])
+    const cols = readWorkbook(makeXlsx({ A: rows }), "x.xlsx").sheets[0].columns
+    expect(cols.map((c) => c.format)).toEqual([undefined, undefined])
+  })
+})

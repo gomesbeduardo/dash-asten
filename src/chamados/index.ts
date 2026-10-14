@@ -1,0 +1,5 @@
+export { tipoChamados, mapearColunas, escolherAba } from "./mapeamento"
+export type { CampoChamado, MapaColunas } from "./mapeamento"
+export { calcularMetricas } from "./metricas"
+export type * from "./tipos"
+export { compararCompetencias, evolucao } from "./comparativo"

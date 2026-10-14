@@ -1,5 +1,5 @@
 import type { CellValue } from "./types"
-import type { ColumnType } from "./types"
+import type { Column, ColumnType } from "./types"
 
 /** Data em ISO YYYY-MM-DD, sempre em UTC (evita deslocar o dia por fuso). */
 export function toIsoDate(date: Date): string {
@@ -24,4 +24,10 @@ export function formatCell(value: CellValue, type: ColumnType): string {
     return value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })
   }
   return String(value)
+}
+
+/** Como formatCell, mas respeita Column.format (identificadores sem separador de milhar). */
+export function formatColumnValue(value: CellValue, column: Column): string {
+  if (column.format === "id" && typeof value === "number") return String(value)
+  return formatCell(value, column.type)
 }

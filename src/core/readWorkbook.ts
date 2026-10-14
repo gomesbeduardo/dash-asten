@@ -46,6 +46,28 @@ function inferType(values: CellValue[]): ColumnType {
   return "text"
 }
 
+const ID_LABEL = /^(id|cod(igo)?|n[o°º]\.?|numero|protocolo|chamado|os)$/
+
+function isTimeOnly(values: CellValue[]): boolean {
+  const dates = values.filter((v): v is Date => v instanceof Date)
+  if (dates.length === 0 || dates.length !== values.filter((v) => v !== null).length) return false
+  return dates.every((d) => d.getUTCFullYear() === 1899 && d.getUTCMonth() === 11 && d.getUTCDate() >= 30)
+}
+
+function toHHMM(d: Date): string {
+  // arredonda ao minuto mais próximo (a SheetJS pode errar por segundos)
+  const t = new Date(Math.round(d.getTime() / 60000) * 60000)
+  return `${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")}`
+}
+
+function isIdColumn(label: string, values: CellValue[]): boolean {
+  const nums = values.filter((v) => v !== null)
+  if (nums.length === 0 || !nums.every((v) => typeof v === "number" && Number.isInteger(v))) return false
+  const plain = label.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()
+  if (ID_LABEL.test(plain)) return true
+  return nums.every((v) => (v as number) >= 1000) && new Set(nums).size / nums.length >= 0.95
+}
+
 function buildSheet(name: string, index: number, matrix: unknown[][], usedIds: Set<string>): Sheet | null {
   const cells = matrix.map((r) => r.map(normalizeCell))
   const nonEmpty = cells.filter((r) => r.some((c) => c !== null))
@@ -76,6 +98,9 @@ function buildSheet(name: string, index: number, matrix: unknown[][], usedIds: S
 
   const rawRows = body.map((r) => keys.map((_, i) => r[i] ?? null))
   const columns: Column[] = keys.map((key, i) => {
+    if (isTimeOnly(rawRows.map((r) => r[i]))) {
+      for (const r of rawRows) if (r[i] instanceof Date) r[i] = toHHMM(r[i])
+    }
     const type = inferType(rawRows.map((r) => r[i]))
     if (type === "text") {
       for (const r of rawRows) {
@@ -87,7 +112,9 @@ function buildSheet(name: string, index: number, matrix: unknown[][], usedIds: S
     const distinctCount = distinct.size
     const filterable =
       type === "date" || (type === "text" && distinctCount >= 2 && distinctCount <= MAX_FILTER_VALUES)
-    return { key, label: labels[i], type, filterable, distinctCount }
+    const column: Column = { key, label: labels[i], type, filterable, distinctCount }
+    if (type === "number" && isIdColumn(labels[i], rawRows.map((r) => r[i]))) column.format = "id"
+    return column
   })
   const rows: Row[] = rawRows.map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i]])))
   return { id: uniqueSlug(name, "aba", usedIds), name, index, columns, rows }

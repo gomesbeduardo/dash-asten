@@ -1,0 +1,6 @@
+export * from "./types"
+export * from "./competencia"
+export { inferirCompetencia } from "./inferirCompetencia"
+export { criarRepositorioMemoria } from "./repositorio-memoria"
+export { criarRepositorioIndexedDB } from "./repositorio-indexeddb"
+export { registrarTipo, tiposRegistrados, TIPO_OUTRO, reconhecerTipo, limparRegistroParaTeste } from "./tipos"
