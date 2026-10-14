@@ -402,7 +402,7 @@ describe("histórico e limpeza", () => {
   it("guardar registra o envio deste navegador e não baixa a carga de novo", async () => {
     const user = userEvent.setup()
     const repo = criarRepositorioMemoria()
-    const obter = vi.spyOn(repo, "obter")
+    const listar = vi.spyOn(repo, "listar")
     const excluir = vi.spyOn(repo, "excluir")
     montar(repo)
     await user.upload(
@@ -413,9 +413,10 @@ describe("histórico e limpeza", () => {
       await screen.findByRole("button", { name: "Confirmar carga" })
     )
     expect(await h1("Projetos")).toBeInTheDocument()
+    // só a listagem de abertura: guardar não relista (a precarga em segundo plano pode chamar obter)
+    expect(listar).toHaveBeenCalledTimes(1)
     const [meta] = await repo.listar()
     expect(foiEnviada(meta.id)).toBe(true)
-    expect(obter).not.toHaveBeenCalled()
     expect(excluir).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
