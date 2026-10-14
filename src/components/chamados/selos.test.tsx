@@ -43,6 +43,9 @@ describe("LegendaSimbolos", () => {
     expect(within(l).getByText("Derivado das datas")).toBeInTheDocument()
     expect(within(l).queryByText("Reconstruído pelas datas")).toBeNull()
     expect(within(l).getAllByRole("listitem")).toHaveLength(2)
+    // símbolo antes do nome, em cada item
+    for (const li of within(l).getAllByRole("listitem"))
+      expect(li.firstElementChild?.getAttribute("aria-hidden")).toBe("true")
   })
 
   it("aceita itens extras (tracejado) e some quando não há nada", () => {

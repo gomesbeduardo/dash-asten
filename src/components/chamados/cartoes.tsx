@@ -87,14 +87,11 @@ export function KpiCartao({
           {kpi.reconstruivel ? (
             kpi.rotulo
           ) : (
-            <>
-              {kpi.rotulo.replace(/\s*\S+$/, "")}{" "}
-              {/* última palavra + símbolo juntos: o símbolo nunca cai sozinho na linha de baixo */}
-              <span className="whitespace-nowrap">
-                {kpi.rotulo.match(/\S+$/)?.[0]}{" "}
-                <SeloSimbolo tipo="calculado" className="-my-1" />
-              </span>
-            </>
+            /* símbolo antes do texto; o texto quebra à parte, então a 2ª linha fica alinhada ao texto (D41) */
+            <span className="flex items-start gap-1.5">
+              <SeloSimbolo tipo="calculado" className="-my-px" />
+              <span>{kpi.rotulo}</span>
+            </span>
           )}
         </h3>
         <Tooltip>
@@ -337,11 +334,16 @@ export function GraficoCartao({
     >
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-display text-2xl font-semibold text-primary">
+          <div className="flex items-start gap-2">
+            {/* símbolos antes do título, centrados na 1ª linha (leading-8 = h-8) */}
+            {selos.length > 0 && (
+              <span className="flex h-8 shrink-0 items-center">
+                <Selos tipos={selos} />
+              </span>
+            )}
+            <h3 className="font-display text-2xl leading-8 font-semibold text-primary">
               {titulo}
             </h3>
-            <Selos tipos={selos} />
           </div>
           {subtitulo && (
             <p className="text-base text-muted-foreground">{subtitulo}</p>

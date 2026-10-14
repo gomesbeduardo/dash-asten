@@ -160,9 +160,13 @@ export function LeiturasChamados({
 
             {evidencia && (
               <section aria-label="Evidência" className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl text-primary">{evidencia.titulo}</h3>
-                  <Selos tipos={selosGrafico} />
+                <div className="flex items-start gap-2">
+                  {selosGrafico.length > 0 && (
+                    <span className="flex h-7 shrink-0 items-center">
+                      <Selos tipos={selosGrafico} />
+                    </span>
+                  )}
+                  <h3 className="text-xl leading-7 text-primary">{evidencia.titulo}</h3>
                 </div>
                 <LegendaSimbolos tipos={selosGrafico} />
                 <BarrasRanking

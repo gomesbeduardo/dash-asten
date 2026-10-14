@@ -248,14 +248,14 @@ function ComparacaoVisao({
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
                   <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
-                    A · {rotA}
                     {!opA.propria && <SeloSimbolo tipo="reconstruido" />}
+                    <span>A · {rotA}</span>
                   </span>
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
                   <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
-                    B · {rotB}
                     {!opB.propria && <SeloSimbolo tipo="reconstruido" />}
+                    <span>B · {rotB}</span>
                   </span>
                 </th>
                 <th scope="col" className="px-4 py-3 text-right font-display">
@@ -277,11 +277,14 @@ function ComparacaoVisao({
                 return (
                   <tr key={k.id} className="border-b bg-card">
                     <th scope="row" className="px-4 py-3 font-medium">
-                      <span className="inline-flex items-center gap-2">
-                        {k.rotulo}
-                        {cmp.b.kpis.find((x) => x.id === k.id)?.reconstruivel === false && (
-                          <SeloSimbolo tipo="calculado" />
-                        )}
+                      {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
+                      <span className="flex items-start gap-2">
+                        <span className="flex size-6 shrink-0 items-center justify-center">
+                          {cmp.b.kpis.find((x) => x.id === k.id)?.reconstruivel === false && (
+                            <SeloSimbolo tipo="calculado" />
+                          )}
+                        </span>
+                        <span>{k.rotulo}</span>
                       </span>
                     </th>
                     {([["a", k.a], ["b", k.b]] as const).map(([lado, v]) => (

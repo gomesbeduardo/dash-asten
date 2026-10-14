@@ -101,6 +101,10 @@ beforeEach(() => {
   Element.prototype.scrollIntoView ??= () => {}
 })
 
+/** O símbolo vem antes do texto no DOM (D41). */
+const antes = (simbolo: Node, texto: Node) =>
+  expect(simbolo.compareDocumentPosition(texto) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
 describe("PainelChamados", () => {
   it("mostra o cabeçalho, KPIs com delta colorido+ícone e '—' com o detalhe", async () => {
     render(<PainelChamados {...await cenario(true)} />)
@@ -166,6 +170,7 @@ describe("PainelChamados", () => {
     // KPI apertado: só o símbolo, na linha do rótulo, e nada de texto do selo no cartão
     expect(within(sla).getByRole("button", { name: "Calculado" })).toBeInTheDocument()
     expect(within(sla).queryByText("Calculado")).toBeNull()
+    antes(within(sla).getByRole("button", { name: "Calculado" }), within(sla).getByText(/^%\s*no SLA/))
     expect(
       within(screen.getByRole("region", { name: "Situação na competência" })).getByRole("button", {
         name: "Derivado das datas",
@@ -353,11 +358,14 @@ describe("CompararChamados", () => {
     const cabB = screen.getByRole("columnheader", { name: /^B · set\/26/ })
     expect(within(cabA).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
     expect(within(cabA).queryByText("Reconstruído pelas datas")).toBeNull()
+    antes(within(cabA).getByRole("button"), within(cabA).getByText(/^A · ago\/26/))
     // B é carga própria: sem símbolo, e nenhuma das duas células empilha nada abaixo do rótulo
     expect(within(cabB).queryByRole("button")).toBeNull()
     for (const cab of [cabA, cabB]) expect(cab.querySelector("div, p, span.flex, span.block")).toBeNull()
     expect(screen.getByRole("row", { name: /Backlog aberto/ })).toHaveTextContent("(reconstruído)")
     expect(within(sla).getByRole("button", { name: "Calculado" })).toBeInTheDocument()
+    const rotuloSla = within(sla).getByRole("rowheader")
+    antes(within(rotuloSla).getByRole("button"), within(rotuloSla).getByText("% no SLA"))
     const legenda = screen.getByRole("region", { name: "Legenda dos símbolos" })
     expect(within(legenda).getByText("Reconstruído pelas datas")).toBeInTheDocument()
     expect(within(legenda).getByText("Calculado")).toBeInTheDocument()
@@ -385,6 +393,14 @@ describe("EvolucaoChamados", () => {
     // indicador que exige a carga do mês e meses reconstruídos levam selo
     expect(within(sla).getByRole("button", { name: "Calculado" })).toBeInTheDocument()
     expect(within(card).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
+    antes(
+      within(card).getByRole("button", { name: "Reconstruído pelas datas" }),
+      within(card).getByRole("heading", { name: "Backlog aberto" })
+    )
+    antes(
+      within(sla).getByRole("button", { name: "Calculado" }),
+      within(sla).getByRole("heading", { name: "% no SLA" })
+    )
   })
 })
 
