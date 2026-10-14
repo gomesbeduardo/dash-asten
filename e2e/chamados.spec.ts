@@ -84,6 +84,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(kpi(page, "Backlog aberto")).toBeVisible()
 
   await page.mouse.move(400, 40)
+  await page.getByRole("button", { name: /Nova carga/ }).click()
   await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(set)
   // clicar fora do diálogo não o fecha
   await expect(confirmar).toBeVisible()

@@ -1,7 +1,7 @@
 # PRD — Painel de análise de planilhas (Asten)
 
-**Versão:** v3, 14/10/2026. Alinha o PRD ao app construído (fases 2C/2D) e aos requisitos de origem (§0.1). A v2 está no histórico do Git.
-**Status:** app funcional na `staging` (cargas por competência, histórico no banco, login, painel de Chamados com Leituras, Comparar e Evolução). Produção ainda na versão antiga, até a promoção pela `main`. Definições de Chamados aguardam o Líder (D31/D34/D35).
+**Versão:** v3.1, 14/10/2026 (fim do dia). Alinha o PRD ao app construído (fases 2C/2D) e aos requisitos de origem (§0.1). A v2 está no histórico do Git.
+**Status:** MVP em produção (https://dash-asten.vercel.app), sem login por enquanto (D52): cargas por competência com histórico no banco, painel de Chamados com Leituras, Comparar (2 a 6 competências) e Evolução, envio em lote. Definições de Chamados aguardam o Líder (D31/D34/D35).
 **Escopo:** app web interno para conduzir as reuniões das coordenações da Asten, exibido em TV, a partir de planilhas `.xlsx` carregadas por competência.
 
 ## 0. Decisões (grilling 13/10 e revisões seguintes)
@@ -61,6 +61,9 @@
 | D52 | Login desligado no MVP | 14/10, pedido do responsável: o login fica **no código mas desligado** até a aprovação. Servidor: `LOGIN_DESATIVADO=1` faz toda requisição contar como sessão válida (`api/_lib/auth.ts`); app: `VITE_LOGIN=desativado` esconde o botão "Sair". Religar = remover as duas variáveis na Vercel e publicar. Risco aceito: quem tiver o link vê e altera as cargas. Banco de staging limpo (14 versões de teste apagadas pela API); produção começa vazia. |
 | D53 | Abertura no envio | O app abre **sempre na tela de envio**, com a lista do que já existe para abrir; não baixa nenhuma carga até a pessoa escolher. Cargas do mesmo tipo + competência formam **um grupo** com a versão mais recente por cima e as anteriores recolhidas (tela de envio, Histórico Geral e Enviados). Botão "Sair" na barra quando o login estiver em uso. Revisa a abertura da D28 ("abre na competência mais recente"). |
 | D54 | Comparar 2 a 6 competências | Revisa a D32: o Comparar aceita de **2 a 6 competências**. Colunas em ordem cronológica; **uma coluna Δ no fim = última − primeira**; cada célula ganha uma setinha discreta vs a coluna anterior (sem número). As Leituras do Comparar comparam a mais recente com a anterior a ela e são **clicáveis**, abrindo o mesmo detalhe da visão Leituras (D40). Decidido pelo responsável em 14/10. |
+| D55 | Nova carga em modal | O botão "Nova carga" abre um modal com a mesma área de arrastar e soltar da tela inicial ("Escolher arquivo" continua como alternativa). Arrastar um arquivo sobre a janela, com o painel aberto, também abre o modal. |
+| D56 | Envio em lote | Até **12 planilhas** de uma vez (soltar ou escolher várias). Com 2 ou mais, a confirmação vira uma **tabela, uma linha por arquivo**, com tipo e competência sugeridos e editáveis, aviso de versão quando o mês se repete e de tipo "Outro"; dá para tirar uma linha. "Confirmar N cargas" envia **um por vez**, com estado por linha; falha numa linha não para as outras e pode ser repetida. No fim, abre a competência mais recente do lote. Com 1 arquivo, o fluxo é o de sempre. |
+| D57 | Competência reconhecida em todas as formas | Revisa a sugestão da D28: o app procura o mês no nome da aba, no nome do arquivo, nos títulos e cabeçalhos da planilha e, por fim, **nas datas das linhas** (mês mais recente com volume significativo da coluna de evento, ignorando datas futuras como SLA), sem a trava "só mês atual ou anterior". Reconhece mês por extenso e abreviado (pt-BR e inglês), junto ou separado do ano (`set/26`, `SET26`, `setembro2026`), número + ano (`2026-09`, `09/2026`, `202609`) e datas completas em vários formatos (`30/09/2026`, `2026-09-30`, `30-set-2026`, `30 de setembro de 2026`, data do Excel). A pessoa sempre confirma. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 0.1 Requisitos de origem
@@ -78,7 +81,7 @@ Pedido do responsável, como chegou, e onde cada item está hoje (conferido no c
 | R7 | Filtrar conjuntos por critérios | Atende | 7 dimensões em Chamados (D39), recalculam KPIs, gráficos, Leituras, Comparar e Evolução; chips e "Limpar filtros" |
 | R8 | Biblioteca gráfica e leitura do xlsx | Atende | Recharts 3 (via shadcn charts); SheetJS 0.20.3 do CDN oficial, no navegador; o servidor recebe os dados já normalizados |
 | R9 | Carga por competência, escolhida no upload e amarrada aos dados | Atende | Competência sugerida (aba → arquivo → datas → mês anterior) e confirmada pela pessoa (D28) |
-| R10 | Guardar o passado para revisitar e comparar | Atende | Histórico no banco com versões, seletor de competência/versão, Comparar A×B, Evolução (D29/D32/D37) |
+| R10 | Guardar o passado para revisitar e comparar | Atende | Histórico no banco com versões agrupadas, seletor de competência/versão, Comparar de 2 a 6 competências, Evolução (D29/D32/D37/D53/D54) |
 | R11 | Outros conjuntos no futuro, cada um com seu dash | Atende (estrutura) | Registro de tipos no código (D30); hoje só Chamados/OS; sem tipo reconhecido → "Outro" com modo automático |
 
 Referência visual citada: https://www.youtube.com/watch?v=en0GuyhieQk
@@ -129,18 +132,18 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 
 ## 6. Fluxos
 
-### 6.1 Carregar uma competência
-1. "Nova carga" na barra → escolher o `.xlsx`.
-2. O app lê a planilha no navegador, reconhece o tipo e sugere a competência; a pessoa confirma ou corrige (D28).
-3. A carga vai para o banco com a próxima versão daquele tipo + competência; o painel abre nela.
+### 6.1 Carregar uma ou várias competências
+1. O app abre na tela de envio, com a lista do que já existe (D53); com o painel aberto, "Nova carga" abre o mesmo envio num modal (D55).
+2. Soltar ou escolher um ou vários `.xlsx` (até 12, D56). O app lê no navegador, reconhece o tipo e sugere a competência; a pessoa confirma ou corrige (D28), uma a uma ou na tabela do lote.
+3. Cada carga vai para o banco com a próxima versão daquele tipo + competência; o painel abre na mais recente.
 
 ### 6.2 Conduzir a reunião
-1. Painel (P) com KPIs, deltas e gráficos; Leituras (L) com o detalhe de cada uma num modal; Comparar (C); Evolução (E).
+1. Painel (P) com KPIs, deltas e gráficos; Leituras (L) com o detalhe de cada uma num modal; Comparar (C) de 2 a 6 competências, com leituras clicáveis; Evolução (E).
 2. Filtros (F) recortam as linhas antes do cálculo; os chips mostram o recorte ativo.
-3. Seletor de competência e versão na barra; Histórico para abrir ou excluir uma carga.
+3. Seletor de competência e versão na barra; Histórico (Enviados e Geral, com busca) para abrir qualquer versão.
 
 ### 6.3 Revisitar e comparar
-Qualquer competência guardada abre de qualquer máquina com o login. Comparar põe duas competências lado a lado; Evolução mostra as últimas 6, com pontos reconstruídos pelas datas marcados (D41).
+Qualquer competência guardada abre de qualquer máquina. Comparar põe de 2 a 6 competências lado a lado (Δ = última − primeira); Evolução mostra as últimas 6, com pontos reconstruídos pelas datas marcados (D41/D51).
 
 ## 7. Requisitos funcionais
 
