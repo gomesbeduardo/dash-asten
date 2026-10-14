@@ -3,6 +3,7 @@ import type { RefObject } from "react"
 
 const ALTURA_PADRAO = 80
 const LIMIAR_TOPO = 8
+const JANELA_FOCO_RESTAURADO = 800
 
 /**
  * Visibilidade da barra superior (D20): escondida por padrão. Aparece por
@@ -28,6 +29,8 @@ export function useBarVisibility({
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const naRegiao = useRef(false)
   const fixaRef = useRef(false)
+  const holdAnterior = useRef(hold)
+  const soltouEm = useRef(-Infinity)
 
   const agendarSumico = useCallback((ms: number) => {
     clearTimeout(timer.current)
@@ -37,9 +40,13 @@ export function useBarVisibility({
   useEffect(() => {
     // Inicia o ciclo ao montar e quando `hold` solta.
     clearTimeout(timer.current)
-    if (!hold && !naRegiao.current) agendarSumico(delay)
+    const soltou = holdAnterior.current && !hold
+    holdAnterior.current = hold
+    if (soltou) soltouEm.current = Date.now()
+    // Ao fechar um menu a barra some após o atraso curto, não o de abertura.
+    if (!hold && !naRegiao.current) agendarSumico(soltou ? leaveDelay : delay)
     return () => clearTimeout(timer.current)
-  }, [hold, delay, agendarSumico])
+  }, [hold, delay, leaveDelay, agendarSumico])
 
   useEffect(() => {
     const entrou = () => {
@@ -52,11 +59,15 @@ export function useBarVisibility({
       agendarSumico(leaveDelay)
     }
     const onMove = (e: MouseEvent) => {
-      const altura = barRef?.current?.getBoundingClientRect().height || ALTURA_PADRAO
+      // Mede mesmo escondida: a transformação não altera a altura.
+      const barra = barRef?.current
+      const altura = barra?.offsetHeight || barra?.getBoundingClientRect().height || ALTURA_PADRAO
       if (e.clientY <= Math.max(altura, LIMIAR_TOPO)) entrou()
       else if (naRegiao.current) saiu()
     }
     const onFocusIn = (e: FocusEvent) => {
+      // O foco que o menu devolve ao botão ao fechar não conta como pedido.
+      if (Date.now() - soltouEm.current < JANELA_FOCO_RESTAURADO) return
       const bar = barRef?.current
       if (bar && e.target instanceof Node && bar.contains(e.target)) {
         setAwake(true)
@@ -64,10 +75,14 @@ export function useBarVisibility({
         agendarSumico(delay)
       }
     }
+    // Mouse saiu da janela: sem isso `naRegiao` ficaria preso e a barra também.
+    const raiz = document.documentElement
     document.addEventListener("mousemove", onMove)
+    raiz.addEventListener("mouseleave", saiu)
     document.addEventListener("focusin", onFocusIn)
     return () => {
       document.removeEventListener("mousemove", onMove)
+      raiz.removeEventListener("mouseleave", saiu)
       document.removeEventListener("focusin", onFocusIn)
     }
   }, [barRef, delay, leaveDelay, agendarSumico])

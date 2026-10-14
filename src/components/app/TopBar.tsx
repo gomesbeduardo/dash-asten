@@ -51,13 +51,13 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
       ref={barRef}
       data-visible={p.visible}
       initial={false}
-      animate={{ opacity: p.visible ? 1 : 0, y: p.visible ? 0 : -24 }}
+      animate={{ opacity: p.visible ? 1 : 0, y: p.visible ? 0 : "-100%" }}
       transition={{
         duration: reduce ? 0 : p.visible ? duration.base : duration.fast,
         ease: standard,
       }}
       className={cn(
-        "fixed inset-x-0 top-0 z-30 border-b bg-card shadow-(--shadow-card)",
+        "fixed inset-x-0 top-0 z-30 border-b bg-card pt-[env(safe-area-inset-top)] shadow-(--shadow-card)",
         !p.visible && "pointer-events-none"
       )}
     >

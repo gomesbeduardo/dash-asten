@@ -131,4 +131,52 @@ describe("useBarVisibility", () => {
     avancar(3100)
     expect(result.current.visible).toBe(false)
   })
+
+  it("mouse que sai da janela estando na região não prende a barra", () => {
+    const ref = barraComAltura(120)
+    const { result } = renderHook(() =>
+      useBarVisibility({ hold: false, barRef: ref })
+    )
+    avancar(3500)
+    mover(50)
+    expect(result.current.visible).toBe(true)
+    act(() => void fireEvent.mouseLeave(document.documentElement))
+    avancar(900)
+    expect(result.current.visible).toBe(false)
+  })
+
+  it("hold que solta com o mouse fora da região some após o atraso curto", () => {
+    const ref = barraComAltura(120)
+    const { result, rerender } = renderHook(
+      ({ hold }) => useBarVisibility({ hold, barRef: ref }),
+      { initialProps: { hold: false } }
+    )
+    avancar(3500)
+    mover(50)
+    rerender({ hold: true })
+    mover(600)
+    avancar(5000)
+    expect(result.current.visible).toBe(true)
+    rerender({ hold: false })
+    avancar(900)
+    expect(result.current.visible).toBe(false)
+  })
+})
+
+describe("useBarVisibility ao fechar menu", () => {
+  it("foco devolvido ao botão da barra ao fechar não a mantém por 3 s", () => {
+    const ref = barraComAltura(120)
+    const { result, rerender } = renderHook(
+      ({ hold }) => useBarVisibility({ hold, barRef: ref }),
+      { initialProps: { hold: false } }
+    )
+    avancar(3500)
+    mover(600)
+    rerender({ hold: true })
+    avancar(1000)
+    rerender({ hold: false })
+    act(() => void fireEvent.focusIn(document.getElementById("dentro")!))
+    avancar(900)
+    expect(result.current.visible).toBe(false)
+  })
 })
