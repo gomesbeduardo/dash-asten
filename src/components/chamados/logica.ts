@@ -172,7 +172,7 @@ export type PontoEvolucao = {
 
 export function pontosDaEvolucao(
   proprias: { meta: CargaMeta; sheet: Sheet }[],
-  maxReconstruidos = 6,
+  maxPontos = 6,
   filtros: FiltrosChamados = {}
 ): {
   pontos: PontoEvolucao[]
@@ -190,9 +190,10 @@ export function pontosDaEvolucao(
     if (!a || p.meta.versao > a.meta.versao)
       maisRecentes.set(p.meta.competencia, p)
   }
-  const lista = [...maisRecentes.values()].sort((a, b) =>
-    a.meta.competencia.localeCompare(b.meta.competencia)
-  )
+  // No máximo `maxPontos` competências, sempre as mais recentes (próprias primeiro).
+  const lista = [...maisRecentes.values()]
+    .sort((a, b) => a.meta.competencia.localeCompare(b.meta.competencia))
+    .slice(-Math.max(maxPontos, 0))
   if (lista.length === 0) return { pontos: [], kpis: [] }
 
   const entradas: EntradaCompetencia[] = lista.map((p) => ({
@@ -205,7 +206,7 @@ export function pontosDaEvolucao(
   const n = anterioresComDados(
     maisAntiga.meta.competencia,
     primeira,
-    maxReconstruidos
+    maxPontos - lista.length
   ).length
   const reconstruidas =
     n > 0

@@ -172,7 +172,7 @@ describe("pontosDaEvolucao", () => {
     { abertura: "2026-09-02" },
   ])
   it("kpis dizem quais dependem da carga do mês (reconstruivel)", () => {
-    const { kpis } = pontosDaEvolucao([{ meta: meta("2026-09"), sheet: a }], 1)
+    const { kpis } = pontosDaEvolucao([{ meta: meta("2026-09"), sheet: a }], 6)
     expect(kpis.find((k) => k.id === "backlog")?.reconstruivel).toBe(true)
     expect(kpis.find((k) => k.id === "sla")?.reconstruivel).toBe(false)
   })
@@ -192,9 +192,55 @@ describe("pontosDaEvolucao", () => {
     // KPIs que exigem a carga do mês ficam nulos nos reconstruídos
     expect(ago.valores.sla).toBeNull()
   })
-  it("respeita o máximo de reconstruídos", () => {
-    const { pontos } = pontosDaEvolucao([{ meta: meta("2026-09"), sheet: a }], 1)
+  it("limita o total de pontos ao máximo informado", () => {
+    const { pontos } = pontosDaEvolucao([{ meta: meta("2026-09"), sheet: a }], 2)
     expect(pontos.map((p) => p.competencia)).toEqual(["2026-08", "2026-09"])
+  })
+  describe("exatamente as 6 competências mais recentes", () => {
+    const longa = sheetChamados(
+      ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m) => ({
+        abertura: `2026-${m}-05`,
+      }))
+    )
+    const proprias = (...cs: string[]) =>
+      cs.map((c) => ({ meta: meta(c), sheet: longa }))
+    it("3 próprias + 3 reconstruídos", () => {
+      const { pontos } = pontosDaEvolucao(
+        proprias("2026-07", "2026-08", "2026-09"),
+        6
+      )
+      expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
+        ["2026-04", false],
+        ["2026-05", false],
+        ["2026-06", false],
+        ["2026-07", true],
+        ["2026-08", true],
+        ["2026-09", true],
+      ])
+    })
+    it("7 próprias: só as 6 mais recentes", () => {
+      const { pontos } = pontosDaEvolucao(
+        proprias(
+          "2026-03", "2026-04", "2026-05", "2026-06",
+          "2026-07", "2026-08", "2026-09"
+        ),
+        6
+      )
+      expect(pontos.map((p) => p.competencia)).toEqual([
+        "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09",
+      ])
+      expect(pontos.every((p) => p.propria)).toBe(true)
+    })
+    it("1 própria: 5 reconstruídos + 1", () => {
+      const { pontos } = pontosDaEvolucao(proprias("2026-09"), 6)
+      expect(pontos.map((p) => p.propria)).toEqual([
+        false, false, false, false, false, true,
+      ])
+      expect(pontos[0].competencia).toBe("2026-04")
+    })
+    it("sem cargas: vazio", () => {
+      expect(pontosDaEvolucao([], 6)).toEqual({ pontos: [], kpis: [] })
+    })
   })
 })
 
