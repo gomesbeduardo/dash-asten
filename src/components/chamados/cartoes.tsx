@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
 import {
   descreverDelta,
@@ -346,11 +347,11 @@ export function GraficoCartao({
             <p className="text-base text-muted-foreground">{subtitulo}</p>
           )}
         </div>
-        <button
-          type="button"
-          aria-pressed={verTabela}
-          onClick={() => setVerTabela((v) => !v)}
-          className="press flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-base font-medium text-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring aria-pressed:bg-accent"
+        <Toggle
+          variant="outline"
+          pressed={verTabela}
+          onPressedChange={setVerTabela}
+          className="press shrink-0 gap-2"
         >
           {verTabela ? (
             <ChartColumnIcon className="size-5" aria-hidden />
@@ -358,7 +359,7 @@ export function GraficoCartao({
             <TableIcon className="size-5" aria-hidden />
           )}
           Ver dados
-        </button>
+        </Toggle>
       </header>
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
       <div hidden={verTabela}>{children}</div>

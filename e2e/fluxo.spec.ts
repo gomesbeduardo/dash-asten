@@ -58,7 +58,7 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
   // Passo de confirmação: tipo e competência (inferida) antes de guardar.
   const confirmar = page.getByRole("dialog", { name: "Confirmar a carga" })
   await expect(confirmar).toBeVisible()
-  await expect(confirmar.getByLabel("Tipo")).toHaveValue("outro")
+  await expect(confirmar.getByRole("combobox", { name: "Tipo" })).toContainText(/outro/i)
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
 
   // Aba com título acima do cabeçalho: cabeçalho real detectado.
@@ -133,14 +133,14 @@ test("duas competências: recarregar abre a mais recente e o seletor troca", asy
   await page.goto("/")
   await page.getByLabel(/Arquivo da planilha/).setInputFiles(agosto)
   const confirmar = page.getByRole("dialog", { name: "Confirmar a carga" })
-  await expect(confirmar.getByLabel("Mês")).toHaveValue("8")
+  await expect(confirmar.getByRole("combobox", { name: "Mês" })).toHaveText("Agosto")
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
   await expect(h1(page, "Resumo")).toBeVisible()
   await expect(linhas(page)).toContainText("4")
 
   await page.mouse.move(400, 40)
   await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(setembro)
-  await expect(confirmar.getByLabel("Mês")).toHaveValue("9")
+  await expect(confirmar.getByRole("combobox", { name: "Mês" })).toHaveText("Setembro")
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
   await expect(linhas(page)).toContainText("6")
 

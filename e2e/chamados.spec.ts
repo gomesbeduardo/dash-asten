@@ -79,7 +79,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await page.goto("/")
   await page.getByLabel(/Arquivo da planilha/).setInputFiles(ago)
   const confirmar = page.getByRole("dialog", { name: "Confirmar a carga" })
-  await expect(confirmar.getByLabel("Tipo")).toHaveValue("chamados")
+  await expect(confirmar.getByRole("combobox", { name: "Tipo" })).toContainText(/chamados/i)
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
   await expect(kpi(page, "Backlog aberto")).toBeVisible()
 
@@ -137,16 +137,20 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   // O filtro persiste em Comparar; trocar os meses mostra o Δ
   await page.keyboard.press("c")
   await expect(page.getByRole("list", { name: "Filtros ativos" })).toContainText("Cli B")
-  await expect(page.getByLabel("Competência A")).toHaveValue("2026-08")
-  await expect(page.getByLabel("Competência B")).toHaveValue("2026-09")
+  await expect(page.getByRole("combobox", { name: "Competência A" })).toContainText("Agosto de 2026")
+  await expect(page.getByRole("combobox", { name: "Competência B" })).toContainText("Setembro de 2026")
   await page.getByRole("button", { name: "Limpar filtros" }).first().click()
   const linha = page.getByRole("row", { name: /Backlog aberto/ })
   await expect(linha).toContainText("+1")
-  await page.getByLabel("Competência A").selectOption("2026-09")
-  await page.getByLabel("Competência B").selectOption("2026-08")
+  await page.getByRole("combobox", { name: "Competência A" }).click()
+  await page.getByRole("option", { name: /Setembro de 2026/ }).click()
+  await page.getByRole("combobox", { name: "Competência B" }).click()
+  await page.getByRole("option", { name: /Agosto de 2026/ }).click()
   await expect(linha).toContainText("-1")
 
   // Evolução: meses sem carga própria vêm marcados como reconstruídos
+  // O seletor segue focado (como o select nativo): tira o foco para o atalho valer.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await page.keyboard.press("e")
   await expect(page.getByRole("heading", { level: 1, name: "Evolução" })).toBeVisible()
   const card = page.getByRole("region", { name: "Backlog aberto" })

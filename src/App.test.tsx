@@ -101,15 +101,16 @@ describe("nova carga", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
-    expect(within(dialog).getByLabelText("Tipo")).toHaveValue("outro")
-    expect(within(dialog).getByLabelText("Mês")).toHaveValue("8")
+    expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toHaveTextContent(/outro/i)
+    expect(within(dialog).getByRole("combobox", { name: "Mês" })).toHaveTextContent("Agosto")
     expect(within(dialog).getByLabelText("Ano")).toHaveValue("2026")
     expect(within(dialog).getByText("pelo nome do arquivo")).toBeInTheDocument()
     expect(
       within(dialog).getByText(/reuniao-agosto-2026\.xlsx/)
     ).toBeInTheDocument()
 
-    await user.selectOptions(within(dialog).getByLabelText("Mês"), "9")
+    await user.click(within(dialog).getByRole("combobox", { name: "Mês" }))
+    await user.click(await screen.findByRole("option", { name: "Setembro" }))
     await user.click(
       within(dialog).getByRole("button", { name: "Confirmar carga" })
     )
@@ -139,7 +140,7 @@ describe("nova carga", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
-    expect(within(dialog).getByLabelText("Tipo")).toHaveValue("chamados")
+    expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toHaveTextContent(/chamados/i)
     expect(
       within(dialog).getByText("reconhecido pelas colunas")
     ).toBeInTheDocument()

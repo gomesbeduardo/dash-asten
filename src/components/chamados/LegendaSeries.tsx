@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { cn } from "@/lib/utils"
+import { ToggleSerie } from "@/components/ui/toggle-serie"
 
 export type ItemLegenda = {
   id: string
@@ -51,32 +51,14 @@ export function LegendaSeries({
         const ultima = !oculta && restantes <= 1
         return (
           <li key={i.id}>
-            <button
-              type="button"
-              aria-pressed={!oculta}
-              aria-disabled={ultima || undefined}
-              title={ultima ? "Ao menos uma série fica visível" : undefined}
-              onClick={() => {
-                if (!ultima) onAlternar(i.id)
-              }}
-              className={cn(
-                "press flex min-h-11 items-center gap-2 rounded-md border px-3 text-base focus-visible:outline-2 focus-visible:outline-ring",
-                oculta
-                  ? "text-muted-foreground line-through"
-                  : "bg-accent/50 font-medium",
-                ultima && "cursor-not-allowed"
-              )}
-            >
-              <span
-                aria-hidden
-                className="inline-block h-0 w-6 border-t-[4px]"
-                style={{
-                  borderColor: i.cor,
-                  borderTopStyle: i.tracejado ? "dashed" : "solid",
-                }}
-              />
-              {i.rotulo}
-            </button>
+            <ToggleSerie
+              ligada={!oculta}
+              ultima={ultima}
+              cor={i.cor}
+              tracejado={i.tracejado}
+              rotulo={i.rotulo}
+              onAlternar={() => onAlternar(i.id)}
+            />
           </li>
         )
       })}
