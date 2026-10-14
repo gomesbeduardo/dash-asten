@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import type { Carga, CargaMeta } from "@/cargas"
 import type { Workbook } from "@/core"
 import { escolherCargaInicial, sucessorAposExcluir } from "@/app/navegacao"
+import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
+import { useListaInicial } from "@/app/sessao/SessaoContext"
 import { Apresentacao } from "@/components/app/Apresentacao"
 import { ImportScreen } from "@/components/app/ImportScreen"
 import { NovaCargaDialog } from "@/components/app/NovaCargaDialog"
@@ -11,6 +13,8 @@ import { useWorkbookLoader } from "@/components/app/hooks/useWorkbookLoader"
 
 export function App() {
   const repo = useRepositorio()
+  // Lista que o porteiro já buscou ao verificar a sessão: poupa uma requisição na abertura.
+  const listaInicial = useRef(useListaInicial())
   const [pronto, setPronto] = useState(false)
   const [metas, setMetas] = useState<CargaMeta[]>([])
   const [atual, setAtual] = useState<Carga | null>(null)
@@ -32,7 +36,7 @@ export function App() {
     let cancelado = false
     ;(async () => {
       try {
-        const ms = await repo.listar()
+        const ms = listaInicial.current ?? (await repo.listar())
         const ini = escolherCargaInicial(ms)
         const carga = ini ? await repo.obter(ini.id) : null
         if (cancelado) return
@@ -92,6 +96,8 @@ export function App() {
     },
     [repo, atual]
   )
+
+  usePrecarga(repo, metas, atual?.tipo ?? null)
 
   const apagarTudo = useCallback(async () => {
     await repo.limparTudo?.()

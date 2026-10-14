@@ -435,3 +435,42 @@ describe("filtros de Chamados", () => {
   })
 
 })
+
+describe("estado de carregamento", () => {
+  // Carga que nunca chega: a visão tem de mostrar que está carregando, nunca a área vazia.
+  const pendente = async () => {
+    const props = await cenario(true)
+    return { ...props, obterCarga: () => new Promise<Carga | null>(() => {}) }
+  }
+
+  it.each([
+    ["Comparar", CompararChamados, "Comparar competências"],
+    ["Evolução", EvolucaoChamados, "Evolução"],
+  ])("%s mostra título e 'Carregando competências…' com aria-busy", async (_n, Visao, titulo) => {
+    const props = await pendente()
+    render(
+      <FiltrosChamadosProvider carga={props.carga}>
+        <Visao {...props} />
+      </FiltrosChamadosProvider>
+    )
+    expect(screen.getByRole("heading", { level: 1, name: titulo })).toBeInTheDocument()
+    const status = screen.getByRole("status")
+    expect(status).toHaveTextContent("Carregando competências…")
+    expect(status).toHaveAttribute("aria-busy", "true")
+  })
+
+  it.each([
+    ["Painel", PainelChamados],
+    ["Leituras", LeiturasChamados],
+  ])("%s mostra o carregando enquanto o mês anterior não chega", async (_n, Visao) => {
+    const props = await pendente()
+    render(
+      <FiltrosChamadosProvider carga={props.carga}>
+        <Visao {...props} />
+      </FiltrosChamadosProvider>
+    )
+    const status = screen.getByRole("status")
+    expect(status).toHaveAttribute("aria-busy", "true")
+    expect(status).toHaveTextContent(/Carregando/)
+  })
+})

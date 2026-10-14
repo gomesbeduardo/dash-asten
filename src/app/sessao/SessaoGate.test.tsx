@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { SessaoGate } from "./SessaoGate"
-import { useSessao } from "./SessaoContext"
+import { useListaInicial, useSessao } from "./SessaoContext"
 
 const json = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } })
@@ -12,9 +12,14 @@ function Sair() {
   const { sair } = useSessao()
   return <button onClick={() => void sair()}>sair-teste</button>
 }
+function Lista() {
+  const lista = useListaInicial()
+  return <p>lista: {lista === null ? "nenhuma" : lista.map((m) => m.id).join(",")}</p>
+}
 const App = () => (
   <div>
     <p>conteúdo do app</p>
+    <Lista />
     <input aria-label="rascunho" />
     <Sair />
   </div>
@@ -47,17 +52,41 @@ describe("SessaoGate", () => {
   })
 
   it("sessão válida mostra o app", async () => {
-    fetchMock.mockResolvedValueOnce(json({ expiraEm: "x" }))
+    fetchMock.mockResolvedValueOnce(json([]))
     montar()
     expect(await screen.findByText("conteúdo do app")).toBeInTheDocument()
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/sessao")
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/cargas")
+  })
+
+  it("a abertura é uma só requisição (sem /api/sessao) e repassa a lista ao app", async () => {
+    fetchMock.mockResolvedValueOnce(json([{ id: "c1", tipo: "t", competencia: "2026-01", versao: 1, importadaEm: "2026-01-02T00:00:00Z", arquivo: "a.xlsx", linhas: 1 }]))
+    montar()
+    expect(await screen.findByText("lista: c1")).toBeInTheDocument()
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual(["/api/cargas"])
+  })
+
+  it("depois do login o app não recebe lista pré-carregada (lista por conta própria)", async () => {
+    fetchMock.mockResolvedValueOnce(json({}, 401))
+    montar()
+    await userEvent.type(await screen.findByLabelText("Usuário"), "ana")
+    await userEvent.type(screen.getByLabelText("Senha"), "segredo")
+    fetchMock.mockResolvedValueOnce(json({ usuario: "ana", expiraEm: "x" }))
+    await userEvent.keyboard("{Enter}")
+    expect(await screen.findByText("lista: nenhuma")).toBeInTheDocument()
+  })
+
+  it("erro 500 ao listar oferece Tentar de novo", async () => {
+    fetchMock.mockResolvedValueOnce(json({ erro: "falha" }, 500))
+    montar()
+    expect(await screen.findByRole("button", { name: "Tentar de novo" })).toBeInTheDocument()
   })
 
   it("401 mostra o login, com foco em Usuário", async () => {
     fetchMock.mockResolvedValueOnce(json({}, 401))
     montar()
     const usuario = await screen.findByLabelText("Usuário")
-    expect(usuario).toHaveFocus()
+    await waitFor(() => expect(usuario).toHaveFocus())
     expect(screen.queryByText("conteúdo do app")).not.toBeInTheDocument()
   })
 
@@ -65,7 +94,7 @@ describe("SessaoGate", () => {
     fetchMock.mockRejectedValueOnce(new TypeError("falhou"))
     montar()
     const botao = await screen.findByRole("button", { name: "Tentar de novo" })
-    fetchMock.mockResolvedValueOnce(json({ expiraEm: "x" }))
+    fetchMock.mockResolvedValueOnce(json([]))
     await userEvent.click(botao)
     expect(await screen.findByText("conteúdo do app")).toBeInTheDocument()
   })
@@ -108,7 +137,7 @@ describe("SessaoGate", () => {
   })
 
   it("evento de sessão expirada volta ao login com aviso e preserva a tela", async () => {
-    fetchMock.mockResolvedValueOnce(json({ expiraEm: "x" }))
+    fetchMock.mockResolvedValueOnce(json([]))
     montar()
     await userEvent.type(await screen.findByLabelText("rascunho"), "meu texto")
     act(() => {
@@ -123,7 +152,7 @@ describe("SessaoGate", () => {
   })
 
   it("sair chama /api/logout e volta ao login", async () => {
-    fetchMock.mockResolvedValueOnce(json({ expiraEm: "x" }))
+    fetchMock.mockResolvedValueOnce(json([]))
     montar()
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
     await userEvent.click(await screen.findByText("sair-teste"))

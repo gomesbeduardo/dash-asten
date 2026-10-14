@@ -8,6 +8,7 @@ import type { FormatoKpi } from "@/chamados"
 import { GraficoCartao } from "./cartoes"
 import { COR, LinhaMini, type SerieLinha } from "./graficos"
 import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
+import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
 import { Selo } from "./selos"
 import {
@@ -76,7 +77,13 @@ export function EvolucaoChamados({
   const titulo = (
     <h1 className="text-6xl leading-none text-primary">Evolução</h1>
   )
-  if (!dados) return <div className="flex flex-col gap-4">{titulo}</div>
+  if (!dados)
+    return (
+      <div className="flex flex-col gap-4">
+        {titulo}
+        <Carregando />
+      </div>
+    )
   const { pontos, kpis } = dados
   const play = entrada && !reduce
   const formatoDe = (id: string): FormatoKpi =>
