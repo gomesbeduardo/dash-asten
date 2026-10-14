@@ -16,7 +16,7 @@
 
 **Fica para depois:** montar ou editar gráficos pela tela, renomear e reordenar abas, um filtro valendo para todas as abas, exportar imagem ou CSV, salvar preferências entre reuniões.
 
-Tudo roda no navegador. A planilha não sai do computador e some quando a aba é fechada.
+Tudo roda no navegador e a planilha não sai do computador. Cada carga é guardada por competência (mês de análise) para revisitar e comparar depois; hoje esse histórico fica no próprio navegador.
 
 ## Protótipo
 

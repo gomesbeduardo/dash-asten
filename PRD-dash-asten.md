@@ -16,7 +16,7 @@
 | D6 | Filtros | **Tudo por aba.** Nenhum filtro atravessa abas, nem o de período. |
 | D7 | Gestão de abas | Fica **ocultar/reexibir abas**. Renomear e reordenar estão **cortados**; nome e ordem vêm da planilha. |
 | D8 | Foco nos dados | O usuário **escolhe quais colunas aparecem** na tabela de detalhe. Não há tela de mapeamento técnico (ver D18). |
-| D9 | Dados sensíveis | **Sem máscara automática.** O layout fixo decide o que aparece. Nada persiste: fechar a aba do navegador apaga tudo. |
+| D9 | Dados sensíveis | **Sem máscara automática.** O layout decide o que aparece. ~~Nada persiste~~ — revisto pela D29: as cargas ficam guardadas para o histórico (hoje no próprio navegador); "Limpar" passa a oferecer apagar o histórico deste navegador. |
 | D10 | Exportação / Claude Motion | **Fora do MVP.** O Motion fica registrado só como ideia futura, sem código. |
 | D11 | Hospedagem | **Em aberto** (depende do Líder ou da TI). O build deve ser estático e agnóstico: precisa funcionar em qualquer host estático. |
 | D12 | Visual | A Asten tem marca. A **cor principal entra só como acento** sobre uma base neutra e clara, com uma paleta de séries acessível separada da marca. |
@@ -57,7 +57,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 
 ## 3. Objetivos do MVP
 
-- Importar o `.xlsx` da semana localmente; nada sai do navegador.
+- Importar o `.xlsx` da competência localmente, informando tipo e competência (D28); enquanto o histórico for local (D29), nada sai do navegador.
 - Carregar todas as abas com conteúdo e exibi-las como visões numa barra de abas, sem trocar de página.
 - Em cada aba, abrir um **dashboard fixo** (cartões-resumo, gráficos e tabela de detalhe) definido para a planilha-modelo.
 - Oferecer **filtros por aba**, combináveis, com chips removíveis e "limpar filtros".
@@ -72,7 +72,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 - Renomear ou reordenar abas (D7).
 - Filtros que atravessam abas (D6).
 - Exportação PNG/CSV/PDF e handoff para Claude Motion (D10).
-- Persistência de qualquer tipo, inclusive localStorage e links compartilháveis.
+- Links compartilháveis. (Persistência deixou de ser não-objetivo: histórico de cargas, D29.)
 - Autenticação, backend, API, banco, telemetria de conteúdo e colaboração.
 - Suporte genérico a qualquer planilha: o produto atende à planilha-modelo (D2).
 - Gráficos ou KPIs inferidos automaticamente, previsões e IA.
@@ -87,7 +87,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 | Facilitadora | Importar a planilha da semana em minutos e conduzir filtros e navegação ao vivo. |
 | Líder | Aprova escopo, métricas e layout. Também é dono das definições de negócio pendentes (§8). |
 
-**Cenário:** computador ligado a uma TV ou tela grande (às vezes projetor). A facilitadora abre o painel, importa a planilha da semana e conduz a reunião. Fechar a aba descarta tudo.
+**Cenário:** computador ligado a uma TV ou tela grande (às vezes projetor). A facilitadora abre o painel, importa a planilha da semana e conduz a reunião. As cargas ficam no histórico (D29); numa máquina compartilhada, use "Limpar" para apagar o histórico daquele navegador.
 
 ## 6. Fluxos
 
