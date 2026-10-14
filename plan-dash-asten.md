@@ -79,7 +79,7 @@ Na `main`, na raiz do repo, do zero e com testes:
 1. ✅ **Neon** pelo Marketplace no projeto `g0mes/dash-asten`. Um banco só; ambientes separados por **schema Postgres** (`public` = produção, `staging` = preview e local) via `DB_SCHEMA`.
 2. ✅ Esquema com **Prisma 7.10.0** (`db/schema.prisma`, migrações `0001_cargas` e `0002_ids_cuid` geradas por `prisma migrate diff`, aplicadas nos dois schemas): tabela `cargas` com id **CUID2**, tipo, competência, versão, importada_em, arquivo, linhas, dados jsonb, unique(tipo, competência, versão).
 3. ✅ API em Vercel Functions: `GET /api/cargas` (metadados), `POST /api/cargas` (corpo gzip, versão = max+1 com retry em conflito), `GET /api/cargas/:id`, `DELETE /api/cargas/:id`. Sem "apagar tudo" (405). Entradas validadas (id CUID2, tipo, tamanho até 4 MB).
-4. ✅ **Login próprio** (D38) no lugar do Basic Auth: `POST /api/login`, `/api/logout`, `/api/sessao`; token HMAC em cookie HttpOnly/Secure/Lax (14 dias com "lembrar"); duas camadas (Routing Middleware em `/api/*` + verificação em cada função).
+4. ✅ **Login próprio** (D38) no lugar do Basic Auth: `POST /api/login`, `/api/logout`, `/api/sessao`; token HMAC em cookie HttpOnly/Secure/Lax (14 dias com "lembrar"); duas camadas (Routing Middleware em `/api/*` + verificação em cada função; o middleware foi trocado pelo roteador único na fase 2E).
 5. ✅ Dev local: `vercel dev` (porta 3000) para o app completo.
 
 **Cliente (workers):**
