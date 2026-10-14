@@ -164,7 +164,79 @@ describe("opcoesDeCompetencia", () => {
   })
 })
 
+describe("opcoesDeCompetencia com mês faltando no meio", () => {
+  it("oferece o mês faltante como reconstruído pela carga seguinte", () => {
+    const o = opcoesDeCompetencia([meta("2026-07"), meta("2026-09")], "2026-01")
+    expect(o.map((x) => [x.competencia, x.propria, x.deCarga])).toEqual([
+      ["2026-09", true, undefined],
+      ["2026-08", false, "2026-09"],
+      ["2026-07", true, undefined],
+    ])
+    expect(o[1].rotulo).toBe("Agosto de 2026 (reconstruído)")
+  })
+  it("só oferece buracos dentro da janela de 6 meses", () => {
+    const o = opcoesDeCompetencia(
+      [meta("2026-01"), meta("2026-08"), meta("2026-09")],
+      "2026-01"
+    )
+    expect(o.map((x) => [x.competencia, x.propria])).toEqual([
+      ["2026-09", true],
+      ["2026-08", true],
+      ["2026-07", false],
+      ["2026-06", false],
+      ["2026-05", false],
+      ["2026-04", false],
+      ["2026-01", true],
+    ])
+  })
+})
+
 describe("pontosDaEvolucao", () => {
+  describe("mês faltando no meio", () => {
+    const longa = sheetChamados(
+      ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m) => ({
+        abertura: `2026-${m}-05`,
+      }))
+    )
+    const proprias = (...cs: string[]) =>
+      cs.map((c) => ({ meta: meta(c), sheet: longa }))
+    it("jul+set: ago vem reconstruído pela carga de set", () => {
+      const { pontos } = pontosDaEvolucao(proprias("2026-07", "2026-09"), 6)
+      expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
+        ["2026-04", false],
+        ["2026-05", false],
+        ["2026-06", false],
+        ["2026-07", true],
+        ["2026-08", false],
+        ["2026-09", true],
+      ])
+    })
+    it("mai+set: abr pela de mai; jun, jul e ago pela de set", () => {
+      const a = sheetChamados([{ abertura: "2026-04-05" }])
+      const b = sheetChamados([
+        { abertura: "2026-04-05" },
+        { abertura: "2026-06-05" },
+      ])
+      const { pontos } = pontosDaEvolucao(
+        [
+          { meta: meta("2026-05"), sheet: a },
+          { meta: meta("2026-09"), sheet: b },
+        ],
+        6
+      )
+      expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
+        ["2026-04", false],
+        ["2026-05", true],
+        ["2026-06", false],
+        ["2026-07", false],
+        ["2026-08", false],
+        ["2026-09", true],
+      ])
+      // jun foi montado pela planilha de set (tem chamado aberto em jun); abr pela de mai
+      expect(pontos[2].valores.backlog).toBe(2)
+      expect(pontos[0].valores.backlog).toBe(1)
+    })
+  })
   const a = sheetChamados([
     { abertura: "2026-07-05", solucao: "2026-07-20" },
     { abertura: "2026-08-03", solucao: "2026-09-10", situacao: "Finalizado" },

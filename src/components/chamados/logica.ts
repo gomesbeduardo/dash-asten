@@ -10,7 +10,6 @@ import {
   classificarLinha,
   evolucao,
   mapearColunas,
-  reconstruirAnteriores,
   ROTULO_SITUACAO_COMPETENCIA,
   type CampoChamado,
   type EntradaCompetencia,
@@ -136,6 +135,26 @@ export type OpcaoCompetencia = {
   rotulo: string
   propria: boolean
   meta?: CargaMeta
+  /** Reconstruído no meio do histórico: competência da carga seguinte cuja planilha o monta. */
+  deCarga?: Competencia
+}
+
+/** As `n` competências de calendário terminando em `fim` (da mais recente à mais antiga). */
+function janelaDe(fim: Competencia, n: number): Competencia[] {
+  const out: Competencia[] = []
+  let c = fim
+  for (let i = 0; i < n; i++) {
+    out.push(c)
+    c = competenciaAnterior(c)
+  }
+  return out
+}
+
+/** Menor competência própria estritamente posterior a `c` (a "carga seguinte"). */
+function proximaPropria(c: Competencia, proprias: Competencia[]) {
+  return proprias
+    .filter((p) => maiorQue(p, c))
+    .sort((x, y) => x.localeCompare(y))[0]
 }
 
 /** Competências escolhíveis em Comparar: as cargas; com só uma carga, também meses reconstruídos. */
@@ -145,12 +164,32 @@ export function opcoesDeCompetencia(
   maxReconstruidas = 6
 ): OpcaoCompetencia[] {
   const proprias = ultimasVersoes(historico).reverse()
-  const opcoes: OpcaoCompetencia[] = proprias.map((meta) => ({
-    competencia: meta.competencia,
-    rotulo: cap(formatarCompetencia(meta.competencia, "longo")),
-    propria: true,
-    meta,
-  }))
+  const comps = proprias.map((m) => m.competencia)
+  const porComp = new Map(proprias.map((m) => [m.competencia, m]))
+  const opcoes: OpcaoCompetencia[] = []
+  if (proprias.length > 0) {
+    const janela = new Set(janelaDe(comps[0], 6))
+    const todas = new Set([...comps, ...janela])
+    const menorPropria = comps[comps.length - 1]
+    for (const c of [...todas].sort((x, y) => y.localeCompare(x))) {
+      const meta = porComp.get(c)
+      if (meta) {
+        opcoes.push({
+          competencia: c,
+          rotulo: cap(formatarCompetencia(c, "longo")),
+          propria: true,
+          meta,
+        })
+      } else if (maiorQue(c, menorPropria)) {
+        opcoes.push({
+          competencia: c,
+          rotulo: `${cap(formatarCompetencia(c, "longo"))} (reconstruído)`,
+          propria: false,
+          deCarga: proximaPropria(c, comps),
+        })
+      }
+    }
+  }
   if (proprias.length === 1) {
     const maisAntiga = proprias[proprias.length - 1].competencia
     for (const c of anterioresComDados(maisAntiga, primeira, maxReconstruidas))
@@ -190,29 +229,34 @@ export function pontosDaEvolucao(
     if (!a || p.meta.versao > a.meta.versao)
       maisRecentes.set(p.meta.competencia, p)
   }
-  // No máximo `maxPontos` competências, sempre as mais recentes (próprias primeiro).
-  const lista = [...maisRecentes.values()]
-    .sort((a, b) => a.meta.competencia.localeCompare(b.meta.competencia))
-    .slice(-Math.max(maxPontos, 0))
-  if (lista.length === 0) return { pontos: [], kpis: [] }
-
-  const entradas: EntradaCompetencia[] = lista.map((p) => ({
-    sheet: p.sheet,
-    competencia: p.meta.competencia,
-    cargaPropria: true,
-  }))
-  const maisAntiga = lista[0]
-  const primeira = primeiraCompetencia(maisAntiga.sheet)
-  const n = anterioresComDados(
-    maisAntiga.meta.competencia,
-    primeira,
-    maxPontos - lista.length
-  ).length
-  const reconstruidas =
-    n > 0
-      ? reconstruirAnteriores(maisAntiga.sheet, maisAntiga.meta.competencia, n)
-      : []
-  const todas = [...reconstruidas, ...entradas].map((e) => ({
+  const n = Math.max(maxPontos, 0)
+  const comps = [...maisRecentes.keys()].sort((a, b) => a.localeCompare(b))
+  if (comps.length === 0 || n === 0) return { pontos: [], kpis: [] }
+  // As `n` competências de calendário terminando na carga própria mais recente, sem buracos.
+  const janela = janelaDe(comps[comps.length - 1], n).reverse()
+  const primeira = primeiraCompetencia(maisRecentes.get(comps[0])!.sheet)
+  const reconstruidas: EntradaCompetencia[] = []
+  const entradas: EntradaCompetencia[] = []
+  for (const c of janela) {
+    const propria = maisRecentes.get(c)
+    if (propria) {
+      entradas.push({ sheet: propria.sheet, competencia: c, cargaPropria: true })
+      continue
+    }
+    // Pela planilha da carga própria seguinte (a mais próxima); antes da primeira
+    // carga, é a mais antiga e não passa do primeiro chamado.
+    const seguinte = proximaPropria(c, comps)
+    if (!seguinte) continue
+    if (maiorQue(comps[0], c) && primeira && maiorQue(primeira, c)) continue
+    reconstruidas.push({
+      sheet: maisRecentes.get(seguinte)!.sheet,
+      competencia: c,
+      cargaPropria: false,
+    })
+  }
+  const todas = [...reconstruidas, ...entradas]
+    .sort((a, b) => a.competencia.localeCompare(b.competencia))
+    .map((e) => ({
     ...e,
     sheet: filtrarSheet(e.sheet, filtros, e.competencia),
   }))

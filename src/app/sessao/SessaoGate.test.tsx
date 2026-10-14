@@ -143,7 +143,7 @@ describe("SessaoGate", () => {
     act(() => {
       window.dispatchEvent(new CustomEvent("asten:sessao-expirada"))
     })
-    expect(await screen.findByText("Sua sessão expirou. Entre de novo.")).toBeInTheDocument()
+    expect(await screen.findByText("Sua sessão expirou. Entre novamente!")).toBeInTheDocument()
     fetchMock.mockResolvedValueOnce(json({ usuario: "ana", expiraEm: "x" }))
     await userEvent.type(screen.getByLabelText("Usuário"), "ana")
     await userEvent.type(screen.getByLabelText("Senha"), "segredo{Enter}")
