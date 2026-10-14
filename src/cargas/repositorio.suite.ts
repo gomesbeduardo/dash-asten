@@ -1,3 +1,4 @@
+import { isCuid } from "@paralleldrive/cuid2"
 import { describe, expect, it } from "vitest"
 import type { Workbook } from "@/core"
 import type { NovaCarga, RepositorioDeCargas } from "./types"
@@ -32,7 +33,7 @@ export function suiteDeRepositorio(criar: () => RepositorioDeCargas) {
       const meta = await repo.salvar(nova())
       expect(meta.versao).toBe(1)
       expect(meta.linhas).toBe(5)
-      expect(meta.id).toMatch(/[0-9a-f-]{36}/)
+      expect(isCuid(meta.id)).toBe(true)
       expect(new Date(meta.importadaEm).toISOString()).toBe(meta.importadaEm)
       const carga = await repo.obter(meta.id)
       expect(carga?.arquivo).toBe("f.xlsx")
@@ -40,6 +41,15 @@ export function suiteDeRepositorio(criar: () => RepositorioDeCargas) {
       expect(d).toBeInstanceOf(Date)
       expect((d as Date).toISOString()).toBe("2026-09-03T00:00:00.000Z")
       expect(carga?.workbook.importedAt).toBeInstanceOf(Date)
+    })
+
+    it("ids são CUID2 e id inválido não quebra obter/excluir", async () => {
+      const repo = criar()
+      const meta = await repo.salvar(nova())
+      expect(isCuid(meta.id)).toBe(true)
+      expect(await repo.obter("nao-e-cuid")).toBeNull()
+      await expect(repo.excluir("nao-e-cuid")).resolves.toBeUndefined()
+      expect(await repo.obter(meta.id)).not.toBeNull()
     })
 
     it("incrementa versão por tipo+competência e recomeça em 1 para outro tipo ou mês", async () => {

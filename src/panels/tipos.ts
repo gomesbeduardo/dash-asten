@@ -1,7 +1,10 @@
-import type { ComponentType } from "react"
+import type { ComponentType, ReactNode } from "react"
 import type { Carga, CargaMeta } from "@/cargas"
+import type { Visao } from "@/app/navegacao"
 import { PainelOutro } from "@/components/app/PainelOutro"
 import { PainelChamados } from "@/components/chamados/PainelChamados"
+import { FiltrosChamadosProvider } from "@/components/chamados/filtros"
+import { LeiturasChamados } from "@/components/chamados/LeiturasChamados"
 import { CompararChamados } from "@/components/chamados/CompararChamados"
 import { EvolucaoChamados } from "@/components/chamados/EvolucaoChamados"
 
@@ -12,17 +15,29 @@ export type VisaoTipoProps = {
   obterCarga: (id: string) => Promise<Carga | null>
   /** true na 1ª exibição da visão nesta sessão: toca a entrada única (D26). */
   entrada: boolean
+  /** Leva a outra visão do mesmo tipo (ex.: do Painel para as Leituras). */
+  irPara?: (visao: Visao) => void
 }
 
+/** Contexto do tipo (ex.: filtros) que sobrevive à troca de visão e de competência. */
+export type EnvoltorioDoTipo = ComponentType<{
+  carga: Carga
+  children: ReactNode
+}>
+
 export type VisoesDoTipo = {
+  Envoltorio?: EnvoltorioDoTipo
   Painel: ComponentType<VisaoTipoProps>
+  Leituras?: ComponentType<VisaoTipoProps>
   Comparar?: ComponentType<VisaoTipoProps>
   Evolucao?: ComponentType<VisaoTipoProps>
 }
 
 const visoes: Record<string, VisoesDoTipo> = {
   chamados: {
+    Envoltorio: FiltrosChamadosProvider,
     Painel: PainelChamados,
+    Leituras: LeiturasChamados,
     Comparar: CompararChamados,
     Evolucao: EvolucaoChamados,
   },

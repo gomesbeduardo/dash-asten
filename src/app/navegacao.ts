@@ -1,6 +1,6 @@
 import type { CargaMeta, Competencia } from "@/cargas"
 
-export type Visao = "painel" | "comparar" | "evolucao"
+export type Visao = "painel" | "leituras" | "comparar" | "evolucao"
 export type GrupoCompetencia = {
   competencia: Competencia
   versoes: CargaMeta[]

@@ -16,7 +16,24 @@ export function FilterChips({
   onRemove: (key: string) => void
   onClearAll: () => void
 }) {
-  const chips = chipsFor(sheet, filters)
+  return (
+    <ListaDeChips
+      chips={chipsFor(sheet, filters)}
+      onRemove={onRemove}
+      onClearAll={onClearAll}
+    />
+  )
+}
+
+export function ListaDeChips<K extends string>({
+  chips,
+  onRemove,
+  onClearAll,
+}: {
+  chips: { key: K; label: string; text: string }[]
+  onRemove: (key: K) => void
+  onClearAll: () => void
+}) {
   if (chips.length === 0) return null
   return (
     <ul

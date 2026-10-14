@@ -50,7 +50,12 @@ function reviver(wb: Workbook): Workbook {
 
 async function validar(resp: Response): Promise<Response> {
   if (resp.ok) return resp
-  if (resp.status === 401) throw new ErroDeCarga(MSG_401)
+  if (resp.status === 401) {
+    // Avisa o porteiro de sessão (SessaoGate), que devolve o usuário ao login.
+    if (typeof window !== "undefined")
+      window.dispatchEvent(new CustomEvent("asten:sessao-expirada"))
+    throw new ErroDeCarga(MSG_401)
+  }
   let detalhe: string | undefined
   try {
     const corpo = (await resp.json()) as { erro?: unknown }

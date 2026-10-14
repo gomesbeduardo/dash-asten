@@ -1,6 +1,6 @@
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { criarRepositorioMemoria, type RepositorioDeCargas } from "@/cargas"
 import { readWorkbook } from "@/core"
 import { registrarTiposDoApp } from "@/app/bootstrap"
@@ -74,7 +74,14 @@ function montar(repo = criarRepositorioMemoria()) {
   return repo
 }
 
-const h1 = (name: string) => screen.findByRole("heading", { level: 1, name })
+/** O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó. */
+const tituloVisivel = (name: string | RegExp) =>
+  waitFor(() =>
+    expect(
+      screen.getByRole("heading", { level: 1, name })
+    ).toBeInTheDocument()
+  )
+const h1 = (name: string | RegExp) => screen.findByRole("heading", { level: 1, name })
 
 beforeEach(() => registrarTiposDoApp())
 
@@ -104,7 +111,9 @@ describe("nova carga", () => {
     )
 
     expect(await h1("Projetos")).toBeInTheDocument()
-    expect(screen.getByText("3 linhas")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("table", { name: /Tabela da aba/ })
+    ).not.toBeInTheDocument()
     const [meta] = await repo.listar()
     expect(meta).toMatchObject({
       tipo: "outro",
@@ -134,15 +143,21 @@ describe("nova carga", () => {
       within(dialog).getByRole("button", { name: "Confirmar carga" })
     )
 
-    expect(await h1("Painel de chamados")).toBeInTheDocument()
+    await screen.findByRole("article", { name: "Backlog aberto" })
+    expect(
+      screen.getByRole("heading", { level: 1, name: /^Chamados · / })
+    ).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Leituras" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Comparar" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Evolução" })).toBeInTheDocument()
+    await user.keyboard("l")
+    await tituloVisivel(/^Leituras · /)
     await user.keyboard("c")
-    expect(await h1("Comparar competências")).toBeInTheDocument()
+    await tituloVisivel("Comparar competências")
     await user.keyboard("e")
-    expect(await h1("Evolução")).toBeInTheDocument()
+    await tituloVisivel("Evolução")
     await user.keyboard("p")
-    expect(await h1("Painel de chamados")).toBeInTheDocument()
+    await screen.findByRole("article", { name: "Backlog aberto" })
   })
 
   it("segunda carga do mesmo mês avisa a versão e cria a v2", async () => {
@@ -179,6 +194,45 @@ describe("nova carga", () => {
       screen.getByRole("button", { name: "Competência" })
     ).toHaveTextContent("v2")
     expect((await repo.listar()).map((m) => m.versao)).toEqual([2, 1])
+  })
+
+  it("o diálogo não fecha ao clicar fora; fecha com Esc", async () => {
+    const user = userEvent.setup()
+    const repo = montar()
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      outro()
+    )
+    const dialog = await screen.findByRole("dialog", {
+      name: "Confirmar a carga",
+    })
+    // clique no fundo (overlay) fora do conteúdo
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]')!
+    await user.click(overlay)
+    expect(
+      screen.getByRole("dialog", { name: "Confirmar a carga" })
+    ).toBe(dialog)
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(await repo.listar()).toEqual([])
+  })
+
+  it("salva os bytes do arquivo original junto da carga", async () => {
+    const user = userEvent.setup()
+    const repo = criarRepositorioMemoria()
+    const salvarOriginal = vi.spyOn(repo, "salvar")
+    montar(repo)
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      outro()
+    )
+    await user.click(
+      await screen.findByRole("button", { name: "Confirmar carga" })
+    )
+    await h1("Projetos")
+    const nova = salvarOriginal.mock.calls[0][0]
+    expect(nova.original).toBeInstanceOf(ArrayBuffer)
+    expect(nova.original!.byteLength).toBeGreaterThan(0)
   })
 
   it("cancelar volta sem salvar", async () => {
@@ -226,7 +280,7 @@ describe("abertura e navegação", () => {
       Dados: CHAMADOS,
     })
     montar(repo)
-    expect(await h1("Painel de chamados")).toBeInTheDocument()
+    await screen.findByRole("article", { name: "Backlog aberto" })
     const sel = screen.getByRole("button", { name: "Competência" })
     expect(sel).toHaveTextContent("Agosto de 2026")
     expect(sel).toHaveTextContent("v2")
@@ -282,6 +336,31 @@ describe("abertura e navegação", () => {
 })
 
 describe("histórico e limpeza", () => {
+  it("sem limparTudo (banco compartilhado) o botão vira Fechar carga e não apaga nada", async () => {
+    const user = userEvent.setup()
+    const base = criarRepositorioMemoria()
+    const repo: RepositorioDeCargas = {
+      listar: () => base.listar(),
+      obter: (id) => base.obter(id),
+      salvar: (n) => base.salvar(n),
+      excluir: (id) => base.excluir(id),
+    }
+    await salvar(repo, "ago.xlsx", "outro", "2026-08", { Agosto: OUTRO })
+    montar(repo)
+    await h1("Agosto")
+    expect(
+      screen.queryByRole("button", { name: /Limpar/ })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Fechar carga/ }))
+    expect(
+      screen.queryByText("Apagar o histórico deste navegador")
+    ).not.toBeInTheDocument()
+    expect(
+      await screen.findByText("Carregar a planilha da competência")
+    ).toBeInTheDocument()
+    expect(await repo.listar()).toHaveLength(1)
+  })
+
   it("Histórico lista por tipo/competência/versão e exclui com confirmação", async () => {
     const user = userEvent.setup()
     const repo = criarRepositorioMemoria()

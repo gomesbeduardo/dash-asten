@@ -82,7 +82,12 @@ export function NovaCargaDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent
+        className="sm:max-w-xl"
+        // Só fecha por Esc ou pelos botões: clique fora não descarta a carga.
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl text-primary">
             Confirmar a carga

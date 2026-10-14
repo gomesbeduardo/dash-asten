@@ -1,6 +1,6 @@
 import { useRef } from "react"
 import { motion, useReducedMotion } from "motion/react"
-import { FolderOpenIcon, HistoryIcon, Trash2Icon } from "lucide-react"
+import { FolderOpenIcon, HistoryIcon, Trash2Icon, XIcon } from "lucide-react"
 
 import logo from "@/assets/asten-logo-fundo-claro.png"
 import type { CargaMeta } from "@/cargas"
@@ -12,6 +12,7 @@ import { duration, standard } from "./motion/tokens"
 
 const ROTULO_VISAO: Record<Visao, string> = {
   painel: "Painel",
+  leituras: "Leituras",
   comparar: "Comparar",
   evolucao: "Evolução",
 }
@@ -29,6 +30,8 @@ export type TopBarProps = {
   onVisao: (v: Visao) => void
   onPickFile: (file: File) => void
   onHistorico: () => void
+  /** true: o botão apaga o histórico local (Limpar); false: só fecha a carga. */
+  podeApagar: boolean
   onClear: () => void
   onSelectorOpenChange: (open: boolean) => void
   dica: string | null
@@ -117,14 +120,19 @@ export function TopBar({ onSlot, ...p }: TopBarProps) {
             <HistoryIcon aria-hidden /> Histórico
           </Button>
           <Button variant="ghost" size="lg" onClick={p.onClear}>
-            <Trash2Icon aria-hidden /> Limpar
+            {p.podeApagar ? (
+              <Trash2Icon aria-hidden />
+            ) : (
+              <XIcon aria-hidden />
+            )}{" "}
+            {p.podeApagar ? "Limpar" : "Fechar carga"}
           </Button>
         </div>
       </div>
       <div ref={onSlot} />
       <p className="border-t px-6 py-1 text-sm text-muted-foreground">
         {p.dica && `${p.dica} · `}H barra
-        {p.visoes.length > 1 && " · P painel · C comparar · E evolução"}
+        {p.visoes.length > 1 && " · P painel · L leituras · C comparar · E evolução"}
       </p>
     </motion.header>
   )

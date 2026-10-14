@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import type { ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import { tiposRegistrados, type Carga, type CargaMeta } from "@/cargas"
@@ -28,10 +29,16 @@ export type ApresentacaoProps = {
   onAbrir: (id: string) => void
   onExcluir: (meta: CargaMeta) => void
   onNovaCarga: (file: File) => void
-  onApagarTudo: () => void
+  /** Ausente no banco compartilhado: não há como apagar tudo. */
+  onApagarTudo?: () => void
+  onFecharCarga: () => void
   erro: string | null
   onDismissErro: () => void
 }
+
+const Fragmento = ({ children }: { carga: Carga; children: ReactNode }) => (
+  <>{children}</>
+)
 
 /** Casca do modo apresentação: barra, visões do tipo e diálogos de histórico/limpeza. */
 export function Apresentacao(p: ApresentacaoProps) {
@@ -50,14 +57,18 @@ export function Apresentacao(p: ApresentacaoProps) {
   const disponiveis = useMemo<Visao[]>(
     () => [
       "painel",
+      ...(visoes.Leituras ? (["leituras"] as const) : []),
       ...(visoes.Comparar ? (["comparar"] as const) : []),
       ...(visoes.Evolucao ? (["evolucao"] as const) : []),
     ],
     [visoes]
   )
+  const Envoltorio = visoes.Envoltorio ?? Fragmento
   const visao = resolverVisao(visaoPedida, disponiveis)
   const Visao =
-    visao === "comparar"
+    visao === "leituras"
+      ? visoes.Leituras!
+      : visao === "comparar"
       ? visoes.Comparar!
       : visao === "evolucao"
         ? visoes.Evolucao!
@@ -109,7 +120,10 @@ export function Apresentacao(p: ApresentacaoProps) {
           onVisao={setVisaoPedida}
           onPickFile={p.onNovaCarga}
           onHistorico={() => setHistoricoOpen(true)}
-          onClear={() => setLimparOpen(true)}
+          podeApagar={!!p.onApagarTudo}
+          onClear={() =>
+            p.onApagarTudo ? setLimparOpen(true) : p.onFecharCarga()
+          }
           onSelectorOpenChange={setSeletorOpen}
         />
 
@@ -129,6 +143,7 @@ export function Apresentacao(p: ApresentacaoProps) {
             </div>
           )}
 
+          <Envoltorio carga={carga}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={chave}
@@ -142,9 +157,11 @@ export function Apresentacao(p: ApresentacaoProps) {
                 historico={doTipo}
                 obterCarga={p.obterCarga}
                 entrada={entrada}
+                irPara={pedirVisao}
               />
             </motion.div>
           </AnimatePresence>
+          </Envoltorio>
         </main>
 
         <HistoricoSheet
@@ -179,7 +196,7 @@ export function Apresentacao(p: ApresentacaoProps) {
                 size="lg"
                 onClick={() => {
                   setLimparOpen(false)
-                  p.onApagarTudo()
+                  p.onApagarTudo?.()
                 }}
               >
                 Apagar o histórico deste navegador

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 
-export type VisaoTecla = "painel" | "comparar" | "evolucao"
+export type VisaoTecla = "painel" | "leituras" | "comparar" | "evolucao"
 
 /** Todos opcionais: o painel do tipo "outro" e a casca registram cada um os seus. */
 export type ShortcutHandlers = {
@@ -42,6 +42,7 @@ export function useShortcuts(handlers: Partial<ShortcutHandlers>) {
       else if (k === "p") h.onVisao?.("painel")
       else if (k === "c") h.onVisao?.("comparar")
       else if (k === "e") h.onVisao?.("evolucao")
+      else if (k === "l") h.onVisao?.("leituras")
       else if (e.key === "Escape" && !e.defaultPrevented) h.onEscape?.()
     }
     window.addEventListener("keydown", onKeyDown)

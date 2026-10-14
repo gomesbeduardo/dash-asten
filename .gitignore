@@ -21,3 +21,8 @@ test-results/
 .vscode/*
 !.vscode/extensions.json
 .vercel
+
+# Prisma client gerado (postinstall)
+api/_generated/
+# Skills de provedores instaladas localmente
+skills-lock.json

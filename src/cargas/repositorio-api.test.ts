@@ -130,6 +130,15 @@ describe("repositório API", () => {
     expect(erro.message).toBe("Sessão sem login. Recarregue a página e entre com o usuário e senha do time.")
   })
 
+  it("401 dispara o evento asten:sessao-expirada", async () => {
+    srv.respostasForcadas.push(new Response("", { status: 401 }))
+    const ouvinte = vi.fn()
+    window.addEventListener("asten:sessao-expirada", ouvinte)
+    await criarRepositorioApi().listar().catch(() => undefined)
+    window.removeEventListener("asten:sessao-expirada", ouvinte)
+    expect(ouvinte).toHaveBeenCalledTimes(1)
+  })
+
   it("outros erros usam { erro } do corpo; sem JSON, uma mensagem genérica", async () => {
     srv.respostasForcadas.push(new Response(JSON.stringify({ erro: "Competência inválida" }), { status: 400 }))
     srv.respostasForcadas.push(new Response("<html>", { status: 500 }))

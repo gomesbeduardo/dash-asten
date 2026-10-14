@@ -14,10 +14,17 @@ export function App() {
   const [pronto, setPronto] = useState(false)
   const [metas, setMetas] = useState<CargaMeta[]>([])
   const [atual, setAtual] = useState<Carga | null>(null)
-  const [pendente, setPendente] = useState<Workbook | null>(null)
+  const [pendente, setPendente] = useState<{
+    workbook: Workbook
+    original: ArrayBuffer
+  } | null>(null)
   const [erroRepo, setErroRepo] = useState<string | null>(null)
 
-  const onLoaded = useCallback((wb: Workbook) => setPendente(wb), [])
+  const onLoaded = useCallback(
+    (workbook: Workbook, original: ArrayBuffer) =>
+      setPendente({ workbook, original }),
+    []
+  )
   const loader = useWorkbookLoader(onLoaded)
 
   // Abertura (TV): competência mais recente do tipo da última carga feita.
@@ -50,8 +57,9 @@ export function App() {
         const meta = await repo.salvar({
           tipo: escolha.tipo,
           competencia: escolha.competencia,
-          arquivo: pendente.fileName,
-          workbook: pendente,
+          arquivo: pendente.workbook.fileName,
+          workbook: pendente.workbook,
+          original: pendente.original,
         })
         setMetas(await repo.listar())
         setAtual(await repo.obter(meta.id))
@@ -86,11 +94,17 @@ export function App() {
   )
 
   const apagarTudo = useCallback(async () => {
-    await repo.limparTudo()
+    await repo.limparTudo?.()
     setMetas([])
     setAtual(null)
     loader.dismiss()
   }, [repo, loader])
+
+  // Banco compartilhado: só volta à tela inicial, sem apagar nada.
+  const fecharCarga = useCallback(() => {
+    setAtual(null)
+    loader.dismiss()
+  }, [loader])
 
   if (!pronto) return null
 
@@ -108,7 +122,8 @@ export function App() {
           onAbrir={abrir}
           onExcluir={excluir}
           onNovaCarga={loader.load}
-          onApagarTudo={apagarTudo}
+          onApagarTudo={repo.limparTudo ? apagarTudo : undefined}
+          onFecharCarga={fecharCarga}
           erro={erro}
           onDismissErro={() => {
             loader.dismiss()
@@ -125,7 +140,7 @@ export function App() {
       )}
       {pendente && (
         <NovaCargaDialog
-          workbook={pendente}
+          workbook={pendente.workbook}
           metas={metas}
           onConfirm={guardar}
           onCancel={() => setPendente(null)}

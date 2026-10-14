@@ -40,6 +40,8 @@ function buildWorkbook(path: string) {
   writeFileSync(path, XLSX.write(wb, { type: "buffer", bookType: "xlsx" }))
 }
 
+const linhas = (page: Page) => page.getByRole("article", { name: "Linhas", exact: true })
+
 const h1 = (page: Page, name: string) =>
   page.getByRole("heading", { level: 1, name, exact: true })
 
@@ -61,15 +63,16 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
 
   // Aba com título acima do cabeçalho: cabeçalho real detectado.
   await expect(h1(page, "Indicadores")).toBeVisible()
-  await expect(page.getByRole("columnheader", { name: /Meta/ })).toBeVisible()
-  await expect(page.getByText("12 linhas")).toBeVisible()
-  await expect(page.getByRole("cell", { name: "—" })).toHaveCount(1)
+  // D36: nada de tabela de linhas soltas; a contagem vem do indicador "Linhas".
+  await expect(page.getByRole("table")).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: "Dados" })).toHaveCount(0)
+  await expect(linhas(page)).toContainText("12")
   // "Instruções" (1 linha) foi omitida.
   await expect(page.getByRole("tab", { name: /Instruções/ })).toHaveCount(0)
 
   await page.keyboard.press("ArrowRight")
   await expect(h1(page, "Projetos")).toBeVisible()
-  await expect(page.getByText("20 linhas")).toBeVisible()
+  await expect(linhas(page)).toContainText("20")
 
   await page.keyboard.press("f")
   const panel = page.getByRole("dialog", { name: "Filtros" })
@@ -86,7 +89,7 @@ test("fluxo completo de apresentação", async ({ page }, testInfo) => {
   await page.keyboard.press("Escape") // fecha o painel
   await expect(panel).toBeHidden()
 
-  await expect(page.getByText("5 linhas")).toBeVisible()
+  await expect(linhas(page)).toContainText("5")
   const chips = page.getByRole("list", { name: "Filtros ativos" })
   await expect(chips).toContainText("Status: Atrasado")
 
@@ -133,18 +136,18 @@ test("duas competências: recarregar abre a mais recente e o seletor troca", asy
   await expect(confirmar.getByLabel("Mês")).toHaveValue("8")
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
   await expect(h1(page, "Resumo")).toBeVisible()
-  await expect(page.getByText("4 linhas")).toBeVisible()
+  await expect(linhas(page)).toContainText("4")
 
   await page.mouse.move(400, 40)
   await page.getByLabel("Arquivo da nova carga (.xlsx)").setInputFiles(setembro)
   await expect(confirmar.getByLabel("Mês")).toHaveValue("9")
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
-  await expect(page.getByText("6 linhas")).toBeVisible()
+  await expect(linhas(page)).toContainText("6")
 
   // Recarregar: abre direto a competência mais recente.
   await page.reload()
   await expect(h1(page, "Resumo")).toBeVisible()
-  await expect(page.getByText("6 linhas")).toBeVisible()
+  await expect(linhas(page)).toContainText("6")
   await page.mouse.move(400, 40)
   const seletor = page.getByRole("button", { name: "Competência" })
   await expect(seletor).toContainText("Setembro de 2026")
@@ -152,5 +155,5 @@ test("duas competências: recarregar abre a mais recente e o seletor troca", asy
   await seletor.click()
   await page.getByRole("button", { name: "Agosto de 2026, versão 1" }).click()
   await expect(seletor).toContainText("Agosto de 2026")
-  await expect(page.getByText("4 linhas")).toBeVisible()
+  await expect(linhas(page)).toContainText("4")
 })

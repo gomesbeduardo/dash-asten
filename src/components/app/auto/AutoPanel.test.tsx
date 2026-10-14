@@ -114,13 +114,16 @@ describe("AutoPanel", () => {
     expect(within(kpi).getByLabelText("—")).toHaveTextContent("—")
   })
 
-  it("mostra título e subtítulo dos gráficos e a tabela embaixo", () => {
+  it("mostra título e subtítulo dos gráficos, sem tabela de linhas soltas (D36)", () => {
     setup()
     expect(screen.getByText("Meta × Realizado por mês")).toBeInTheDocument()
     expect(screen.getByText("Soma por mês")).toBeInTheDocument()
     expect(screen.getByText("Sem dados para este filtro")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Dados" })).toBeInTheDocument()
-    expect(screen.getByText("valor-da-tabela")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Dados" })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText("valor-da-tabela")).not.toBeInTheDocument()
+    expect(screen.queryByRole("table", { name: /Tabela da aba/ })).toBeNull()
   })
 
   it("Ver dados alterna para a tabela do gráfico", async () => {

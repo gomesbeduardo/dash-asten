@@ -35,26 +35,26 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
-function ValuesFilter({
-  sheet,
-  column,
-  filter,
+/** Multisseleção com busca, sobre uma lista de opções já pronta. */
+export function MultiSelectFilter({
+  label,
+  options,
+  selected,
   onChange,
 }: {
-  sheet: Sheet
-  column: Column
-  filter: Extract<ColumnFilter, { kind: "values" }> | undefined
-  onChange: (next: ColumnFilter | null) => void
+  label: string
+  options: string[]
+  selected: string[]
+  onChange: (values: string[]) => void
 }) {
   const [open, setOpen] = useState(false)
-  const options = filterOptions(sheet, column.key)
-  const selected = filter?.values ?? []
 
   function toggle(value: string) {
-    const next = selected.includes(value)
-      ? selected.filter((v) => v !== value)
-      : [...selected, value]
-    onChange(next.length ? { kind: "values", values: next } : null)
+    onChange(
+      selected.includes(value)
+        ? selected.filter((v) => v !== value)
+        : [...selected, value]
+    )
   }
 
   return (
@@ -63,6 +63,7 @@ function ValuesFilter({
         <Button
           variant="outline"
           role="combobox"
+          aria-label={label}
           aria-expanded={open}
           className="h-11 w-full justify-between text-base"
         >
@@ -81,7 +82,7 @@ function ValuesFilter({
         align="start"
       >
         <Command>
-          <CommandInput placeholder={`Buscar em ${column.label}`} />
+          <CommandInput placeholder={`Buscar em ${label}`} />
           <CommandList>
             <CommandEmpty>Nenhum valor encontrado.</CommandEmpty>
             <CommandGroup>
@@ -108,6 +109,29 @@ function ValuesFilter({
         </Command>
       </PopoverContent>
     </Popover>
+  )
+}
+
+function ValuesFilter({
+  sheet,
+  column,
+  filter,
+  onChange,
+}: {
+  sheet: Sheet
+  column: Column
+  filter: Extract<ColumnFilter, { kind: "values" }> | undefined
+  onChange: (next: ColumnFilter | null) => void
+}) {
+  return (
+    <MultiSelectFilter
+      label={column.label}
+      options={filterOptions(sheet, column.key)}
+      selected={filter?.values ?? []}
+      onChange={(values) =>
+        onChange(values.length ? { kind: "values", values } : null)
+      }
+    />
   )
 }
 

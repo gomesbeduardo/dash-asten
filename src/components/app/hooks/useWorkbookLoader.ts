@@ -13,7 +13,7 @@ export function messageForError(error: unknown): string {
 }
 
 /** Lê o arquivo escolhido inteiro no navegador; nada é enviado a lugar nenhum. */
-export function useWorkbookLoader(onLoaded: (workbook: Workbook) => void) {
+export function useWorkbookLoader(onLoaded: (workbook: Workbook, original: ArrayBuffer) => void) {
   const [state, setState] = useState<LoadState>({ status: "idle" })
 
   const load = useCallback(
@@ -23,7 +23,7 @@ export function useWorkbookLoader(onLoaded: (workbook: Workbook) => void) {
         const data = await file.arrayBuffer()
         const workbook = readWorkbook(data, file.name)
         setState({ status: "idle" })
-        onLoaded(workbook)
+        onLoaded(workbook, data)
       } catch (error) {
         setState({ status: "error", message: messageForError(error) })
       }

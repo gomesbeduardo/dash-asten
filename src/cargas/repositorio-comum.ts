@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2"
 import type { CargaMeta, NovaCarga } from "./types"
 
 export function ordenarMetas(metas: CargaMeta[]): CargaMeta[] {
@@ -14,7 +15,7 @@ export function montarMeta(nova: NovaCarga, existentes: CargaMeta[]): CargaMeta 
     .filter((m) => m.tipo === nova.tipo && m.competencia === nova.competencia)
     .map((m) => m.versao)
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     tipo: nova.tipo,
     competencia: nova.competencia,
     versao: Math.max(0, ...versoes) + 1,

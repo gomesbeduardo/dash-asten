@@ -84,5 +84,7 @@ describe("resolverVisao", () => {
   it("mantém a visão pedida se existe; senão painel", () => {
     expect(resolverVisao("comparar", ["painel", "comparar"])).toBe("comparar")
     expect(resolverVisao("evolucao", ["painel"])).toBe("painel")
+    expect(resolverVisao("leituras", ["painel", "leituras"])).toBe("leituras")
+    expect(resolverVisao("leituras", ["painel"])).toBe("painel")
   })
 })

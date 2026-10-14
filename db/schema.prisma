@@ -1,0 +1,30 @@
+// Histórico de cargas por competência (D28, D37). Prisma 7 + Neon (adaptador).
+// O schema Postgres por ambiente (public = produção, staging = dev/preview) vem de DB_SCHEMA,
+// aplicado no adaptador em runtime e na URL das migrações (db/prisma.config.ts).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../api/_generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Carga {
+  id          String   @id @default(cuid(2))
+  tipo        String
+  competencia String   @db.Char(7)
+  versao      Int
+  importadaEm DateTime @default(now()) @map("importada_em") @db.Timestamptz(6)
+  arquivo     String
+  linhas      Int
+  /// Workbook normalizado (abas, colunas, linhas); datas em ISO 8601.
+  dados       Json
+  /// .xlsx original, para reprocessar se o leitor ou as regras mudarem.
+  original    Bytes?
+
+  @@unique([tipo, competencia, versao])
+  @@index([tipo, competencia(sort: Desc), versao(sort: Desc)])
+  @@map("cargas")
+}

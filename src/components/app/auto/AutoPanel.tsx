@@ -7,7 +7,6 @@ import {
   type Sheet,
   type SheetFilters,
 } from "@/core"
-import { GenericTable } from "../GenericTable"
 import { entryContainer } from "../motion/variants"
 import { AutoChartCard } from "./AutoChartCard"
 import { complementGridClass } from "./chartTheme"
@@ -21,7 +20,7 @@ export type PanelProps = {
   entry?: boolean
 }
 
-/** Painel da aba sem painel específico (D25): KPIs + gráficos automáticos + tabela. */
+/** Painel da aba sem painel específico (D25): KPIs + gráficos automáticos (sem tabela de linhas soltas, D36). */
 export function AutoPanel({
   sheet,
   rows,
@@ -58,10 +57,6 @@ export function AutoPanel({
           )}
         </motion.div>
       )}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-2xl text-primary">Dados</h2>
-        <GenericTable key={sheet.id} sheet={sheet} rows={rows} />
-      </div>
     </div>
   )
 }
