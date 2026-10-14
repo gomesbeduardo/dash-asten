@@ -1,6 +1,6 @@
 // Sessão do time (D38): login único, token HMAC em cookie HttpOnly.
 // A chave de assinatura deriva de AUTH_SECRET + usuário + senha: trocar o login ou a senha
-// invalida todos os tokens emitidos. Verificado no Routing Middleware e de novo em cada função.
+// invalida todos os tokens emitidos. Verificado no roteador da API (api/rota.ts) e de novo em cada handler.
 import { createHash, createHmac, timingSafeEqual } from "node:crypto"
 
 export const COOKIE = "asten_sessao"
@@ -67,8 +67,17 @@ function lerCookie(request: Request): string | null {
   return null
 }
 
+/**
+ * Login desligado no MVP de validação (D52): com LOGIN_DESATIVADO=1, toda requisição conta como sessão
+ * válida. O resto do login fica intacto; religar = remover a variável (e VITE_LOGIN no build) e publicar.
+ */
+export function loginDesativado(): boolean {
+  return process.env.LOGIN_DESATIVADO === "1"
+}
+
 /** Valida o token do cookie. Devolve a expiração (ISO) ou null se ausente, adulterado ou vencido. */
 export function sessaoValida(request: Request, agora = Date.now()): { expiraEm: string } | null {
+  if (loginDesativado()) return { expiraEm: new Date(agora + SESSAO_CURTA_S * 1000).toISOString() }
   const c = config()
   const token = lerCookie(request)
   if (!c || !token) return null
