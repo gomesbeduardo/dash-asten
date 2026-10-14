@@ -7,37 +7,47 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  mensagemDoLote,
+  separarArquivos,
+  type MensagemDoLote,
+} from "@/cargas/lote"
 import { AreaDeEnvio } from "./AreaDeEnvio"
 
 /** Modal de envio da "Nova carga": solta o .xlsx aqui, sem procurar em pastas. */
 export function NovoEnvioDialog({
   open,
   onOpenChange,
-  onFile,
+  onFiles,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onFile: (file: File) => void
+  onFiles: (files: File[], ignorados: string[]) => void
 }) {
-  const [erro, setErro] = useState<string | null>(null)
+  const [mensagem, setMensagem] = useState<MensagemDoLote | null>(null)
   const botao = useRef<HTMLButtonElement>(null)
-  const ref = useRef({ onFile, onOpenChange })
+  const ref = useRef({ onFiles, onOpenChange })
   useEffect(() => {
-    ref.current = { onFile, onOpenChange }
+    ref.current = { onFiles, onOpenChange }
   })
 
-  function receber(file: File) {
-    if (!/\.xlsx$/i.test(file.name)) {
-      setErro(`"${file.name}" não é uma planilha .xlsx. Envie um arquivo .xlsx.`)
+  // Soltar fora da área (qualquer ponto da janela) passa pelas mesmas regras.
+  function receberSolto(lista: FileList | File[]) {
+    const todos = Array.from(lista)
+    if (todos.length === 0) return
+    const r = separarArquivos(todos)
+    const m = mensagemDoLote(r, todos.length)
+    if (r.aceitos.length === 0) {
+      setMensagem(m)
       return
     }
-    setErro(null)
-    onOpenChange(false)
-    onFile(file)
+    setMensagem(null)
+    ref.current.onOpenChange(false)
+    ref.current.onFiles(r.aceitos, r.ignorados)
   }
-  const receberRef = useRef(receber)
+  const receberRef = useRef(receberSolto)
   useEffect(() => {
-    receberRef.current = receber
+    receberRef.current = receberSolto
   })
 
   // Com o modal aberto, soltar em qualquer ponto da janela vale como soltar na
@@ -47,8 +57,7 @@ export function NovoEnvioDialog({
     const over = (e: DragEvent) => e.preventDefault()
     const drop = (e: DragEvent) => {
       e.preventDefault()
-      const file = e.dataTransfer?.files[0]
-      if (file) receberRef.current(file)
+      if (e.dataTransfer?.files) receberRef.current(e.dataTransfer.files)
     }
     window.addEventListener("dragover", over)
     window.addEventListener("drop", drop)
@@ -62,7 +71,7 @@ export function NovoEnvioDialog({
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        if (!v) setErro(null)
+        if (!v) setMensagem(null)
         onOpenChange(v)
       }}
     >
@@ -76,18 +85,25 @@ export function NovoEnvioDialog({
         <DialogHeader>
           <DialogTitle className="text-2xl text-primary">Nova carga</DialogTitle>
           <DialogDescription className="text-base">
-            Solte a planilha .xlsx aqui ou escolha o arquivo. Depois você
-            confirma o tipo e a competência.
+            Solte a planilha .xlsx (ou várias de uma vez, até 12) aqui ou escolha
+            os arquivos. Depois você confirma o tipo e a competência.
           </DialogDescription>
         </DialogHeader>
         <AreaDeEnvio
-          onFile={receber}
+          onFiles={(files, ignorados) => {
+            setMensagem(null)
+            onOpenChange(false)
+            onFiles(files, ignorados)
+          }}
           rotuloInput="Arquivo da nova carga (.xlsx)"
           botaoRef={botao}
         />
-        {erro && (
-          <p role="alert" className="border-l-4 border-destructive pl-3 text-base font-medium text-destructive">
-            {erro}
+        {mensagem && (
+          <p
+            role={mensagem.nivel === "erro" ? "alert" : "status"}
+            className="border-l-4 border-destructive pl-3 text-base font-medium text-destructive"
+          >
+            {mensagem.texto}
           </p>
         )}
       </DialogContent>

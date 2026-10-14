@@ -28,7 +28,7 @@ export type ApresentacaoProps = {
   metas: CargaMeta[]
   obterCarga: (id: string) => Promise<Carga | null>
   onAbrir: (id: string) => void
-  onNovaCarga: (file: File) => void
+  onNovaCarga: (files: File[], ignorados: string[]) => void
   /** Ausente no banco compartilhado: não há como apagar tudo. */
   onApagarTudo?: () => void
   onFecharCarga: () => void
@@ -182,7 +182,7 @@ export function Apresentacao(p: ApresentacaoProps) {
         <NovoEnvioDialog
           open={envioOpen}
           onOpenChange={setEnvioOpen}
-          onFile={p.onNovaCarga}
+          onFiles={p.onNovaCarga}
         />
 
         <HistoricoSheet

@@ -10,13 +10,13 @@ import { ListaCargasAgrupada } from "./ListaCargasAgrupada"
 
 export function ImportScreen({
   state,
-  onFile,
+  onFiles,
   metas = [],
   carregandoLista = false,
   onAbrir,
 }: {
   state: LoadState
-  onFile: (file: File) => void
+  onFiles: (files: File[], ignorados: string[]) => void
   /** Cargas que já existem, mostradas agrupadas abaixo da área de envio. */
   metas?: CargaMeta[]
   carregandoLista?: boolean
@@ -35,7 +35,7 @@ export function ImportScreen({
           Carregar a planilha da competência
         </h1>
         <p className="max-w-prose text-xl text-muted-foreground">
-          Escolha a planilha do mês, confirme o tipo e a competência, e ela vira
+          Escolha a planilha do mês (ou várias de uma vez), confirme o tipo e a competência, e ela vira
           telas para apresentar.{" "}
           {modoApi()
             ? "A carga fica guardada no banco do app e aparece em qualquer computador."
@@ -43,7 +43,11 @@ export function ImportScreen({
         </p>
       </div>
 
-      <AreaDeEnvio onFile={onFile} loading={loading} />
+      <AreaDeEnvio
+        onFiles={onFiles}
+        loading={loading}
+        progresso={state.status === "loading" ? state.progresso : null}
+      />
 
       {state.status === "error" && (
         <div

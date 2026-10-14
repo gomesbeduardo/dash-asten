@@ -4,7 +4,7 @@ import { ImportScreen } from "./ImportScreen"
 
 afterEach(() => vi.unstubAllEnvs())
 const tela = () =>
-  render(<ImportScreen state={{ status: "idle" }} onFile={() => {}} />)
+  render(<ImportScreen state={{ status: "idle" }} onFiles={() => {}} />)
 
 describe("ImportScreen texto por modo", () => {
   it("modo API: diz que a carga fica no banco do app", () => {
