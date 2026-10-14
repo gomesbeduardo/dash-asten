@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { LIMITE_NOME, nomeSugerido } from "./formatoCarga"
 
 export const MESES = [
   "Janeiro",
@@ -58,7 +59,7 @@ export function NovaCargaDialog({
 }: {
   workbook: Workbook
   metas: CargaMeta[]
-  onConfirm: (escolha: { tipo: string; competencia: string }) => void
+  onConfirm: (escolha: { tipo: string; competencia: string; nome?: string }) => void
   onCancel: () => void
 }) {
   const inicial = useMemo(() => {
@@ -79,6 +80,7 @@ export function NovaCargaDialog({
   const [mes, setMes] = useState(inicial.mes)
   const [ano, setAno] = useState(String(inicial.ano))
   const [editado, setEditado] = useState(false)
+  const [nome, setNome] = useState(() => nomeSugerido(workbook.fileName))
 
   const anoNum = Number(ano)
   const anoValido = Number.isInteger(anoNum) && anoNum >= 1990 && anoNum <= 2100
@@ -176,6 +178,23 @@ export function NovaCargaDialog({
             </p>
           )}
 
+          {versao > 1 && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="carga-nome" className="text-base font-medium">
+                Nome (opcional)
+              </label>
+              <Input
+                id="carga-nome"
+                maxLength={LIMITE_NOME}
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                Ajuda a diferenciar as versões deste mês.
+              </p>
+            </div>
+          )}
+
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-base">
             <dt className="text-muted-foreground">Arquivo</dt>
             <dd className="truncate">{workbook.fileName}</dd>
@@ -196,7 +215,9 @@ export function NovaCargaDialog({
           <Button
             size="lg"
             disabled={!anoValido}
-            onClick={() => onConfirm({ tipo, competencia })}
+            onClick={() =>
+              onConfirm({ tipo, competencia, ...(versao > 1 ? { nome } : {}) })
+            }
           >
             Confirmar carga
           </Button>

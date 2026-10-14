@@ -37,7 +37,7 @@ const meta = (competencia: string, versao = 1): CargaMeta => ({
   versao,
   importadaEm: "2026-10-01T10:00:00Z",
   arquivo: "x.xlsx",
-  linhas: 1,
+  linhas: 1, nome: null, arquivadaEm: null,
 })
 
 describe("formatarKpi", () => {

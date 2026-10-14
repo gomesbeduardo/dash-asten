@@ -6,7 +6,7 @@ import type { CargaMeta } from "@/cargas"
 import { agruparHistorico } from "@/app/navegacao"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { competenciaLonga, dataHora, rotuloVersao } from "./formatoCarga"
+import { competenciaLonga, dataHora, rotuloComNome, rotuloVersao } from "./formatoCarga"
 
 const nomeDaCarga = (v: CargaMeta) =>
   `${competenciaLonga(v.competencia)} ${rotuloVersao(v)}`
@@ -19,6 +19,8 @@ type Props = {
   atualId?: string
   /** Mostra as versões anteriores de todos os grupos (ex.: durante uma busca). */
   expandirTodos?: boolean
+  /** false esconde o botão Abrir da versão (ex.: arquivada). */
+  podeAbrir?: (v: CargaMeta) => boolean
   /** Botões extras da linha de uma versão (ex.: "Tirar da lista"). */
   acoes?: (v: CargaMeta) => ReactNode
   /** Conteúdo extra sob o nome do arquivo (ex.: etiquetas). */
@@ -39,6 +41,7 @@ export function ListaCargasAgrupada({
   expandirTodos = false,
   acoes,
   detalhes,
+  podeAbrir,
   className,
 }: Props) {
   const tipos = agruparHistorico(metas)
@@ -64,6 +67,7 @@ export function ListaCargasAgrupada({
                 expandirTodos={expandirTodos}
                 acoes={acoes}
                 detalhes={detalhes}
+                podeAbrir={podeAbrir}
               />
             ))}
           </ul>
@@ -80,6 +84,7 @@ function Grupo({
   expandirTodos,
   acoes,
   detalhes,
+  podeAbrir,
 }: {
   versoes: CargaMeta[]
   onAbrir: (id: string) => void
@@ -87,6 +92,7 @@ function Grupo({
   expandirTodos: boolean
   acoes?: Props["acoes"]
   detalhes?: Props["detalhes"]
+  podeAbrir?: Props["podeAbrir"]
 }) {
   const [aberto, setAberto] = useState(false)
   const reduzir = useReducedMotion()
@@ -97,14 +103,21 @@ function Grupo({
   const linha = (v: CargaMeta, destaque: boolean) => (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-md border px-3 py-2",
+        "flex flex-col gap-2 rounded-md border px-3 py-2",
         destaque ? "bg-card" : "bg-muted/40"
       )}
     >
       <div className="min-w-0 text-base">
         <p className="tabular-nums">
-          <span className="font-semibold">{nomeDaCarga(v)}</span> ·{" "}
-          {dataHora(v.importadaEm)}
+          <span className="font-semibold">
+            {competenciaLonga(v.competencia)} {rotuloComNome(v)}
+          </span>{" "}
+          · {dataHora(v.importadaEm)}
+          {v.arquivadaEm && (
+            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+              arquivada
+            </span>
+          )}
           {v.id === atualId && (
             <span className="ml-2 text-sm text-brand-ink">aberta</span>
           )}
@@ -112,15 +125,17 @@ function Grupo({
         <p className="truncate text-sm text-muted-foreground">{v.arquivo}</p>
         {detalhes?.(v)}
       </div>
-      <div className="flex shrink-0 gap-2">
-        <Button
-          size="lg"
-          variant="outline"
-          aria-label={`Abrir ${nomeDaCarga(v)}`}
-          onClick={() => onAbrir(v.id)}
-        >
-          Abrir
-        </Button>
+      <div className="flex flex-wrap gap-2">
+        {(podeAbrir?.(v) ?? true) && (
+          <Button
+            size="lg"
+            variant="outline"
+            aria-label={`Abrir ${nomeDaCarga(v)}`}
+            onClick={() => onAbrir(v.id)}
+          >
+            Abrir
+          </Button>
+        )}
         {acoes?.(v)}
       </div>
     </div>

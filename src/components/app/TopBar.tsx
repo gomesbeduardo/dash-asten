@@ -4,13 +4,15 @@ import {
   FolderOpenIcon,
   HistoryIcon,
   LogOutIcon,
+  MaximizeIcon,
+  MinimizeIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react"
 
 import logo from "@/assets/asten-logo-fundo-claro.png"
 import type { CargaMeta } from "@/cargas"
-import type { GrupoCompetencia, Visao } from "@/app/navegacao"
+import type { GrupoCompetencia, GrupoTipo, Visao } from "@/app/navegacao"
 import { loginEmUso } from "@/app/login-em-uso"
 import { useSessao } from "@/app/sessao/SessaoContext"
 import { Button } from "@/components/ui/button"
@@ -30,6 +32,8 @@ export type TopBarProps = {
   tipoNome: string
   atual: CargaMeta
   grupos: GrupoCompetencia[]
+  /** Cargas ativas dos outros tipos, para o seletor mostrar em seções rotuladas. */
+  outrosTipos?: GrupoTipo[]
   visoes: Visao[]
   visao: Visao
   /** Recebe a faixa onde o painel do tipo desenha seus controles. */
@@ -48,6 +52,9 @@ export type TopBarProps = {
   barRef?: Ref<HTMLElement>
   /** Barra fixada pela tecla H. */
   fixa?: boolean
+  /** Alterna a tela cheia; ausente quando o navegador não suporta. */
+  onTelaCheia?: () => void
+  telaCheiaAtiva?: boolean
 }
 
 export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
@@ -79,6 +86,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
           <CompetenciaSelector
             atual={p.atual}
             grupos={p.grupos}
+            outrosTipos={p.outrosTipos}
             onAbrir={p.onAbrir}
             onOpenChange={p.onSelectorOpenChange}
           />
@@ -128,6 +136,16 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
             )}{" "}
             {p.podeApagar ? "Limpar" : "Fechar carga"}
           </Button>
+          {p.onTelaCheia && (
+            <Button variant="ghost" size="lg" onClick={p.onTelaCheia}>
+              {p.telaCheiaAtiva ? (
+                <MinimizeIcon aria-hidden />
+              ) : (
+                <MaximizeIcon aria-hidden />
+              )}{" "}
+              {p.telaCheiaAtiva ? "Sair da tela cheia" : "Tela cheia"}
+            </Button>
+          )}
           {loginEmUso() && (
             <Button variant="ghost" size="lg" onClick={() => void sair()}>
               <LogOutIcon aria-hidden /> Sair
@@ -137,7 +155,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
       </div>
       <div ref={onSlot} />
       <p className="border-t px-6 py-1 text-sm text-muted-foreground">
-        {p.dica && `${p.dica} · `}{p.fixa ? "H soltar barra" : "H fixar barra"}
+        {p.dica && `${p.dica} · `}{p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
         {p.visoes.length > 1 && " · P painel · L leituras · C comparar · E evolução"}
       </p>
     </motion.header>

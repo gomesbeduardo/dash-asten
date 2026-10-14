@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 
-import type { CargaMeta } from "@/cargas"
+import type { AlteracaoDeCarga, CargaMeta } from "@/cargas"
 import { tiposRegistrados } from "@/cargas"
 import {
   enviadosVisiveis,
@@ -10,6 +10,7 @@ import {
 } from "@/cargas/enviados"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { EditarCargaDialog } from "./EditarCargaDialog"
 import {
   Sheet,
   SheetContent,
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dataCarga, filtrarHistorico } from "./buscaHistorico"
-import { competenciaLonga, rotuloVersao } from "./formatoCarga"
+import { competenciaLonga, rotuloComNome, rotuloVersao } from "./formatoCarga"
 import { ListaCargasAgrupada } from "./ListaCargasAgrupada"
 
 const maisRecentesPrimeiro = (metas: CargaMeta[]) =>
@@ -38,28 +39,50 @@ export function HistoricoSheet({
   metas,
   atualId,
   onAbrir,
+  onAlterar,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   metas: CargaMeta[]
   atualId: string
   onAbrir: (id: string) => void
+  /** Renomeia, corrige tipo/competência ou arquiva/restaura. Quem chama trata os erros. */
+  onAlterar: (id: string, alteracao: AlteracaoDeCarga) => Promise<void>
 }) {
   // O estado de Enviados vive no localStorage; `rev` força reler após mudar.
   const [rev, setRev] = useState(0)
   const [confirmando, setConfirmando] = useState(false)
   const [busca, setBusca] = useState("")
+  const [mostrarArquivadas, setMostrarArquivadas] = useState(false)
+  const [editando, setEditando] = useState<CargaMeta | null>(null)
+  const [falha, setFalha] = useState<string | null>(null)
+  // Arquivar/restaurar direto da lista: a falha aparece no topo do painel.
+  const alterar = async (id: string, alt: AlteracaoDeCarga) => {
+    try {
+      setFalha(null)
+      await onAlterar(id, alt)
+    } catch (e) {
+      setFalha(e instanceof Error ? e.message : "Não foi possível alterar a carga.")
+    }
+  }
   const nomeDoTipo = (id: string) =>
     tiposRegistrados().find((t) => t.id === id)?.nome ?? id
 
+  const ativas = useMemo(() => metas.filter((m) => !m.arquivadaEm), [metas])
+  const temArquivadas = ativas.length !== metas.length
   const enviados = useMemo(
-    () => maisRecentesPrimeiro(enviadosVisiveis(metas)),
+    () => maisRecentesPrimeiro(enviadosVisiveis(ativas)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [metas, rev, open]
+    [ativas, rev, open]
   )
   const geral = useMemo(
-    () => filtrarHistorico(maisRecentesPrimeiro(metas), busca, nomeDoTipo),
-    [metas, busca]
+    () =>
+      filtrarHistorico(
+        maisRecentesPrimeiro(mostrarArquivadas ? metas : ativas),
+        busca,
+        nomeDoTipo
+      ),
+    [metas, ativas, mostrarArquivadas, busca]
   )
 
   const abrir = (id: string) => {
@@ -69,11 +92,44 @@ export function HistoricoSheet({
   const nome = (v: CargaMeta) =>
     `${competenciaLonga(v.competencia)} ${rotuloVersao(v)}`
 
+  const podeAbrir = (v: CargaMeta) => !v.arquivadaEm
+  const gestao = (v: CargaMeta) => (
+    <>
+      <Button
+        size="lg"
+        variant="ghost"
+        aria-label={`Editar ${nome(v)}`}
+        onClick={() => setEditando(v)}
+      >
+        Editar
+      </Button>
+      {v.arquivadaEm ? (
+        <Button
+          size="lg"
+          variant="ghost"
+          aria-label={`Restaurar ${nome(v)}`}
+          onClick={() => alterar(v.id, { arquivada: false })}
+        >
+          Restaurar
+        </Button>
+      ) : (
+        <Button
+          size="lg"
+          variant="ghost"
+          aria-label={`Arquivar ${nome(v)}`}
+          onClick={() => alterar(v.id, { arquivada: true })}
+        >
+          Arquivar
+        </Button>
+      )}
+    </>
+  )
+
   const etiquetas = (v: CargaMeta) => (
     <p className="mt-1 flex flex-wrap gap-1">
       <Etiqueta>{nomeDoTipo(v.tipo)}</Etiqueta>
       <Etiqueta>{competenciaLonga(v.competencia)}</Etiqueta>
-      <Etiqueta>{rotuloVersao(v)}</Etiqueta>
+      <Etiqueta>{rotuloComNome(v)}</Etiqueta>
       <Etiqueta>{dataCarga(v.importadaEm)}</Etiqueta>
       {foiEnviada(v.id) && <Etiqueta>enviada deste navegador</Etiqueta>}
     </p>
@@ -94,6 +150,14 @@ export function HistoricoSheet({
             Cargas enviadas por este navegador e todas as cargas do time.
           </SheetDescription>
         </SheetHeader>
+        {falha && (
+          <p
+            role="alert"
+            className="mx-4 border-l-4 border-destructive py-2 pl-3 text-base text-destructive"
+          >
+            {falha}
+          </p>
+        )}
         <Tabs
           defaultValue="enviados"
           className="px-4 pb-6"
@@ -108,7 +172,7 @@ export function HistoricoSheet({
             {enviados.length === 0 ? (
               <div className="text-base text-muted-foreground">
                 <p>
-                  {metas.some((m) => foiEnviada(m.id))
+                  {ativas.some((m) => foiEnviada(m.id))
                     ? "Lista limpa."
                     : "Nada enviado deste navegador ainda."}
                 </p>
@@ -157,17 +221,20 @@ export function HistoricoSheet({
                   atualId={atualId}
                   onAbrir={abrir}
                   acoes={(v) => (
-                    <Button
-                      size="lg"
-                      variant="ghost"
-                      aria-label={`Tirar da lista ${nome(v)}`}
-                      onClick={() => {
-                        tirarDaLista(v.id)
-                        setRev((r) => r + 1)
-                      }}
-                    >
-                      Tirar da lista
-                    </Button>
+                    <>
+                      {gestao(v)}
+                      <Button
+                        size="lg"
+                        variant="ghost"
+                        aria-label={`Tirar da lista ${nome(v)}`}
+                        onClick={() => {
+                          tirarDaLista(v.id)
+                          setRev((r) => r + 1)
+                        }}
+                      >
+                        Tirar da lista
+                      </Button>
+                    </>
                   )}
                 />
               </>
@@ -187,6 +254,17 @@ export function HistoricoSheet({
                 placeholder="Arquivo, competência (09/2026, set/26), data, tipo, v3"
               />
             </div>
+            {temArquivadas && (
+              <label className="flex min-h-11 items-center gap-2 text-base">
+                <input
+                  type="checkbox"
+                  className="size-5 accent-primary"
+                  checked={mostrarArquivadas}
+                  onChange={(e) => setMostrarArquivadas(e.target.checked)}
+                />
+                Mostrar arquivadas
+              </label>
+            )}
             {metas.length === 0 ? (
               <p className="text-base text-muted-foreground">
                 Nenhuma carga guardada.
@@ -203,11 +281,22 @@ export function HistoricoSheet({
                 onAbrir={abrir}
                 expandirTodos={busca.trim() !== ""}
                 detalhes={etiquetas}
+                podeAbrir={podeAbrir}
+                acoes={gestao}
               />
             )}
           </TabsContent>
         </Tabs>
       </SheetContent>
+      {editando && (
+        <EditarCargaDialog
+          key={editando.id}
+          carga={editando}
+          metas={metas}
+          onSalvar={(alt) => onAlterar(editando.id, alt)}
+          onCancel={() => setEditando(null)}
+        />
+      )}
     </Sheet>
   )
 }

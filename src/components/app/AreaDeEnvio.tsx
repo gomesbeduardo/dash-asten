@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent, type Ref } from "react"
-import { FileSpreadsheetIcon } from "lucide-react"
+import { FileSpreadsheetIcon, UploadCloudIcon } from "lucide-react"
 
 import {
   mensagemDoLote,
@@ -8,6 +8,7 @@ import {
 } from "@/cargas/lote"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useArrasteNaJanela } from "./hooks/useArrasteNaJanela"
 import type { ProgressoDeLeitura } from "./hooks/useWorkbookLoader"
 
 
@@ -22,12 +23,15 @@ export function AreaDeEnvio({
   progresso,
   rotuloInput = "Arquivo da planilha (.xlsx)",
   botaoRef,
+  janela = false,
 }: {
   onFiles: (files: File[], ignorados: string[]) => void
   loading?: boolean
   progresso?: ProgressoDeLeitura | null
   rotuloInput?: string
   botaoRef?: Ref<HTMLButtonElement>
+  /** Aceita soltar em qualquer ponto da janela e mostra o aviso de página inteira. */
+  janela?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -41,15 +45,36 @@ export function AreaDeEnvio({
     if (r.aceitos.length > 0) onFiles(r.aceitos, r.ignorados)
   }
 
+  const arrastandoNaJanela = useArrasteNaJanela(
+    (arquivos) => receber(arquivos),
+    janela
+  )
+
   function onDrop(e: DragEvent) {
     e.preventDefault()
-    e.stopPropagation()
     setDragging(false)
+    // Com a janela como alvo, quem recebe é o ouvinte da janela (uma vez só).
+    if (janela) return
+    e.stopPropagation()
     receber(e.dataTransfer.files)
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {janela && arrastandoNaJanela && (
+        <div
+          data-solte-aqui
+          className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 border-8 border-dashed border-brand bg-brand-soft/90 backdrop-blur-[2px]"
+        >
+          <UploadCloudIcon className="size-24 text-brand-ink" aria-hidden />
+          <p role="status" className="text-5xl font-semibold text-brand-ink">
+            Solte para carregar
+          </p>
+          <p className="text-xl text-brand-ink">
+            Uma planilha .xlsx ou várias de uma vez (até 12).
+          </p>
+        </div>
+      )}
       <div
         data-area-envio
         onDragOver={(e) => {

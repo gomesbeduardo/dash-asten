@@ -100,4 +100,12 @@ describe("useShortcuts e Esc já tratado", () => {
     fireEvent.keyDown(window, { key: "ArrowRight" })
     fireEvent.keyDown(window, { key: "f" })
   })
+
+  it("T pede tela cheia", () => {
+    const onTelaCheia = vi.fn()
+    render(<Harness onTelaCheia={onTelaCheia} />)
+    fireEvent.keyDown(window, { key: "t" })
+    fireEvent.keyDown(window, { key: "T" })
+    expect(onTelaCheia).toHaveBeenCalledTimes(2)
+  })
 })
