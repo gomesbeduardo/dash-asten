@@ -60,6 +60,10 @@ export type CargaMetaDto = {
   importadaEm: string
   arquivo: string
   linhas: number
+  /** Nome dado pela pessoa (D58); null = sem nome. */
+  nome: string | null
+  /** Quando foi arquivada (D58); null = ativa. */
+  arquivadaEm: string | null
 }
 
 export function paraMeta(c: {
@@ -70,6 +74,8 @@ export function paraMeta(c: {
   importadaEm: Date
   arquivo: string
   linhas: number
+  nome: string | null
+  arquivadaEm: Date | null
 }): CargaMetaDto {
   return {
     id: c.id,
@@ -79,5 +85,23 @@ export function paraMeta(c: {
     importadaEm: c.importadaEm.toISOString(),
     arquivo: c.arquivo,
     linhas: c.linhas,
+    nome: c.nome,
+    arquivadaEm: c.arquivadaEm ? c.arquivadaEm.toISOString() : null,
   }
 }
+
+export const LIMITE_NOME = 80
+
+/** Nome opcional da carga: texto sem caracteres de controle, até 80 caracteres; vazio vira null. */
+export function validarNome(v: unknown): string | null {
+  if (v === undefined || v === null) return null
+  if (typeof v !== "string") throw new ErroDeEntrada("Nome inválido.", 400)
+  const nome = v.trim().replace(/\s+/g, " ")
+  if (nome.length === 0) return null
+  // eslint-disable-next-line no-control-regex -- recusa caracteres de controle no nome
+  if (nome.length > LIMITE_NOME || /[\u0000-\u001f\u007f<>]/.test(nome)) throw new ErroDeEntrada("Nome inválido (até 80 caracteres, sem < >).", 400)
+  return nome
+}
+
+export const ehTipo = (v: unknown): v is string => typeof v === "string" && /^[a-z0-9-]{1,40}$/.test(v)
+export const ehCompetencia = (v: unknown): v is string => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v)

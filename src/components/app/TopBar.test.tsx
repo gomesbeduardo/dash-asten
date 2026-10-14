@@ -116,4 +116,50 @@ describe("TopBar", () => {
       expect(screen.queryByRole("button", { name: "Sair" })).toBeNull()
     })
   })
+
+  describe("tela cheia", () => {
+    const comTela = (extra: { onTelaCheia?: () => void; telaCheiaAtiva?: boolean }) =>
+      render(
+        <TopBar
+          visible
+          tipoNome="Chamados"
+          atual={atual}
+          grupos={[]}
+          visoes={["painel"]}
+          visao="painel"
+          onSlot={() => {}}
+          onAbrir={() => {}}
+          onVisao={() => {}}
+          onNovaCarga={() => {}}
+          onHistorico={() => {}}
+          podeApagar={false}
+          onClear={() => {}}
+          onSelectorOpenChange={() => {}}
+          dica={null}
+          {...extra}
+        />
+      )
+
+    it("sem suporte (sem handler), o botão não aparece", () => {
+      comTela({})
+      expect(screen.queryByRole("button", { name: /tela cheia/i })).toBeNull()
+    })
+
+    it("mostra Tela cheia e chama o handler ao clicar", async () => {
+      const onTelaCheia = vi.fn()
+      comTela({ onTelaCheia })
+      await userEvent.click(screen.getByRole("button", { name: "Tela cheia" }))
+      expect(onTelaCheia).toHaveBeenCalledTimes(1)
+    })
+
+    it("em tela cheia, o botão vira Sair da tela cheia", () => {
+      comTela({ onTelaCheia: () => {}, telaCheiaAtiva: true })
+      expect(screen.getByRole("button", { name: "Sair da tela cheia" })).toBeInTheDocument()
+    })
+
+    it("a linha de dicas lista o atalho T", () => {
+      comTela({})
+      expect(screen.getByText(/T tela cheia/)).toBeInTheDocument()
+    })
+  })
 })

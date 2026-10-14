@@ -1,10 +1,10 @@
 // GET  /api/cargas → metadados de todas as cargas (sem dados)
-// POST /api/cargas → salva uma nova carga; a versão é max+1 de (tipo, competência) — D28/D37.
+// POST /api/cargas → salva uma nova carga (nome opcional, D58); a versão é max+1 de (tipo, competência) — D28/D37.
 // Não existe "apagar tudo": o banco é compartilhado pelo time.
 import { Prisma } from "../_generated/prisma/client.js"
 import { naoAutorizado, sessaoValida } from "../_lib/auth.js"
 import { getDb } from "../_lib/db.js"
-import { ErroDeEntrada, erro, json, lerJson, paraMeta, protegido } from "../_lib/http.js"
+import { ErroDeEntrada, ehCompetencia, ehTipo, erro, json, lerJson, paraMeta, protegido, validarNome } from "../_lib/http.js"
 
 const SELECAO_META = {
   id: true,
@@ -14,6 +14,8 @@ const SELECAO_META = {
   importadaEm: true,
   arquivo: true,
   linhas: true,
+  nome: true,
+  arquivadaEm: true,
 } as const
 
 export function GET(request: Request): Promise<Response> {
@@ -29,14 +31,14 @@ async function listar(request: Request): Promise<Response> {
   return json(cargas.map(paraMeta))
 }
 
-type NovaCargaDto = { tipo: string; competencia: string; arquivo: string; workbook: { sheets: { rows: unknown[] }[] }; originalBase64?: string }
+type NovaCargaDto = { tipo: string; competencia: string; arquivo: string; nome?: string | null; workbook: { sheets: { rows: unknown[] }[] }; originalBase64?: string }
 
 function validar(corpo: unknown): NovaCargaDto {
   const c = corpo as Partial<NovaCargaDto> | null
   if (!c || typeof c !== "object") throw new ErroDeEntrada("Corpo inválido.", 400)
-  if (typeof c.tipo !== "string" || !/^[a-z0-9-]{1,40}$/.test(c.tipo)) throw new ErroDeEntrada("Tipo inválido.", 400)
-  if (typeof c.competencia !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(c.competencia))
-    throw new ErroDeEntrada("Competência inválida (use AAAA-MM).", 400)
+  if (!ehTipo(c.tipo)) throw new ErroDeEntrada("Tipo inválido.", 400)
+  if (!ehCompetencia(c.competencia)) throw new ErroDeEntrada("Competência inválida (use AAAA-MM).", 400)
+  c.nome = validarNome(c.nome)
   // eslint-disable-next-line no-control-regex -- recusa caracteres de controle no nome do arquivo
   if (typeof c.arquivo !== "string" || c.arquivo.length === 0 || c.arquivo.length > 255 || /[\u0000-\u001f\u007f/\\<>]/.test(c.arquivo))
     throw new ErroDeEntrada("Nome de arquivo inválido.", 400)
@@ -79,6 +81,7 @@ async function salvar(request: Request): Promise<Response> {
             competencia: nova.competencia,
             versao: (_max.versao ?? 0) + 1,
             arquivo: nova.arquivo,
+            nome: nova.nome ?? null,
             linhas,
             dados: nova.workbook as Prisma.InputJsonValue,
             original,

@@ -18,6 +18,10 @@ model Carga {
   versao      Int
   importadaEm DateTime @default(now()) @map("importada_em") @db.Timestamptz(6)
   arquivo     String
+  /// Nome dado pela pessoa (opcional; ex.: "Correção do Líder"). D58.
+  nome        String?
+  /// Carga arquivada: some das listas por padrão, nada é apagado; null = ativa. D58.
+  arquivadaEm DateTime? @map("arquivada_em") @db.Timestamptz(6)
   linhas      Int
   /// Workbook normalizado (abas, colunas, linhas); datas em ISO 8601.
   dados       Json

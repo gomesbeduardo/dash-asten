@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import type { Carga, CargaMeta } from "@/cargas"
+import { ErroDeCarga, type AlteracaoDeCarga, type Carga, type CargaMeta } from "@/cargas"
 import { registrarEnvio } from "@/cargas/enviados"
 import { maisRecenteDoLote } from "@/cargas/lote"
+import { sucessorAposExcluir } from "@/app/navegacao"
 import { ordenarMetas } from "@/cargas/repositorio-comum"
 import type { Workbook } from "@/core"
 import { modoApi } from "@/app/modo-api"
 import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
 import { useListaInicial } from "@/app/sessao/SessaoContext"
+import { guardarUltimaAbertura, lerUltimaAbertura } from "@/app/ultima-abertura"
 import { Apresentacao } from "@/components/app/Apresentacao"
 import { ImportScreen } from "@/components/app/ImportScreen"
 import { NovaCargaDialog } from "@/components/app/NovaCargaDialog"
@@ -18,10 +20,15 @@ import {
   type Guardada,
   type ItemLido,
 } from "@/components/app/NovaCargaLoteDialog"
+import { useAvisoAoSair } from "@/components/app/hooks/useAvisoAoSair"
+import { useImpedirAbrirArquivo } from "@/components/app/hooks/useArrasteNaJanela"
 import {
   useWorkbookLoader,
   type LoteLido,
 } from "@/components/app/hooks/useWorkbookLoader"
+
+/** Tempo mínimo entre duas relistagens disparadas pela volta à aba. */
+const INTERVALO_RELISTAR_MS = 30_000
 
 export function App() {
   const repo = useRepositorio()
@@ -35,8 +42,30 @@ export function App() {
     original: ArrayBuffer
   } | null>(null)
   const [lote, setLote] = useState<LoteLido | null>(null)
-  const [resumoLote, setResumoLote] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [erroRepo, setErroRepo] = useState<string | null>(null)
+  // Envio em andamento (guardando) e carga sendo baixada ao abrir.
+  const [guardando, setGuardando] = useState(0)
+  const [abrindo, setAbrindo] = useState(false)
+  const abrindoRef = useRef(false)
+
+  const ultimaLista = useRef(0)
+  const sequencia = useRef(0)
+  const atualRef = useRef<Carga | null>(null)
+  const metasRef = useRef<CargaMeta[]>([])
+  useEffect(() => {
+    atualRef.current = atual
+    metasRef.current = metas
+  })
+  // Arquivadas ficam fora de tudo, menos do Histórico (que as mostra sob pedido).
+  const ativas = useMemo(() => metas.filter((m) => !m.arquivadaEm), [metas])
+  // Os dados de uma carga nunca mudam, mas nome/tipo/competência/versão/arquivamento
+  // podem: valem sempre os da lista.
+  const atualVista = useMemo<Carga | null>(() => {
+    if (!atual) return null
+    const m = metas.find((x) => x.id === atual.id)
+    return m ? { ...atual, ...m } : atual
+  }, [atual, metas])
 
   const onLoaded = useCallback(
     (workbook: Workbook, original: ArrayBuffer) =>
@@ -44,7 +73,7 @@ export function App() {
     []
   )
   const onLoadedMany = useCallback((l: LoteLido) => {
-    setResumoLote(null)
+    setAviso(null)
     setLote(l)
   }, [])
   const loader = useWorkbookLoader(onLoaded, onLoadedMany)
@@ -64,6 +93,7 @@ export function App() {
     let cancelado = false
     ;(async () => {
       try {
+        ultimaLista.current = Date.now()
         const ms = listaInicial.current ?? (await repo.listar())
         if (cancelado) return
         setMetas(ms)
@@ -83,17 +113,120 @@ export function App() {
     }
   }, [repo])
 
+  const abrir = useCallback(
+    async (id: string) => {
+      // O download leva um instante: mostra o indicador e ignora cliques repetidos.
+      if (abrindoRef.current) return
+      abrindoRef.current = true
+      setAbrindo(true)
+      try {
+        const carga = await repo.obter(id)
+        if (carga) setAtual(carga)
+      } finally {
+        abrindoRef.current = false
+        setAbrindo(false)
+      }
+    },
+    [repo]
+  )
+
+  // A carga aberta sumiu ou foi arquivada: avisa e abre a mais recente ativa
+  // (ou volta à tela de envio).
+  const reconciliar = useCallback(
+    (ms: CargaMeta[], avisar: boolean) => {
+      const a = atualRef.current
+      if (!a) return
+      const m = ms.find((x) => x.id === a.id)
+      if (!m) {
+        if (avisar) setAviso("Esta carga não existe mais.")
+        setAtual(null)
+        return
+      }
+      if (!m.arquivadaEm) return
+      if (avisar) setAviso("Esta carga foi arquivada.")
+      const sucessora = sucessorAposExcluir(
+        ms.filter((x) => !x.arquivadaEm),
+        m
+      )
+      if (sucessora) void abrir(sucessora.id)
+      else setAtual(null)
+    },
+    [abrir]
+  )
+
+  // Refaz a lista (outra pessoa pode ter enviado, apagado ou arquivado). Uma
+  // resposta antiga nunca sobrepõe uma mais nova. Falha de rede é ignorada.
+  const atualizarLista = useCallback(
+    async (avisar = true): Promise<boolean> => {
+      const minha = ++sequencia.current
+      ultimaLista.current = Date.now()
+      try {
+        const ms = await repo.listar()
+        if (minha !== sequencia.current) return true
+        setMetas(ms)
+        reconciliar(ms, avisar)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [repo, reconciliar]
+  )
+
+  useEffect(() => {
+    const aoVoltar = () => {
+      if (document.visibilityState === "hidden") return
+      if (Date.now() - ultimaLista.current < INTERVALO_RELISTAR_MS) return
+      void atualizarLista()
+    }
+    document.addEventListener("visibilitychange", aoVoltar)
+    window.addEventListener("focus", aoVoltar)
+    return () => {
+      document.removeEventListener("visibilitychange", aoVoltar)
+      window.removeEventListener("focus", aoVoltar)
+    }
+  }, [atualizarLista])
+
+  const alterar = useCallback(
+    async (id: string, alteracao: AlteracaoDeCarga) => {
+      let meta: CargaMeta
+      try {
+        meta = await repo.alterar(id, alteracao)
+      } catch (e) {
+        throw new Error(
+          e instanceof ErroDeCarga
+            ? e.message
+            : "Não foi possível alterar a carga. Tente de novo.",
+          { cause: e }
+        )
+      }
+      const locais = ordenarMetas(
+        metasRef.current.map((m) => (m.id === id ? meta : m))
+      )
+      setMetas(locais)
+      if (!(await atualizarLista(false))) reconciliar(locais, false)
+    },
+    [repo, atualizarLista, reconciliar]
+  )
+
   // Guarda uma planilha. A meta vem do servidor e o workbook é o local, sem
   // baixar de novo (o adaptador da API também revive datas para Date).
   const persistir = useCallback(
     async (item: ItemLido, escolha: Escolha) => {
-      const meta = await repo.salvar({
-        tipo: escolha.tipo,
-        competencia: escolha.competencia,
-        arquivo: item.workbook.fileName,
-        workbook: item.workbook,
-        original: item.original,
-      })
+      setGuardando((n) => n + 1)
+      let meta: CargaMeta
+      try {
+        meta = await repo.salvar({
+          tipo: escolha.tipo,
+          competencia: escolha.competencia,
+          arquivo: item.workbook.fileName,
+          ...(escolha.nome ? { nome: escolha.nome } : {}),
+          workbook: item.workbook,
+          original: item.original,
+        })
+      } finally {
+        setGuardando((n) => n - 1)
+      }
       registrarEnvio(meta.id)
       setMetas((ms) => ordenarMetas([...ms.filter((m) => m.id !== meta.id), meta]))
       return meta
@@ -108,6 +241,7 @@ export function App() {
         const meta = await persistir(pendente, escolha)
         setAtual({ ...meta, workbook: pendente.workbook })
         setErroRepo(null)
+        void atualizarLista()
       } catch {
         setErroRepo(
           modoApi()
@@ -117,31 +251,33 @@ export function App() {
       }
       setPendente(null)
     },
-    [persistir, pendente]
+    [persistir, pendente, atualizarLista]
   )
 
   // Fim do lote: abre a competência mais recente entre as guardadas.
   const concluirLote = useCallback((guardadas: Guardada[], total: number) => {
+    void atualizarLista()
     const recente = maisRecenteDoLote(guardadas.map((g) => g.meta))
     const g = guardadas.find((x) => x.meta === recente)
     if (g) setAtual({ ...g.meta, workbook: g.item.workbook })
     const erros = total - guardadas.length
-    setResumoLote(
+    setAviso(
       `${guardadas.length} de ${total} guardadas${erros > 0 ? `; ${erros} com erro` : ""}`
     )
     setErroRepo(null)
     setLote(null)
-  }, [])
+  }, [atualizarLista])
 
-  const abrir = useCallback(
-    async (id: string) => {
-      const carga = await repo.obter(id)
-      if (carga) setAtual(carga)
-    },
-    [repo]
-  )
+  // Lembra a carga aberta (por navegador) para o "Abrir a última" da TV.
+  const atualId = atual?.id
+  useEffect(() => {
+    if (atualId) guardarUltimaAbertura({ cargaId: atualId })
+  }, [atualId])
 
-  usePrecarga(repo, metas, atual?.tipo ?? null)
+  useImpedirAbrirArquivo()
+  useAvisoAoSair(guardando > 0 || loader.state.status === "loading")
+
+  usePrecarga(repo, ativas, atual?.tipo ?? null)
 
   const apagarTudo = useCallback(async () => {
     await repo.limparTudo?.()
@@ -161,11 +297,13 @@ export function App() {
 
   return (
     <>
-      {atual ? (
+      {atualVista ? (
         <Apresentacao
-          key={atual.tipo}
-          carga={atual}
-          metas={metas}
+          key={atualVista.tipo}
+          carga={atualVista}
+          metas={ativas}
+          metasTodas={metas}
+          onAlterar={alterar}
           obterCarga={repo.obter}
           onAbrir={abrir}
           onNovaCarga={receberArquivos}
@@ -183,10 +321,20 @@ export function App() {
             erroRepo ? { status: "error", message: erroRepo } : loader.state
           }
           onFiles={receberArquivos}
-          metas={metas}
+          metas={ativas}
           carregandoLista={!pronto}
           onAbrir={abrir}
+          lembradaId={lerUltimaAbertura().cargaId}
+          abrindo={abrindo}
         />
+      )}
+      {abrindo && atual && (
+        <p
+          role="status"
+          className="fixed bottom-4 left-4 z-50 rounded-md border bg-card px-4 py-2 text-base shadow-md"
+        >
+          Abrindo a carga…
+        </p>
       )}
       {loader.state.status === "loading" && atual && (
         <p
@@ -198,16 +346,16 @@ export function App() {
             : "Lendo a planilha…"}
         </p>
       )}
-      {resumoLote && (
+      {aviso && (
         <p
           role="status"
           className="fixed bottom-4 left-4 z-50 flex items-center gap-3 rounded-md border bg-card py-2 pl-4 pr-2 text-base shadow-md"
         >
-          {resumoLote}
+          {aviso}
           <button
             type="button"
             className="rounded px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => setResumoLote(null)}
+            onClick={() => setAviso(null)}
           >
             Fechar
           </button>

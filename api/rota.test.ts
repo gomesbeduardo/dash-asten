@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest"
-import { caminhoDa, DELETE, GET, POST } from "./rota.js"
+import { caminhoDa, DELETE, GET, PATCH, POST } from "./rota.js"
 
 const req = (url: string, init?: RequestInit) => new Request(`https://x.test${url}`, init)
 
@@ -54,5 +54,31 @@ describe("roteador da API", () => {
     expect(r.status).toBe(405)
     expect(r.headers.get("allow")).toBe("POST")
     expect((await DELETE(req("/api/rota?r=cargas"))).status).toBe(405)
+  })
+})
+
+describe("PATCH /api/cargas/:id (D58)", () => {
+  const ID = "tz4a98xxat96iws9zmbrgj3a" // CUID2 válido; nada chega ao banco nestes casos
+  const patch = (corpo: unknown) =>
+    PATCH(req(`/api/rota?r=cargas/${ID}`, { method: "PATCH", body: JSON.stringify(corpo), headers: { "Content-Type": "application/json" } }))
+
+  it("sem sessão → 401", async () => {
+    expect((await patch({ nome: "x" })).status).toBe(401)
+  })
+
+  it("valida o corpo antes do banco (login desligado)", async () => {
+    vi.stubEnv("LOGIN_DESATIVADO", "1")
+    try {
+      expect((await patch({})).status).toBe(400)
+      expect((await patch({ outro: 1 })).status).toBe(400)
+      expect((await patch({ tipo: "Chamados!" })).status).toBe(400)
+      expect((await patch({ competencia: "2026-13" })).status).toBe(400)
+      expect((await patch({ arquivada: "sim" })).status).toBe(400)
+      expect((await patch({ nome: "a".repeat(81) })).status).toBe(400)
+      expect((await patch({ nome: "<script>" })).status).toBe(400)
+      expect((await PATCH(req("/api/rota?r=cargas/nao-e-id", { method: "PATCH", body: "{}" }))).status).toBe(404)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })

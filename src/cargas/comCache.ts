@@ -41,6 +41,13 @@ export function comCache(base: RepositorioDeCargas): RepositorioDeCargas {
       listando = null
       return meta
     },
+    // Muda só os metadados: a lista é refeita; os dados de `obter` seguem válidos.
+    async alterar(id, alteracao) {
+      listando = null
+      const meta = await base.alterar(id, alteracao)
+      listando = null
+      return meta
+    },
     async excluir(id) {
       listando = null
       cache.delete(id)

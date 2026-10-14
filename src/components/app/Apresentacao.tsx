@@ -1,9 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
-import { tiposRegistrados, type Carga, type CargaMeta } from "@/cargas"
-import { competenciasDoTipo, resolverVisao, type Visao } from "@/app/navegacao"
+import {
+  tiposRegistrados,
+  type AlteracaoDeCarga,
+  type Carga,
+  type CargaMeta,
+} from "@/cargas"
+import {
+  agruparHistorico,
+  competenciasDoTipo,
+  resolverVisao,
+  type Visao,
+} from "@/app/navegacao"
+import { guardarUltimaAbertura, lerUltimaAbertura } from "@/app/ultima-abertura"
 import { visoesDoTipo } from "@/panels/tipos"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,11 +32,16 @@ import { NovoEnvioDialog } from "./NovoEnvioDialog"
 import { TopBar } from "./TopBar"
 import { useBarVisibility } from "./hooks/useBarVisibility"
 import { useShortcuts } from "./hooks/useShortcuts"
+import { useTelaCheia } from "./hooks/useTelaCheia"
 import { crossfade } from "./motion/tokens"
 
 export type ApresentacaoProps = {
   carga: Carga
+  /** Cargas ativas (as arquivadas ficam de fora do seletor e das visões). */
   metas: CargaMeta[]
+  /** Todas as cargas, inclusive arquivadas: só o Histórico e a conta de versões usam. */
+  metasTodas: CargaMeta[]
+  onAlterar: (id: string, alteracao: AlteracaoDeCarga) => Promise<void>
   obterCarga: (id: string) => Promise<Carga | null>
   onAbrir: (id: string) => void
   onNovaCarga: (files: File[], ignorados: string[]) => void
@@ -44,7 +60,7 @@ const Fragmento = ({ children }: { carga: Carga; children: ReactNode }) => (
 export function Apresentacao(p: ApresentacaoProps) {
   const { carga, metas } = p
   const reduce = useReducedMotion()
-  const [visaoPedida, setVisaoPedida] = useState<Visao>("painel")
+  const [visaoPedida, setVisaoPedida] = useState<Visao>(() => lerUltimaAbertura().visao ?? "painel")
   const [historicoOpen, setHistoricoOpen] = useState(false)
   const [limparOpen, setLimparOpen] = useState(false)
   const [seletorOpen, setSeletorOpen] = useState(false)
@@ -90,13 +106,38 @@ export function Apresentacao(p: ApresentacaoProps) {
     return () => window.removeEventListener("dragenter", aoArrastar)
   }, [])
 
+  // Só a escolha da pessoa vira lembrança (não a visão que sobrou por falta de opção).
+  const escolherVisao = useCallback((v: Visao) => {
+    setVisaoPedida(v)
+    guardarUltimaAbertura({ visao: v })
+  }, [])
   const pedirVisao = useCallback(
     (v: Visao) => {
-      if (!overlay && disponiveis.includes(v)) setVisaoPedida(v)
+      if (!overlay && disponiveis.includes(v)) escolherVisao(v)
     },
-    [disponiveis, overlay]
+    [disponiveis, overlay, escolherVisao]
   )
-  useShortcuts({ onToggleBar: bar.toggle, onVisao: pedirVisao })
+  const telaCheia = useTelaCheia()
+  useShortcuts({
+    onToggleBar: bar.toggle,
+    onVisao: pedirVisao,
+    onTelaCheia: telaCheia.suportado ? telaCheia.alternar : undefined,
+  })
+
+  // Barra fixada (H) ou segurada pela gaveta de filtros: não flutua sobre o
+  // conteúdo, que ganha um respiro igual à altura dela (senão cobre os chips).
+  const barraSegura = bar.fixa || painelHold
+  const [alturaBarra, setAlturaBarra] = useState(0)
+  useLayoutEffect(() => {
+    const barra = barRef.current
+    if (!barraSegura || !barra) return
+    const medir = () => setAlturaBarra(barra.offsetHeight)
+    medir()
+    if (typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(medir)
+    ro.observe(barra)
+    return () => ro.disconnect()
+  }, [barraSegura])
 
   const chave = `${carga.id}:${visao}`
   const entrada = !vistas.includes(chave)
@@ -127,12 +168,15 @@ export function Apresentacao(p: ApresentacaoProps) {
           tipoNome={tipoNome}
           atual={atualMeta}
           grupos={competenciasDoTipo(metas, carga.tipo)}
+          outrosTipos={agruparHistorico(metas).filter(
+            (g) => g.tipo !== carga.tipo
+          )}
           visoes={disponiveis}
           visao={visao}
           onSlot={setSlot}
           dica={dica}
           onAbrir={p.onAbrir}
-          onVisao={setVisaoPedida}
+          onVisao={escolherVisao}
           onNovaCarga={() => setEnvioOpen(true)}
           onHistorico={() => setHistoricoOpen(true)}
           podeApagar={!!p.onApagarTudo}
@@ -140,9 +184,19 @@ export function Apresentacao(p: ApresentacaoProps) {
             p.onApagarTudo ? setLimparOpen(true) : p.onFecharCarga()
           }
           onSelectorOpenChange={setSeletorOpen}
+          onTelaCheia={telaCheia.suportado ? telaCheia.alternar : undefined}
+          telaCheiaAtiva={telaCheia.ativa}
         />
 
-        <main className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16">
+        <main
+          data-barra-segura={barraSegura}
+          style={
+            barraSegura && alturaBarra > 0
+              ? { paddingTop: `calc(${alturaBarra}px + 1rem)` }
+              : undefined
+          }
+          className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16 transition-[padding-top] duration-200 motion-reduce:transition-none"
+        >
           {p.erro && (
             <div
               role="alert"
@@ -188,9 +242,10 @@ export function Apresentacao(p: ApresentacaoProps) {
         <HistoricoSheet
           open={historicoOpen}
           onOpenChange={setHistoricoOpen}
-          metas={metas}
+          metas={p.metasTodas}
           atualId={carga.id}
           onAbrir={p.onAbrir}
+          onAlterar={p.onAlterar}
         />
 
         <Dialog open={limparOpen} onOpenChange={setLimparOpen}>

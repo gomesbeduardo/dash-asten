@@ -1,4 +1,4 @@
-import { montarMeta, ordenarMetas } from "./repositorio-comum"
+import { aplicarAlteracao, montarMeta, ordenarMetas } from "./repositorio-comum"
 import type { Carga, CargaMeta, RepositorioDeCargas } from "./types"
 
 const METAS = "metas"
@@ -60,6 +60,16 @@ export function criarRepositorioIndexedDB(nomeBanco = "dash-asten"): Repositorio
       tx.objectStore(METAS).delete(id)
       tx.objectStore(WORKBOOKS).delete(id)
       await concluida(tx)
+    },
+    async alterar(id, alteracao) {
+      const tx = (await banco()).transaction(METAS, "readwrite")
+      const todas = await pedido<CargaMeta[]>(tx.objectStore(METAS).getAll())
+      const atual = todas.find((m) => m.id === id)
+      if (!atual) throw new Error("Carga não encontrada.")
+      const meta = aplicarAlteracao(atual, alteracao, todas)
+      tx.objectStore(METAS).put(meta)
+      await concluida(tx)
+      return meta
     },
     async limparTudo() {
       const tx = (await banco()).transaction([METAS, WORKBOOKS], "readwrite")

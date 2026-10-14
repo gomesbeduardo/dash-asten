@@ -69,4 +69,16 @@ describe("NovoEnvioDialog", () => {
     await userEvent.keyboard("{Escape}")
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
+
+  it("soltar em qualquer ponto da janela, fora da caixa, também envia (e o navegador não abre o arquivo)", async () => {
+    const { onFiles, onOpenChange } = montar()
+    await screen.findByRole("dialog", { name: "Nova carga" })
+    const f = xlsx()
+    const ev = createEvent.drop(document.body)
+    Object.defineProperty(ev, "dataTransfer", { value: { files: [f], types: ["Files"] } })
+    fireEvent(document.body, ev)
+    expect(ev.defaultPrevented).toBe(true)
+    expect(onFiles).toHaveBeenCalledWith([f], [])
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
 })

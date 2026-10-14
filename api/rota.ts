@@ -9,7 +9,7 @@ import * as login from "./_rotas/login.js"
 import * as logout from "./_rotas/logout.js"
 import * as sessao from "./_rotas/sessao.js"
 
-type Metodo = "GET" | "POST" | "DELETE"
+type Metodo = "GET" | "POST" | "PATCH" | "DELETE"
 type Handler = (request: Request, param: string) => Response | Promise<Response>
 type Rota = { padrao: RegExp; publica?: boolean; metodos: Partial<Record<Metodo, Handler>> }
 
@@ -18,7 +18,7 @@ const ROTAS: Rota[] = [
   { padrao: /^logout$/, publica: true, metodos: { POST: logout.POST } },
   { padrao: /^sessao$/, metodos: { GET: sessao.GET } },
   { padrao: /^cargas$/, metodos: { GET: cargas.GET, POST: cargas.POST } },
-  { padrao: /^cargas\/([^/]+)$/, metodos: { GET: carga.GET, DELETE: carga.DELETE } },
+  { padrao: /^cargas\/([^/]+)$/, metodos: { GET: carga.GET, PATCH: carga.PATCH, DELETE: carga.DELETE } },
 ]
 
 /** Caminho depois de /api/: vem em ?r= quando a requisição foi reescrita, senão no próprio pathname. */
@@ -52,4 +52,5 @@ function despachar(metodo: Metodo, request: Request): Response | Promise<Respons
 
 export const GET = (request: Request) => despachar("GET", request)
 export const POST = (request: Request) => despachar("POST", request)
+export const PATCH = (request: Request) => despachar("PATCH", request)
 export const DELETE = (request: Request) => despachar("DELETE", request)

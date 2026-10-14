@@ -11,7 +11,7 @@ const meta = (p: Partial<CargaMeta>): CargaMeta => ({
   versao: 1,
   importadaEm: "2026-10-14T15:00:00.000Z",
   arquivo: "x.xlsx",
-  linhas: 5,
+  linhas: 5, nome: null, arquivadaEm: null,
   ...p,
 })
 const S1 = meta({ id: "s1", versao: 1, arquivo: "set-1.xlsx" })
@@ -92,5 +92,17 @@ describe("ListaCargasAgrupada", () => {
     const lista = screen.getByRole("list", { name: /Cargas/ })
     await user.click(within(lista).getByRole("button", { name: "Tirar 1" }))
     expect(tirar).toHaveBeenCalledWith("s1")
+  })
+
+  it("mostra o nome da versão ao lado do número (v2 · Correção do Líder)", () => {
+    montar([S1, meta({ id: "s2n", versao: 2, arquivo: "set-2.xlsx", nome: "Correção do Líder" })])
+    expect(screen.getByText(/v2 · Correção do Líder/)).toBeInTheDocument()
+  })
+
+  it("carga arquivada traz a marca e, com podeAbrir falso, sem o botão Abrir", () => {
+    const arq = meta({ id: "arq", arquivo: "velha.xlsx", arquivadaEm: "2026-10-10T00:00:00Z" })
+    montar([arq], { podeAbrir: (m: CargaMeta) => !m.arquivadaEm })
+    expect(screen.getByText("arquivada")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /^Abrir/ })).toBeNull()
   })
 })
