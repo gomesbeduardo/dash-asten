@@ -75,6 +75,14 @@ function montar(repo = criarRepositorioMemoria()) {
   return repo
 }
 
+/** A página sempre abre na tela de envio; abre a carga pela lista "Abrir a última". */
+async function montarAberto(repo: RepositorioDeCargas) {
+  montar(repo)
+  await userEvent.click(
+    await screen.findByRole("button", { name: /^Abrir a última/ })
+  )
+}
+
 /** O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó. */
 const tituloVisivel = (name: string | RegExp) =>
   waitFor(() =>
@@ -269,6 +277,44 @@ describe("nova carga", () => {
 })
 
 describe("abertura e navegação", () => {
+  it("com cargas, abre na tela de envio, não baixa nenhuma carga e mostra a lista agrupada", async () => {
+    const repo = criarRepositorioMemoria()
+    await salvar(repo, "ch-08.xlsx", "chamados", "2026-08", { Dados: CHAMADOS })
+    await salvar(repo, "ch-09a.xlsx", "chamados", "2026-09", { Dados: CHAMADOS })
+    await salvar(repo, "ch-09b.xlsx", "chamados", "2026-09", { Dados: CHAMADOS })
+    const obter = vi.spyOn(repo, "obter")
+    montar(repo)
+    expect(
+      await screen.findByText("Carregar a planilha da competência")
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", {
+        name: "Abrir a última: Chamados / OS · setembro de 2026 v2",
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /1 versão anterior/ })
+    ).toBeInTheDocument()
+    expect(screen.getByText("ch-08.xlsx")).toBeInTheDocument()
+    await new Promise((r) => setTimeout(r, 120))
+    expect(obter).not.toHaveBeenCalled()
+  })
+
+  it("abrir uma versão anterior pela lista abre aquela carga", async () => {
+    const user = userEvent.setup()
+    const repo = criarRepositorioMemoria()
+    await salvar(repo, "ago1.xlsx", "outro", "2026-08", { Agosto1: OUTRO })
+    await salvar(repo, "ago2.xlsx", "outro", "2026-08", { Agosto2: OUTRO })
+    montar(repo)
+    await user.click(
+      await screen.findByRole("button", { name: /1 versão anterior/ })
+    )
+    await user.click(
+      screen.getByRole("button", { name: "Abrir Agosto de 2026 v1" })
+    )
+    expect(await h1("Agosto1")).toBeInTheDocument()
+  })
+
   it("sem histórico mostra a tela de importação", async () => {
     montar()
     expect(
@@ -276,7 +322,7 @@ describe("abertura e navegação", () => {
     ).toBeInTheDocument()
   })
 
-  it("com histórico abre a competência mais recente do tipo da última carga", async () => {
+  it("com histórico abre a competência mais recente do tipo da última carga pela lista, nunca sozinho", async () => {
     const repo = criarRepositorioMemoria()
     await salvar(repo, "ch-07.xlsx", "chamados", "2026-07", { Dados: CHAMADOS })
     await salvar(repo, "ch-08.xlsx", "chamados", "2026-08", { Dados: CHAMADOS })
@@ -284,7 +330,7 @@ describe("abertura e navegação", () => {
     await salvar(repo, "ch-08b.xlsx", "chamados", "2026-08", {
       Dados: CHAMADOS,
     })
-    montar(repo)
+    await montarAberto(repo)
     await screen.findByRole("article", { name: "Backlog aberto" })
     const sel = screen.getByRole("button", { name: "Competência" })
     expect(sel).toHaveTextContent("Agosto de 2026")
@@ -297,7 +343,7 @@ describe("abertura e navegação", () => {
     await salvar(repo, "jul.xlsx", "outro", "2026-07", { Antigo: OUTRO })
     await salvar(repo, "ago1.xlsx", "outro", "2026-08", { Agosto1: OUTRO })
     await salvar(repo, "ago2.xlsx", "outro", "2026-08", { Agosto2: OUTRO })
-    montar(repo)
+    await montarAberto(repo)
     expect(await h1("Agosto2")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Competência" }))
@@ -323,7 +369,7 @@ describe("abertura e navegação", () => {
       Projetos: OUTRO,
       Outra: [["X"], ["a"], ["b"]],
     })
-    montar(repo)
+    await montarAberto(repo)
     await h1("Projetos")
     await user.keyboard("{ArrowRight}")
     expect(await h1("Outra")).toBeInTheDocument()
@@ -351,7 +397,7 @@ describe("histórico e limpeza", () => {
       excluir: (id) => base.excluir(id),
     }
     await salvar(repo, "ago.xlsx", "outro", "2026-08", { Agosto: OUTRO })
-    montar(repo)
+    await montarAberto(repo)
     await h1("Agosto")
     expect(
       screen.queryByRole("button", { name: /Limpar/ })
@@ -363,6 +409,9 @@ describe("histórico e limpeza", () => {
     expect(
       await screen.findByText("Carregar a planilha da competência")
     ).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    ).toBeInTheDocument()
     expect(await repo.listar()).toHaveLength(1)
   })
 
@@ -372,7 +421,7 @@ describe("histórico e limpeza", () => {
     const excluir = vi.spyOn(repo, "excluir")
     await salvar(repo, "jul.xlsx", "outro", "2026-07", { Antigo: OUTRO })
     await salvar(repo, "ago.xlsx", "outro", "2026-08", { Agosto: OUTRO })
-    montar(repo)
+    await montarAberto(repo)
     await h1("Agosto")
 
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
@@ -390,7 +439,7 @@ describe("histórico e limpeza", () => {
     const repo = criarRepositorioMemoria()
     await salvar(repo, "jul.xlsx", "outro", "2026-07", { Antigo: OUTRO })
     await salvar(repo, "ago.xlsx", "outro", "2026-08", { Agosto: OUTRO })
-    montar(repo)
+    await montarAberto(repo)
     await h1("Agosto")
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
     await user.click(await screen.findByRole("tab", { name: "Geral" }))
@@ -431,7 +480,7 @@ describe("histórico e limpeza", () => {
     const user = userEvent.setup()
     const repo = criarRepositorioMemoria()
     await salvar(repo, "ago.xlsx", "outro", "2026-08", { Agosto: OUTRO })
-    montar(repo)
+    await montarAberto(repo)
     await h1("Agosto")
     await user.click(screen.getByRole("button", { name: /Limpar/ }))
     expect(await repo.listar()).toHaveLength(1)

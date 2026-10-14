@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { StrictMode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -46,7 +47,7 @@ async function cenario() {
 }
 
 describe("abertura e pré-carga", () => {
-  it("com a lista já vinda do porteiro, não lista de novo e abre com uma só carga", async () => {
+  it("com a lista já vinda do porteiro, não lista de novo, não baixa nada ao abrir e baixa uma só carga ao escolher", async () => {
     const c = await cenario()
     const lista = await c.repo.listar()
     c.listar.mockClear()
@@ -59,8 +60,12 @@ describe("abertura e pré-carga", () => {
         </ListaInicialContext.Provider>
       </StrictMode>
     )
-    await screen.findByRole("heading", { level: 1 })
+    const abrirUltima = await screen.findByRole("button", { name: /^Abrir a última/ })
     expect(c.listar).not.toHaveBeenCalled()
+    await new Promise((r) => setTimeout(r, 150))
+    expect(c.chamadasObter).toEqual([])
+    await userEvent.click(abrirUltima)
+    await screen.findByRole("heading", { level: 1 })
     const maisRecente = c.metas.find((m) => m.competencia === "2026-08")!.id
     expect(c.chamadasObter.filter((id) => id === maisRecente)).toHaveLength(1)
   })
@@ -74,6 +79,7 @@ describe("abertura e pré-carga", () => {
         </RepositorioProvider>
       </StrictMode>
     )
+    await userEvent.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
     const esperadas = c.metas.filter((m) => m.competencia >= "2026-03").map((m) => m.id)
     await waitFor(() => expect(new Set(c.chamadasObter)).toEqual(new Set(esperadas)), { timeout: 4000 })
     expect(c.chamadasObter).toHaveLength(esperadas.length)

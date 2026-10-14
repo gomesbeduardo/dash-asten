@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dataCarga, filtrarHistorico } from "./buscaHistorico"
-import { competenciaLonga, dataHora, rotuloVersao } from "./formatoCarga"
+import { competenciaLonga, rotuloVersao } from "./formatoCarga"
+import { ListaCargasAgrupada } from "./ListaCargasAgrupada"
 
 const maisRecentesPrimeiro = (metas: CargaMeta[]) =>
   [...metas].sort((a, b) => b.importadaEm.localeCompare(a.importadaEm))
@@ -68,45 +69,14 @@ export function HistoricoSheet({
   const nome = (v: CargaMeta) =>
     `${competenciaLonga(v.competencia)} ${rotuloVersao(v)}`
 
-  const linha = (v: CargaMeta, acoes: React.ReactNode, etiquetas = false) => (
-    <li
-      key={v.id}
-      className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
-    >
-      <div className="min-w-0 text-base">
-        <p className="tabular-nums">
-          <span className="font-semibold">{nome(v)}</span> ·{" "}
-          {dataHora(v.importadaEm)}
-          {v.id === atualId && (
-            <span className="ml-2 text-sm text-brand-ink">aberta</span>
-          )}
-        </p>
-        <p className="truncate text-sm text-muted-foreground">
-          {v.arquivo}
-        </p>
-        {etiquetas && (
-          <p className="mt-1 flex flex-wrap gap-1">
-            <Etiqueta>{nomeDoTipo(v.tipo)}</Etiqueta>
-            <Etiqueta>{competenciaLonga(v.competencia)}</Etiqueta>
-            <Etiqueta>{rotuloVersao(v)}</Etiqueta>
-            <Etiqueta>{dataCarga(v.importadaEm)}</Etiqueta>
-            {foiEnviada(v.id) && <Etiqueta>enviada deste navegador</Etiqueta>}
-          </p>
-        )}
-      </div>
-      <div className="flex shrink-0 gap-2">{acoes}</div>
-    </li>
-  )
-
-  const botaoAbrir = (v: CargaMeta) => (
-    <Button
-      size="lg"
-      variant="outline"
-      aria-label={`Abrir ${nome(v)}`}
-      onClick={() => abrir(v.id)}
-    >
-      Abrir
-    </Button>
+  const etiquetas = (v: CargaMeta) => (
+    <p className="mt-1 flex flex-wrap gap-1">
+      <Etiqueta>{nomeDoTipo(v.tipo)}</Etiqueta>
+      <Etiqueta>{competenciaLonga(v.competencia)}</Etiqueta>
+      <Etiqueta>{rotuloVersao(v)}</Etiqueta>
+      <Etiqueta>{dataCarga(v.importadaEm)}</Etiqueta>
+      {foiEnviada(v.id) && <Etiqueta>enviada deste navegador</Etiqueta>}
+    </p>
   )
 
   return (
@@ -181,27 +151,25 @@ export function HistoricoSheet({
                     Limpar enviados
                   </Button>
                 )}
-                <ul className="flex flex-col gap-2">
-                  {enviados.map((v) =>
-                    linha(
-                      v,
-                      <>
-                        {botaoAbrir(v)}
-                        <Button
-                          size="lg"
-                          variant="ghost"
-                          aria-label={`Tirar da lista ${nome(v)}`}
-                          onClick={() => {
-                            tirarDaLista(v.id)
-                            setRev((r) => r + 1)
-                          }}
-                        >
-                          Tirar da lista
-                        </Button>
-                      </>
-                    )
+                <ListaCargasAgrupada
+                  metas={enviados}
+                  nomeDoTipo={nomeDoTipo}
+                  atualId={atualId}
+                  onAbrir={abrir}
+                  acoes={(v) => (
+                    <Button
+                      size="lg"
+                      variant="ghost"
+                      aria-label={`Tirar da lista ${nome(v)}`}
+                      onClick={() => {
+                        tirarDaLista(v.id)
+                        setRev((r) => r + 1)
+                      }}
+                    >
+                      Tirar da lista
+                    </Button>
                   )}
-                </ul>
+                />
               </>
             )}
           </TabsContent>
@@ -228,9 +196,14 @@ export function HistoricoSheet({
                 Nenhuma carga encontrada para essa busca.
               </p>
             ) : (
-              <ul className="flex flex-col gap-2">
-                {geral.map((v) => linha(v, botaoAbrir(v), true))}
-              </ul>
+              <ListaCargasAgrupada
+                metas={geral}
+                nomeDoTipo={nomeDoTipo}
+                atualId={atualId}
+                onAbrir={abrir}
+                expandirTodos={busca.trim() !== ""}
+                detalhes={etiquetas}
+              />
             )}
           </TabsContent>
         </Tabs>
