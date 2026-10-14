@@ -17,7 +17,7 @@ import type { ItemDistribuicao, FormatoKpi } from "@/chamados"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { chartGrow } from "@/components/app/motion/tokens"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
-import { formatarKpi, type ItemAxB, type LinhaSerie } from "./logica"
+import { formatarKpi, type ItemSerie, type LinhaSerie } from "./logica"
 
 export const COR = {
   principal: "var(--chart-1)",
@@ -226,73 +226,87 @@ export function BarrasFaixas({
   )
 }
 
-/** Barras agrupadas A × B por categoria (horizontais). */
-export function BarrasAxB({
+export type SerieComparar = {
+  id: string
+  rotulo: string
+  /** Mês reconstruído pelas datas: barra hachurada, nunca cheia. */
+  reconstruido?: boolean
+}
+
+// Da mais antiga à mais recente: a última (mais recente) fica sempre no azul principal e,
+// com duas séries, volta ao par cinza × azul de antes. Só fichas --chart-*, mais o laranja já usado.
+const PALETA_COMPARAR = [
+  COR.roxo,
+  COR.verde,
+  "var(--chart-2)",
+  COR.laranja,
+  COR.cinza,
+  COR.principal,
+] as const
+const corDaSerie = (indice: number, total: number) =>
+  PALETA_COMPARAR[PALETA_COMPARAR.length - total + indice]
+
+/** Barras agrupadas por categoria (horizontais), uma barra por competência (2 a 6), em ordem cronológica. */
+export function BarrasComparar({
   itens,
-  rotuloA,
-  rotuloB,
-  reconstruidoA = false,
-  reconstruidoB = false,
+  series,
   animar,
 }: {
-  itens: ItemAxB[]
-  rotuloA: string
-  rotuloB: string
-  /** Lado reconstruído pelas datas: barra hachurada, nunca cheia. */
-  reconstruidoA?: boolean
-  reconstruidoB?: boolean
+  itens: ItemSerie[]
+  series: SerieComparar[]
   animar: boolean
 }) {
   const uid = useId().replace(/:/g, "")
-  const preenchimento = (k: "a" | "b", cor: string) =>
-    (k === "a" ? reconstruidoA : reconstruidoB)
-      ? `url(#hachura-${uid}-${k})`
-      : cor
-  const altura = Math.max(220, itens.length * 58 + 24)
-  const { ocultas, alternar } = useSeriesOcultas(`${rotuloA}|${rotuloB}`, [
-    "a",
-    "b",
-  ])
+  const n = series.length
+  const coloridas = series.map((s, i) => ({ ...s, cor: corDaSerie(i, n) }))
+  const dados = itens.map((i) => ({
+    rotulo: i.rotulo,
+    ...Object.fromEntries(series.map((s, k) => [s.id, i.valores[k]])),
+  }))
+  const altura = Math.max(220, itens.length * (n * 21 + 16) + 24)
+  const { ocultas, alternar } = useSeriesOcultas(
+    series.map((s) => s.id).join("|"),
+    series.map((s) => s.id)
+  )
   return (
     <div className="flex flex-col gap-3">
       <LegendaSeries
-        itens={[
-          { id: "a", rotulo: rotuloA, cor: COR.cinza },
-          { id: "b", rotulo: rotuloB, cor: COR.principal },
-        ]}
+        itens={coloridas.map((s) => ({
+          id: s.id,
+          rotulo: s.rotulo,
+          cor: s.cor,
+          tracejado: s.reconstruido,
+        }))}
         ocultas={ocultas}
         onAlternar={alternar}
       />
       <ChartContainer
-        config={Cfg(["a", rotuloA, COR.cinza], ["b", rotuloB, COR.principal])}
+        config={Cfg(...coloridas.map((s): [string, string, string] => [s.id, s.rotulo, s.cor]))}
         className="aspect-auto w-full"
         style={{ height: altura }}
         role="img"
-        aria-label={`${rotuloA} contra ${rotuloB}: ${itens.map((i) => `${i.rotulo} ${i.a} e ${i.b}`).join("; ")}`}
+        aria-label={`${series.map((s) => s.rotulo).join(" contra ")}: ${itens.map((i) => `${i.rotulo} ${i.valores.join(", ")}`).join("; ")}`}
       >
         <BarChart
-          data={itens}
+          // remonta ao mudar as séries: o Recharts guarda a ordem em que as barras entraram
+          key={series.map((s) => s.id).join("|")}
+          data={dados}
           layout="vertical"
           margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
           barGap={3}
         >
           <defs>
-            {(
-              [
-                ["a", COR.cinza],
-                ["b", COR.principal],
-              ] as const
-            ).map(([k, cor]) => (
+            {coloridas.map((s) => (
               <pattern
-                key={k}
-                id={`hachura-${uid}-${k}`}
+                key={s.id}
+                id={`hachura-${uid}-${s.id}`}
                 patternUnits="userSpaceOnUse"
                 width="8"
                 height="8"
                 patternTransform="rotate(45)"
               >
                 <rect width="8" height="8" fill="var(--card)" />
-                <rect width="4" height="8" fill={cor} />
+                <rect width="4" height="8" fill={s.cor} />
               </pattern>
             ))}
           </defs>
@@ -308,27 +322,22 @@ export function BarrasAxB({
             axisLine={false}
           />
           <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
-          {(
-            [
-              ["a", rotuloA, COR.cinza],
-              ["b", rotuloB, COR.principal],
-            ] as const
-          )
-            .filter(([k]) => !ocultas.includes(k))
-            .map(([k, nome, cor]) => (
+          {coloridas
+            .filter((s) => !ocultas.includes(s.id))
+            .map((s) => (
               <Bar
-                key={k}
-                dataKey={k}
-                name={nome}
-                fill={preenchimento(k, cor)}
-                stroke={cor}
+                key={s.id}
+                dataKey={s.id}
+                name={s.rotulo}
+                fill={s.reconstruido ? `url(#hachura-${uid}-${s.id})` : s.cor}
+                stroke={s.cor}
                 strokeWidth={2}
                 radius={[0, 4, 4, 0]}
                 barSize={18}
                 {...animacao(animar)}
               >
                 <LabelList
-                  dataKey={k}
+                  dataKey={s.id}
                   position="right"
                   className="num fill-foreground"
                   style={{ fontSize: 15, fontWeight: 600 }}

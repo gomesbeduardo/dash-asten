@@ -90,6 +90,31 @@ async function cenario(comAgosto: boolean) {
   return props
 }
 
+/** Cargas próprias de vários meses (a última é a atual). Jul e anteriores: só o backlog antigo (4). */
+async function cenarioN(competencias: string[]) {
+  const repo: RepositorioDeCargas = criarRepositorioMemoria()
+  const dados = (c: string): L[] =>
+    c === "2026-09" ? base : c === "2026-08" ? aug : base.slice(0, 4)
+  let ultima = ""
+  for (const c of competencias) {
+    const m = await repo.salvar({
+      tipo: "chamados",
+      competencia: c,
+      arquivo: `ch-${c}.xlsx`,
+      workbook: readWorkbook(xlsx(dados(c)), `ch-${c}.xlsx`),
+    })
+    ultima = m.id
+  }
+  const carga = (await repo.obter(ultima)) as Carga
+  const props: VisaoTipoProps = {
+    carga,
+    historico: await repo.listar(),
+    obterCarga: (id) => repo.obter(id),
+    entrada: false,
+  }
+  return props
+}
+
 beforeEach(() => {
   registrarTiposDoApp()
   // Radix (tooltip) mede o conteúdo com ResizeObserver, que o jsdom não tem.
@@ -319,33 +344,118 @@ describe("LeiturasChamados", () => {
 })
 
 describe("CompararChamados", () => {
-  it("troca A e B e mostra o Δ com melhorQuando", async () => {
+  const cabecalhos = () =>
+    screen.getAllByRole("columnheader").map((c) => c.textContent?.trim())
+  const seletores = () => screen.getAllByRole("combobox", { name: /^Competência \d$/ })
+
+  it("começa com duas competências (anterior e atual), mostra o Δ e não deixa remover", async () => {
+    render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
+    const [um, dois] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    expect(um).toHaveAccessibleName("Competência 1")
+    expect(um).toHaveTextContent("Agosto de 2026")
+    expect(dois).toHaveTextContent("Setembro de 2026")
+    expect(cabecalhos()).toEqual(["Indicador", "ago/26", "set/26", "Δ"])
+    const linha = screen.getByRole("row", { name: /Backlog aberto/ })
+    expect(linha).toHaveTextContent("+1")
+    expect(linha).toHaveTextContent("pior")
+    expect(screen.getByRole("button", { name: "Adicionar competência" })).toBeEnabled()
+    for (const r of screen.getAllByRole("button", { name: /^Remover competência/ }))
+      expect(r).toBeDisabled()
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Leituras de set/26 contra ago/26" })
+    ).toBeInTheDocument()
+  })
+
+  it("adiciona a próxima mais antiga, em ordem cronológica, com Δ = última − primeira e setas vs anterior", async () => {
+    const user = userEvent.setup()
+    render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(screen.getByRole("button", { name: "Adicionar competência" }))
+    const tres = seletores()
+    expect(tres).toHaveLength(3)
+    expect(tres[2]).toHaveTextContent("Julho de 2026")
+    // colunas cronológicas, independente da ordem dos seletores
+    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26", "Δ"])
+    const linha = screen.getByRole("row", { name: /Backlog aberto/ })
+    expect(linha).toHaveTextContent(/4\s*6\s*7\s*\+3/) // Δ = set (7) − jul (4)
+    const celulas = within(linha).getAllByRole("cell")
+    expect(within(celulas[0]).queryByRole("img")).toBeNull() // primeira coluna sem seta
+    expect(within(celulas[1]).getByRole("img", { name: "subiu em relação a jul/26" })).toBeInTheDocument()
+    expect(within(celulas[2]).getByRole("img", { name: "subiu em relação a ago/26" })).toBeInTheDocument()
+    // leituras: a mais recente contra a anterior a ela na seleção
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Leituras de set/26 contra ago/26" })
+    ).toBeInTheDocument()
+  })
+
+  it("respeita os limites de 2 e 6 e remove pelo seletor extra", async () => {
+    const user = userEvent.setup()
+    render(
+      <CompararChamados
+        {...await cenarioN(["2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"])}
+      />
+    )
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    const adicionar = screen.getByRole("button", { name: "Adicionar competência" })
+    for (let k = 0; k < 4; k++) await user.click(adicionar)
+    expect(seletores()).toHaveLength(6)
+    expect(adicionar).toBeDisabled()
+    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "mai/26", "jun/26", "jul/26", "ago/26", "set/26", "Δ"])
+    await user.click(screen.getByRole("button", { name: "Remover competência 6" }))
+    expect(seletores()).toHaveLength(5)
+    expect(adicionar).toBeEnabled()
+    while (seletores().length > 2)
+      await user.click(screen.getAllByRole("button", { name: /^Remover competência/ }).at(-1)!)
+    for (const r of screen.getAllByRole("button", { name: /^Remover competência/ }))
+      expect(r).toBeDisabled()
+  })
+
+  it("não deixa escolher a mesma competência duas vezes", async () => {
+    const user = userEvent.setup()
+    render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
+    const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(um)
+    expect(await screen.findByRole("option", { name: /Setembro de 2026/ })).toHaveAttribute("aria-disabled", "true")
+    expect(screen.getByRole("option", { name: /Julho de 2026/ })).not.toHaveAttribute("aria-disabled", "true")
+    await user.click(screen.getByRole("option", { name: /Julho de 2026/ }))
+    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "set/26", "Δ"])
+  })
+
+  it("as colunas seguem a ordem cronológica mesmo com o seletor fora de ordem", async () => {
+    const user = userEvent.setup()
+    render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
+    const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(um)
+    await user.click(await screen.findByRole("option", { name: /Julho de 2026/ }))
+    await user.click(screen.getByRole("button", { name: "Adicionar competência" }))
+    // seletores: jul, set, ago (a sugerida é a mais recente livre)
+    expect(seletores().map((x) => x.textContent)).toEqual([
+      expect.stringContaining("Julho"),
+      expect.stringContaining("Setembro"),
+      expect.stringContaining("Agosto"),
+    ])
+    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26", "Δ"])
+  })
+
+  it("leitura do Comparar abre o mesmo modal de detalhe e o Esc devolve o foco ao cartão", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenario(true)} />)
-    const a = await screen.findByRole("combobox", { name: "Competência A" })
-    const b = screen.getByRole("combobox", { name: "Competência B" })
-    expect(b).toHaveTextContent("Setembro de 2026")
-    expect(a).toHaveTextContent("Agosto de 2026")
-    const linha = () => screen.getByRole("row", { name: /Backlog aberto/ })
-    expect(linha()).toHaveTextContent("+1")
-    expect(linha()).toHaveTextContent("pior")
-    await user.click(a)
-    await user.click(await screen.findByRole("option", { name: /Setembro de 2026/ }))
-    await user.click(b)
-    await user.click(await screen.findByRole("option", { name: /Agosto de 2026/ }))
-    expect(linha()).toHaveTextContent("-1")
-    expect(linha()).toHaveTextContent("melhor")
-    // KPI de Agosto sem base própria → traço
-    expect(
-      screen.getByRole("heading", { level: 2, name: /Leituras de ago\/26 contra set\/26/ })
-    ).toBeInTheDocument()
+    const cartao = await screen.findByRole("button", { name: /Atenção.*concentra/s })
+    await user.click(cartao)
+    const modal = await screen.findByRole("dialog")
+    expect(within(modal).getByRole("region", { name: "Regra que disparou" })).toBeInTheDocument()
+    expect(within(modal).getByRole("region", { name: "Números que sustentam" })).toBeInTheDocument()
+    expect(within(modal).getByRole("region", { name: "Evidência" })).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await waitFor(() => expect(cartao).toHaveFocus())
   })
 
   it("com uma só carga oferece meses reconstruídos e marca '—' nos que exigem a carga", async () => {
     render(<CompararChamados {...await cenario(false)} />)
     const user = userEvent.setup()
-    const a = await screen.findByRole("combobox", { name: "Competência A" })
-    await user.click(a)
+    const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(um)
     // rótulo secundário "reconstruído", sem parênteses colados ao nome do mês
     const opcao = await screen.findByRole("option", { name: /Agosto de 2026/ })
     expect(within(opcao).getByText("reconstruído")).toBeInTheDocument()
@@ -354,12 +464,12 @@ describe("CompararChamados", () => {
     const sla = screen.getByRole("row", { name: /% no SLA/ })
     expect(sla).toHaveTextContent("exige a carga daquele mês")
     // mês reconstruído: selo no cabeçalho da coluna e Δ marcado
-    const cabA = screen.getByRole("columnheader", { name: /^A · ago\/26/ })
-    const cabB = screen.getByRole("columnheader", { name: /^B · set\/26/ })
+    const cabA = screen.getByRole("columnheader", { name: /^ago\/26/ })
+    const cabB = screen.getByRole("columnheader", { name: /^set\/26/ })
     expect(within(cabA).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
     expect(within(cabA).queryByText("Reconstruído pelas datas")).toBeNull()
-    antes(within(cabA).getByRole("button"), within(cabA).getByText(/^A · ago\/26/))
-    // B é carga própria: sem símbolo, e nenhuma das duas células empilha nada abaixo do rótulo
+    antes(within(cabA).getByRole("button"), within(cabA).getByText(/^ago\/26/))
+    // set é carga própria: sem símbolo, e nenhuma das duas células empilha nada abaixo do rótulo
     expect(within(cabB).queryByRole("button")).toBeNull()
     for (const cab of [cabA, cabB]) expect(cab.querySelector("div, p, span.flex, span.block")).toBeNull()
     expect(screen.getByRole("row", { name: /Backlog aberto/ })).toHaveTextContent("(reconstruído)")

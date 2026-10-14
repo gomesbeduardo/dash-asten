@@ -1,8 +1,8 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
-import { BarrasAxB, LinhaMini, type SerieLinha } from "./graficos"
+import { BarrasComparar, LinhaMini, type SerieLinha } from "./graficos"
 import type { LinhaSerie } from "./logica"
 
 const comp = (n: number) => ({ ano: 2026, mes: n }) as never
@@ -83,12 +83,12 @@ describe("legenda de séries na Evolução", () => {
 })
 
 describe("legenda de séries no Comparar", () => {
-  const itens = [{ rotulo: "Cli A", a: 3, b: 5 }]
-  it("liga e desliga A e B, mantendo ao menos uma", async () => {
+  const itens = [{ rotulo: "Cli A", valores: [3, 5] }]
+  const serie = (id: string, rotulo: string) => ({ id, rotulo })
+  const duas = [serie("2026-08", "Ago"), serie("2026-09", "Set")]
+  it("liga e desliga as séries, mantendo ao menos uma", async () => {
     const u = userEvent.setup()
-    render(
-      <BarrasAxB itens={itens} rotuloA="Ago" rotuloB="Set" animar={false} />
-    )
+    render(<BarrasComparar itens={itens} series={duas} animar={false} />)
     const a = screen.getByRole("button", { name: "Ago" })
     const b = screen.getByRole("button", { name: "Set" })
     await u.click(b)
@@ -99,18 +99,40 @@ describe("legenda de séries no Comparar", () => {
     await u.click(b)
     expect(b).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("img").getAttribute("aria-label")).toContain(
-      "Cli A 3 e 5"
+      "Cli A 3, 5"
     )
+  })
+
+  it("aceita até 6 séries, uma legenda clicável para cada uma", async () => {
+    const u = userEvent.setup()
+    const seis = ["02", "03", "04", "05", "06", "07"].map((m) =>
+      serie(`2026-${m}`, `m${m}`)
+    )
+    render(
+      <BarrasComparar
+        itens={[{ rotulo: "Cli A", valores: [1, 2, 3, 4, 5, 6] }]}
+        series={seis}
+        animar={false}
+      />
+    )
+    expect(within(screen.getByRole("list", { name: "Séries" })).getAllByRole("button")).toHaveLength(6)
+    await u.click(screen.getByRole("button", { name: "m04" }))
+    expect(screen.getByRole("button", { name: "m04" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "m05" })).toHaveAttribute("aria-pressed", "true")
   })
 
   it("volta ao padrão ao trocar de competência", async () => {
     const u = userEvent.setup()
     const { rerender } = render(
-      <BarrasAxB itens={itens} rotuloA="Ago" rotuloB="Set" animar={false} />
+      <BarrasComparar itens={itens} series={duas} animar={false} />
     )
     await u.click(screen.getByRole("button", { name: "Set" }))
     rerender(
-      <BarrasAxB itens={itens} rotuloA="Ago" rotuloB="Out" animar={false} />
+      <BarrasComparar
+        itens={itens}
+        series={[serie("2026-08", "Ago"), serie("2026-10", "Out")]}
+        animar={false}
+      />
     )
     expect(screen.getByRole("button", { name: "Out" })).toHaveAttribute(
       "aria-pressed",
