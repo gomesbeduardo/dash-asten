@@ -477,6 +477,29 @@ describe("CompararChamados", () => {
     await waitFor(() => expect(cartao).toHaveFocus())
   })
 
+  it("clicar no cartão do indicador abre o modal com os valores por competência e o Esc devolve o foco", async () => {
+    const user = userEvent.setup()
+    render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
+    const cartao = await screen.findByRole("button", { name: /Backlog aberto/ })
+    await user.click(cartao)
+    const modal = await screen.findByRole("dialog", { name: "Backlog aberto" })
+    const lista = within(modal).getByRole("list", { name: "Valores por competência" })
+    const itens = within(lista).getAllByRole("listitem")
+    expect(itens).toHaveLength(2)
+    // do mais recente (destaque, "atual") para o mais antigo
+    expect(itens[0]).toHaveTextContent("set/26")
+    expect(itens[0]).toHaveTextContent("atual")
+    expect(itens[0]).toHaveAttribute("aria-current", "true")
+    expect(itens[0]).toHaveTextContent("7")
+    expect(itens[1]).toHaveTextContent("ago/26")
+    expect(itens[1]).toHaveTextContent("6")
+    expect(itens[1]).not.toHaveAttribute("aria-current")
+    expect(within(modal).getByText(/\+1/)).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await waitFor(() => expect(cartao).toHaveFocus())
+  })
+
   it("com uma só carga oferece meses reconstruídos e marca '—' nos que exigem a carga", async () => {
     render(<CompararChamados {...await cenario(false)} />)
     const user = userEvent.setup()
