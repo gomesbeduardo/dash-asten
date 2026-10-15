@@ -366,6 +366,32 @@ describe("CompararChamados", () => {
     ).toBeInTheDocument()
   })
 
+  it("mostra um card por indicador com os valores de cada competência e o Δ com o tom", async () => {
+    const user = userEvent.setup()
+    render(
+      <CompararChamados
+        {...await cenarioN(["2026-07", "2026-08", "2026-09"])}
+      />
+    )
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar competência" })
+    )
+    const secao = screen.getByRole("region", {
+      name: "Indicadores lado a lado",
+    })
+    const cards = within(secao).getAllByRole("article")
+    expect(cards).toHaveLength(10)
+    const backlog = within(secao).getByRole("article", {
+      name: /Backlog aberto/,
+    })
+    for (const r of ["jul/26", "ago/26", "set/26"])
+      expect(within(backlog).getByText(r)).toBeInTheDocument()
+    expect(backlog).toHaveTextContent(/jul\/26\s*4.*ago\/26\s*6.*set\/26\s*7/s)
+    expect(within(backlog).getByText(/\+3/)).toBeInTheDocument()
+    expect(within(backlog).getByText(/pior/)).toBeInTheDocument()
+  })
+
   it("adiciona a próxima mais antiga, em ordem cronológica, com Δ = última − primeira e setas vs anterior", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
@@ -593,6 +619,137 @@ describe("filtros de Chamados", () => {
     expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("2")
   })
 
+  it("filtro de Autarquia: a carga antiga (sem a coluna) mostra '—' e aviso, não zero", async () => {
+    const user = userEvent.setup()
+    const repo: RepositorioDeCargas = criarRepositorioMemoria()
+    const comAutarquia = (linhas: L[]) =>
+      makeXlsx({
+        Dados: [
+          [...CAB, "Autarquia"],
+          ...linhas.map(([ab, cli, sit, sla, sol], i) => [
+            ab ? d(ab) : null,
+            i + 1,
+            cli,
+            "Área 1",
+            "Suporte",
+            sit,
+            sla ? d(sla) : null,
+            null,
+            sol ? d(sol) : null,
+            null,
+            0,
+            "SPPrev",
+          ]),
+        ],
+      })
+    await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-08",
+      arquivo: "ago.xlsx",
+      workbook: readWorkbook(xlsx(aug), "ago.xlsx"),
+    })
+    const meta = await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-09",
+      arquivo: "set.xlsx",
+      workbook: readWorkbook(comAutarquia(base), "set.xlsx"),
+    })
+    const props: VisaoTipoProps = {
+      carga: (await repo.obter(meta.id)) as Carga,
+      historico: await repo.listar(),
+      obterCarga: (id) => repo.obter(id),
+      entrada: false,
+    }
+    render(<Visao props={props} qual="comparar" />)
+    await screen.findByRole("row", { name: /Backlog aberto/ })
+    await user.keyboard("f")
+    const painel = await screen.findByRole("dialog", { name: "Filtros" })
+    await user.click(within(painel).getByRole("combobox", { name: "Autarquia" }))
+    await user.click(await screen.findByRole("option", { name: "SPPrev" }))
+    await user.keyboard("{Escape}")
+    await user.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Filtros" })).toBeNull()
+    )
+    const linha = await screen.findByRole("row", { name: /Backlog aberto/ })
+    await waitFor(() => expect(linha).toHaveTextContent("—"))
+    expect(linha).toHaveTextContent("7")
+    expect(
+      screen.getByText("Sem a coluna Autarquia nesta carga: filtro não se aplica")
+    ).toBeInTheDocument()
+    // envelhecimento da carga antiga: "—", nunca 0 (D61)
+    const env = screen.getByRole("region", { name: "Envelhecimento do backlog" })
+    await user.click(within(env).getByRole("button", { name: /Ver dados/ }))
+    const linhas = within(env).getAllByRole("row").slice(1)
+    expect(linhas.length).toBeGreaterThan(0)
+    for (const l of linhas) {
+      const cel = within(l).getAllByRole("cell")
+      expect(cel[0]).toHaveTextContent("—")
+    }
+  })
+
+  it("filtro de Autarquia numa carga sem a coluna: painel não mostra barras com 0 nem '0 chamados'", async () => {
+    const user = userEvent.setup()
+    const repo: RepositorioDeCargas = criarRepositorioMemoria()
+    const comAutarquia = makeXlsx({
+      Dados: [
+        [...CAB, "Autarquia"],
+        ...base.map(([ab, cli, sit, sla, sol], i) => [
+          ab ? d(ab) : null,
+          i + 1,
+          cli,
+          "Área 1",
+          "Suporte",
+          sit,
+          sla ? d(sla) : null,
+          null,
+          sol ? d(sol) : null,
+          null,
+          0,
+          "SPPrev",
+        ]),
+      ],
+    })
+    const antiga = await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-08",
+      arquivo: "ago.xlsx",
+      workbook: readWorkbook(xlsx(aug), "ago.xlsx"),
+    })
+    const nova = await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-09",
+      arquivo: "set.xlsx",
+      workbook: readWorkbook(comAutarquia, "set.xlsx"),
+    })
+    const mk = async (m: typeof nova): Promise<VisaoTipoProps> => ({
+      carga: (await repo.obter(m.id)) as Carga,
+      historico: await repo.listar(),
+      obterCarga: (id) => repo.obter(id),
+      entrada: false,
+    })
+    const { rerender } = render(<Visao props={await mk(nova)} qual="comparar" />)
+    await screen.findByRole("row", { name: /Backlog aberto/ })
+    await user.keyboard("f")
+    const dlg = await screen.findByRole("dialog", { name: "Filtros" })
+    await user.click(within(dlg).getByRole("combobox", { name: "Autarquia" }))
+    await user.click(await screen.findByRole("option", { name: "SPPrev" }))
+    await user.keyboard("{Escape}")
+    await user.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Filtros" })).toBeNull()
+    )
+    rerender(<Visao props={await mk(antiga)} qual="painel" />)
+    const env = await screen.findByRole("region", {
+      name: "Envelhecimento do backlog",
+    })
+    expect(env).toHaveTextContent("Sem dados com este filtro nesta carga")
+    expect(env.querySelector("[role=img]")).toBeNull()
+    const sit = screen.getByRole("region", { name: "Situação na competência" })
+    expect(sit).toHaveTextContent("Sem dados com este filtro nesta carga")
+    expect(sit.querySelector("[role=img]")).toBeNull()
+    expect(sit).not.toHaveTextContent(/0 chamados/)
+  })
 })
 
 describe("estado de carregamento", () => {

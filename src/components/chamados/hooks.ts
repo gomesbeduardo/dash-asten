@@ -10,7 +10,12 @@ import {
 } from "@/chamados"
 import type { Sheet } from "@/core"
 import { useFiltrosChamados } from "./filtros"
-import { filtrarSheet, metaAnterior, ultimasVersoes } from "./logica"
+import {
+  colunasAusentes,
+  filtrarSheet,
+  metaAnterior,
+  ultimasVersoes,
+} from "./logica"
 
 export type CargaComAba = { meta: CargaMeta; sheet: Sheet }
 
@@ -128,6 +133,7 @@ export function useMesDeChamados(
             ...bruto,
             entrada: {
               ...bruto.entrada,
+              colunasSemFiltro: colunasAusentes(bruto.entrada.sheet, filtros),
               sheet: filtrarSheet(
                 bruto.entrada.sheet,
                 filtros,
@@ -145,9 +151,10 @@ export function useMesDeChamados(
             sheet: sheetFiltrada,
             competencia: carga.competencia,
             cargaPropria: true,
+            colunasSemFiltro: sheet ? colunasAusentes(sheet, filtros) : [],
           }
         : null,
-    [sheetFiltrada, carga.competencia]
+    [sheetFiltrada, sheet, filtros, carga.competencia]
   )
   const pronto = atual !== null && anterior !== undefined
   const metricas = useMemo(
@@ -158,5 +165,6 @@ export function useMesDeChamados(
     () => (pronto ? gerarLeituras(atual, anterior?.entrada) : []),
     [pronto, atual, anterior]
   )
-  return { sheet, filtros, metricas, leituras, anterior }
+  const semColuna = atual?.colunasSemFiltro ?? []
+  return { sheet, filtros, metricas, leituras, anterior, semColuna }
 }

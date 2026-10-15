@@ -19,6 +19,7 @@ import {
   type MetricasChamados,
   type ItemDistribuicao,
   type SituacaoNaCompetencia,
+  avisoColunasSemFiltro,
 } from "@/chamados"
 import type { CellValue, Sheet } from "@/core"
 
@@ -52,11 +53,13 @@ export function descreverDelta(
 ): DeltaUI | null {
   const { delta, formato, melhorQuando } = kpi
   if (delta === null || !Number.isFinite(delta)) return null
-  const arred = formato === "inteiro" ? Math.round(delta) : Math.round(delta * 10) / 10
+  const arred =
+    formato === "inteiro" ? Math.round(delta) : Math.round(delta * 10) / 10
   const sentido = arred > 0 ? "alta" : arred < 0 ? "queda" : "igual"
   const fmt = formato === "inteiro" ? inteiro : decimal
   const sinal = arred > 0 ? "+" : arred < 0 ? "-" : ""
-  const unidade = formato === "percentual" ? " p.p." : formato === "dias" ? " dias" : ""
+  const unidade =
+    formato === "percentual" ? " p.p." : formato === "dias" ? " dias" : ""
   const texto = `${sinal}${fmt.format(Math.abs(arred))}${unidade} vs ${rotuloAnterior}${reconstruido ? " (reconstruído)" : ""}`
   let tom: DeltaUI["tom"] = "neutro"
   if (sentido !== "igual" && melhorQuando !== "neutro") {
@@ -222,6 +225,8 @@ export function pontosDaEvolucao(
     /** false: depende da carga do mês (colunas da data da exportação). */
     reconstruivel: boolean
   }[]
+  /** Filtros ativos sem coluna em alguma carga da janela: os pontos dela ficam vazios. */
+  avisosFiltro: string[]
 } {
   const maisRecentes = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>()
   for (const p of proprias) {
@@ -231,7 +236,8 @@ export function pontosDaEvolucao(
   }
   const n = Math.max(maxPontos, 0)
   const comps = [...maisRecentes.keys()].sort((a, b) => a.localeCompare(b))
-  if (comps.length === 0 || n === 0) return { pontos: [], kpis: [] }
+  if (comps.length === 0 || n === 0)
+    return { pontos: [], kpis: [], avisosFiltro: [] }
   // As `n` competências de calendário terminando na carga própria mais recente, sem buracos.
   const janela = janelaDe(comps[comps.length - 1], n).reverse()
   const primeira = primeiraCompetencia(maisRecentes.get(comps[0])!.sheet)
@@ -240,7 +246,11 @@ export function pontosDaEvolucao(
   for (const c of janela) {
     const propria = maisRecentes.get(c)
     if (propria) {
-      entradas.push({ sheet: propria.sheet, competencia: c, cargaPropria: true })
+      entradas.push({
+        sheet: propria.sheet,
+        competencia: c,
+        cargaPropria: true,
+      })
       continue
     }
     // Pela planilha da carga própria seguinte (a mais próxima); antes da primeira
@@ -257,19 +267,24 @@ export function pontosDaEvolucao(
   const todas = [...reconstruidas, ...entradas]
     .sort((a, b) => a.competencia.localeCompare(b.competencia))
     .map((e) => ({
-    ...e,
-    sheet: filtrarSheet(e.sheet, filtros, e.competencia),
-  }))
+      ...e,
+      colunasSemFiltro: colunasAusentes(e.sheet, filtros),
+      sheet: filtrarSheet(e.sheet, filtros, e.competencia),
+    }))
   const ev = evolucao(todas)
-  const propria = new Map(todas.map((e) => [e.competencia, e.cargaPropria !== false]))
+  const propria = new Map(
+    todas.map((e) => [e.competencia, e.cargaPropria !== false])
+  )
   const pontos = ev.competencias.map((competencia, i) => ({
     competencia,
     rotulo: formatarCompetencia(competencia),
     propria: propria.get(competencia) ?? false,
     valores: Object.fromEntries(ev.series.map((s) => [s.id, s.valores[i]])),
   }))
+  const semColuna = [...new Set(todas.flatMap((e) => e.colunasSemFiltro))]
   return {
     pontos,
+    avisosFiltro: semColuna.length ? [avisoColunasSemFiltro(semColuna)] : [],
     kpis: ev.series.map(({ id, rotulo, formato }) => ({
       id,
       rotulo,
@@ -312,7 +327,7 @@ export function linhasDeSerie(
 }
 
 /** Um item (categoria) com um valor por competência, na ordem cronológica das colunas. */
-export type ItemSerie = { rotulo: string; valores: number[] }
+export type ItemSerie = { rotulo: string; valores: (number | null)[] }
 
 export function agruparSeries(itens: ItemSerie[], max: number): ItemSerie[] {
   if (itens.length <= max) return itens
@@ -323,7 +338,7 @@ export function agruparSeries(itens: ItemSerie[], max: number): ItemSerie[] {
     {
       rotulo: "Outros",
       valores: Array.from({ length: colunas }, (_, c) =>
-        resto.reduce((s, i) => s + i.valores[c], 0)
+        resto.reduce((s, i) => s + (i.valores[c] ?? 0), 0)
       ),
     },
   ]
@@ -354,8 +369,10 @@ export function proximaParaAdicionar(
   const maisAntiga = [...escolhidas].sort()[0]
   const antes = livres.filter((o) => o.competencia < maisAntiga)
   if (antes.length > 0)
-    return antes.reduce((x, y) => (x.competencia > y.competencia ? x : y)).competencia
-  return livres.reduce((x, y) => (x.competencia > y.competencia ? x : y)).competencia
+    return antes.reduce((x, y) => (x.competencia > y.competencia ? x : y))
+      .competencia
+  return livres.reduce((x, y) => (x.competencia > y.competencia ? x : y))
+    .competencia
 }
 
 export type KpiN = {
@@ -376,14 +393,19 @@ export type ComparacaoN = {
   envelhecimento: ItemSerie[]
 }
 
-const juntarItens = (listas: ItemDistribuicao[][], ordenar = true): ItemSerie[] => {
+const juntarItens = (
+  listas: ItemDistribuicao[][],
+  ordenar = true,
+  semDados: boolean[] = []
+): ItemSerie[] => {
   const mapas = listas.map((l) => new Map(l.map((i) => [i.rotulo, i.valor])))
   const rotulos = [...new Set(listas.flatMap((l) => l.map((i) => i.rotulo)))]
   const itens = rotulos.map((rotulo) => ({
     rotulo,
-    valores: mapas.map((m) => m.get(rotulo) ?? 0),
+    valores: mapas.map((m, k) => (semDados[k] ? null : (m.get(rotulo) ?? 0))),
   }))
-  const total = (i: ItemSerie) => i.valores.reduce((s, v) => s + v, 0)
+  const total = (i: ItemSerie) =>
+    i.valores.reduce<number>((s, v) => s + (v ?? 0), 0)
   return ordenar ? itens.sort((x, y) => total(y) - total(x)) : itens
 }
 
@@ -408,13 +430,20 @@ export function compararN(metricas: MetricasChamados[]): ComparacaoN {
       ),
     }
   })
-  const ids = [...new Set(metricas.flatMap((m) => m.distribuicoes.map((d) => d.id)))]
+  const semDados = metricas.map((m) => (m.colunasSemFiltro ?? []).length > 0)
+  const ids = [
+    ...new Set(metricas.flatMap((m) => m.distribuicoes.map((d) => d.id))),
+  ]
   const distribuicoes = ids.map((id) => {
     const ds = metricas.map((m) => m.distribuicoes.find((d) => d.id === id))
     return {
       id,
       titulo: (ds[ds.length - 1] ?? ds.find(Boolean))!.titulo,
-      itens: juntarItens(ds.map((d) => d?.itens ?? [])),
+      itens: juntarItens(
+        ds.map((d) => d?.itens ?? []),
+        true,
+        semDados
+      ),
     }
   })
   return {
@@ -422,7 +451,11 @@ export function compararN(metricas: MetricasChamados[]): ComparacaoN {
     kpis,
     distribuicoes,
     // faixas de idade ficam na ordem do motor, não por total
-    envelhecimento: juntarItens(metricas.map((m) => m.envelhecimento), false),
+    envelhecimento: juntarItens(
+      metricas.map((m) => m.envelhecimento),
+      false,
+      semDados
+    ),
   }
 }
 
@@ -440,18 +473,22 @@ export function motivoSemDelta(
 
 export type CampoFiltro =
   | "cliente"
+  | "autarquia"
   | "areaSuperior"
   | "area"
   | "atividade"
+  | "tipo"
   | "severidade"
   | "operador"
   | "situacaoNaCompetencia"
 
 export const CAMPOS_FILTRO: { campo: CampoFiltro; rotulo: string }[] = [
   { campo: "cliente", rotulo: "Cliente" },
+  { campo: "autarquia", rotulo: "Autarquia" },
   { campo: "areaSuperior", rotulo: "Área Superior" },
   { campo: "area", rotulo: "Área" },
   { campo: "atividade", rotulo: "Atividade" },
+  { campo: "tipo", rotulo: "Tipo" },
   { campo: "severidade", rotulo: "Severidade" },
   { campo: "operador", rotulo: "Operador" },
   { campo: "situacaoNaCompetencia", rotulo: "Situação na competência" },
@@ -471,6 +508,20 @@ function textoDe(v: CellValue | undefined): string {
 
 const ativos = (f: FiltrosChamados) =>
   CAMPOS_FILTRO.filter(({ campo }) => (f[campo]?.length ?? 0) > 0)
+
+/** Rótulos dos filtros ativos cuja coluna não existe na planilha (a carga não consegue aplicá-los). */
+export function colunasAusentes(
+  sheet: Sheet,
+  filtros: FiltrosChamados
+): string[] {
+  const { mapa } = mapearColunas(sheet)
+  return ativos(filtros)
+    .filter(
+      ({ campo }) =>
+        campo !== "situacaoNaCompetencia" && !mapa[campo as CampoChamado]
+    )
+    .map(({ rotulo }) => rotulo)
+}
 
 /** Mesma planilha, só com as linhas do recorte. Nenhuma coluna muda; sem filtro devolve a própria planilha. */
 export function filtrarSheet(
@@ -495,10 +546,7 @@ export function filtrarSheet(
   return { ...sheet, rows }
 }
 
-export function opcoesDoFiltro(
-  sheet: Sheet,
-  campo: CampoFiltro
-): string[] {
+export function opcoesDoFiltro(sheet: Sheet, campo: CampoFiltro): string[] {
   if (campo === "situacaoNaCompetencia") return ordemSituacoes
   const chave = mapearColunas(sheet).mapa[campo as CampoChamado]
   if (!chave) return []
@@ -559,11 +607,7 @@ export function filtroDaLeitura(
 
 /** Origem de um dado que não é original puro; o selo aparece igual em todas as visões. */
 export type SeloTipo =
-  | "reconstruido"
-  | "calculado"
-  | "exportacao"
-  | "derivado"
-  | "outros"
+  "reconstruido" | "calculado" | "exportacao" | "derivado" | "outros"
 
 const REGRAS: Record<Leitura["id"], string> = {
   fluxo:
@@ -595,20 +639,27 @@ export function numerosDaLeitura(
       .find((d) => d.id === "cliente")
       ?.itens.find((i) => i.rotulo === nome)?.valor
     if (nome && n !== undefined) {
-      out.push({ rotulo: `Chamados de ${nome} no backlog`, valor: inteiro.format(n) })
+      out.push({
+        rotulo: `Chamados de ${nome} no backlog`,
+        valor: inteiro.format(n),
+      })
       out.push({ rotulo: "Participação no backlog", valor: pct(n, backlog) })
     }
   }
   if (l.id === "envelhecimento") {
     const n = m.envelhecimento.find((f) => f.rotulo === "> 180 dias")?.valor
     if (n !== undefined) {
-      out.push({ rotulo: "Abertos há mais de 180 dias", valor: inteiro.format(n) })
+      out.push({
+        rotulo: "Abertos há mais de 180 dias",
+        valor: inteiro.format(n),
+      })
       out.push({ rotulo: "Participação no backlog", valor: pct(n, backlog) })
     }
   }
   for (const id of l.evidencia) {
     const k = kpi(id)
-    if (k) out.push({ rotulo: k.rotulo, valor: formatarKpi(k.valor, k.formato) })
+    if (k)
+      out.push({ rotulo: k.rotulo, valor: formatarKpi(k.valor, k.formato) })
   }
   return out
 }
@@ -631,7 +682,11 @@ export function evidenciaDaLeitura(
     case "concentracao": {
       const d = dist("cliente")
       return d
-        ? { titulo: d.titulo, itens: d.itens, destaque: l.filtro?.valores ?? [] }
+        ? {
+            titulo: d.titulo,
+            itens: d.itens,
+            destaque: l.filtro?.valores ?? [],
+          }
         : null
     }
     case "envelhecimento":
@@ -685,7 +740,10 @@ const normalizarTexto = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
 /** Selos que a leitura precisa carregar por causa da origem dos dados que usa. */
-export function selosDaLeitura(l: Leitura, anteriorPropria: boolean): SeloTipo[] {
+export function selosDaLeitura(
+  l: Leitura,
+  anteriorPropria: boolean
+): SeloTipo[] {
   const out: SeloTipo[] = []
   if (l.id === "gargaloCliente") out.push("exportacao")
   if (l.id === "fluxo" && !anteriorPropria) out.push("reconstruido")

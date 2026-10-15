@@ -33,6 +33,54 @@ describe("mapearColunas", () => {
     expect(faltando).toEqual(["abertura", "situacao"])
   })
 
+  it("mapeia o cabeçalho novo completo campo a campo", () => {
+    const rotulos = [
+      "Mes Ref.",
+      "Data Abertura",
+      "Hora Abertura",
+      "Código",
+      "Tipo",
+      "Severidade",
+      "Resumo",
+      "Área Superior",
+      "Área",
+      "Cliente",
+      "Autarquia",
+      "Operador",
+      "Situação",
+      "Data de Solução",
+      "SLA Previsto",
+      "SLA Renegociado",
+      "Data de Aceite",
+      "Data Ultima Reabertura",
+      "Situação Ultima Reabertura",
+      "Qtd Reabertura",
+      "Observação",
+    ]
+    const { mapa, faltando } = mapearColunas(montarSheet(rotulos, []))
+    const idx = (r: string) => `c${rotulos.indexOf(r)}`
+    expect(mapa).toEqual({
+      abertura: idx("Data Abertura"),
+      codigo: idx("Código"),
+      tipo: idx("Tipo"),
+      severidade: idx("Severidade"),
+      resumo: idx("Resumo"),
+      areaSuperior: idx("Área Superior"),
+      area: idx("Área"),
+      cliente: idx("Cliente"),
+      autarquia: idx("Autarquia"),
+      operador: idx("Operador"),
+      situacao: idx("Situação"),
+      solucao: idx("Data de Solução"),
+      slaPrevisto: idx("SLA Previsto"),
+      slaRenegociado: idx("SLA Renegociado"),
+      aceite: idx("Data de Aceite"),
+      ultimaReabertura: idx("Data Ultima Reabertura"),
+      qtdReabertura: idx("Qtd Reabertura"),
+    })
+    expect(faltando).toEqual([])
+  })
+
   it("separa Área de Área Superior", () => {
     const { mapa } = mapearColunas(montarSheet(["Área Superior", "Área"], []))
     expect(mapa.areaSuperior).toBe("c0")

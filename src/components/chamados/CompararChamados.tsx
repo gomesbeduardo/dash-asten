@@ -9,6 +9,7 @@ import {
   gerarLeituras,
   type EntradaCompetencia,
   type FormatoKpi,
+  avisoColunasSemFiltro,
 } from "@/chamados"
 import { entryContainer } from "@/components/app/motion/variants"
 import { Button } from "@/components/ui/button"
@@ -26,7 +27,11 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao } from "./cartoes"
 import { BarrasComparar } from "./graficos"
 import { ListaLeituras } from "./ListaLeituras"
-import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
+import {
+  AvisoFiltroSemColuna,
+  ChipsFiltrosChamados,
+  useFiltrosChamados,
+} from "./filtros"
 import { LegendaSimbolos, SeloSimbolo } from "./selos"
 import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
@@ -39,6 +44,7 @@ import {
   temOutros,
   type SeloTipo,
   descreverDelta,
+  colunasAusentes,
   filtrarSheet,
   formatarKpi,
   opcoesDeCompetencia,
@@ -65,7 +71,10 @@ export function CompararChamados({
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
   const cargas = useCargasDoTipo(historico, obterCarga)
-  const sheetAtual = useMemo(() => escolherAba(carga.workbook), [carga.workbook])
+  const sheetAtual = useMemo(
+    () => escolherAba(carga.workbook),
+    [carga.workbook]
+  )
 
   const sheets = useMemo(() => {
     const m = new Map(cargas?.map((c) => [c.meta.competencia, c.sheet]))
@@ -116,7 +125,11 @@ export function CompararChamados({
   )
 }
 
-const ICONE_SENTIDO = { alta: ArrowUpIcon, queda: ArrowDownIcon, igual: EqualIcon } as const
+const ICONE_SENTIDO = {
+  alta: ArrowUpIcon,
+  queda: ArrowDownIcon,
+  igual: EqualIcon,
+} as const
 const VERBO_SENTIDO = { alta: "subiu", queda: "caiu", igual: "igual" } as const
 
 /** Setinha discreta contra a coluna anterior; o espaço fica reservado para os números alinharem. */
@@ -167,7 +180,8 @@ function ComparacaoVisao({
       0,
       opcoes.findIndex((o) => o.competencia === competenciaAtual)
     )
-    const anterior = opcoes[idxB + 1] ?? (idxB === 0 ? undefined : opcoes[idxB - 1])
+    const anterior =
+      opcoes[idxB + 1] ?? (idxB === 0 ? undefined : opcoes[idxB - 1])
     return [anterior?.competencia, opcoes[idxB].competencia].filter(
       (c): c is string => !!c
     )
@@ -197,19 +211,25 @@ function ComparacaoVisao({
   )
   const entradas = useMemo(
     () =>
-      ordenadas.map((o): EntradaCompetencia => ({
-        sheet: filtrarSheet(
-          o.propria
-            ? (sheets.get(o.competencia) ?? sheetAtual)
-            : ((o.deCarga ? sheets.get(o.deCarga) : undefined) ?? sheetAtual),
-          filtros,
-          o.competencia
-        ),
-        competencia: o.competencia,
-        cargaPropria: o.propria,
-      })),
+      ordenadas.map((o): EntradaCompetencia => {
+        const bruta = o.propria
+          ? (sheets.get(o.competencia) ?? sheetAtual)
+          : ((o.deCarga ? sheets.get(o.deCarga) : undefined) ?? sheetAtual)
+        return {
+          sheet: filtrarSheet(bruta, filtros, o.competencia),
+          competencia: o.competencia,
+          cargaPropria: o.propria,
+          colunasSemFiltro: colunasAusentes(bruta, filtros),
+        }
+      }),
     [ordenadas, sheets, sheetAtual, filtros]
   )
+  const avisosFiltro = useMemo(() => {
+    const rotulos = [
+      ...new Set(entradas.flatMap((e) => e.colunasSemFiltro ?? [])),
+    ]
+    return rotulos.length ? [avisoColunasSemFiltro(rotulos)] : []
+  }, [entradas])
   const metricas = useMemo(
     () => entradas.map((e) => calcularMetricas(e)),
     [entradas]
@@ -229,7 +249,8 @@ function ComparacaoVisao({
   const entradaRecente = entradas[n - 1]
   const entradaAnterior = n >= 2 ? entradas[n - 2] : undefined
   const leituras = useMemo(
-    () => (entradaAnterior ? gerarLeituras(entradaRecente, entradaAnterior) : []),
+    () =>
+      entradaAnterior ? gerarLeituras(entradaRecente, entradaAnterior) : [],
     [entradaRecente, entradaAnterior]
   )
   const metricasLeitura = useMemo(
@@ -253,15 +274,21 @@ function ComparacaoVisao({
   // símbolos que aparecem nesta tela, para a legenda
   const tiposNaTela: SeloTipo[] = [
     ...(algumReconstruido ? (["reconstruido"] as const) : []),
-    ...(metricas[n - 1].kpis.some((k) => k.reconstruivel === false) ? (["calculado"] as const) : []),
+    ...(metricas[n - 1].kpis.some((k) => k.reconstruivel === false)
+      ? (["calculado"] as const)
+      : []),
     ...leituras.flatMap((l) => selosDaLeitura(l, anteriorPropria)),
-    ...(dists.some((d) => d.id !== "situacao" && temOutros(agruparSeries(d.itens, maxItens)))
+    ...(dists.some(
+      (d) => d.id !== "situacao" && temOutros(agruparSeries(d.itens, maxItens))
+    )
       ? (["outros"] as const)
       : []),
   ]
-  const tabelaSeries = (itens: { rotulo: string; valores: number[] }[]) => ({
+  const tabelaSeries = (
+    itens: { rotulo: string; valores: (number | null)[] }[]
+  ) => ({
     colunas: ["Categoria", ...nomes],
-    linhas: itens.map((i) => [i.rotulo, ...i.valores]),
+    linhas: itens.map((i) => [i.rotulo, ...i.valores.map((v) => v ?? "—")]),
   })
 
   return (
@@ -275,10 +302,14 @@ function ComparacaoVisao({
         <header className="flex flex-col gap-4">
           {cabecalho}
           <ChipsFiltrosChamados />
+          <AvisoFiltroSemColuna avisos={avisosFiltro} />
           <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
             {selecao.map((valor, i) => (
               <div key={i} className="flex flex-col gap-1.5">
-                <label htmlFor={`comp-${i + 1}`} className="text-base font-medium">
+                <label
+                  htmlFor={`comp-${i + 1}`}
+                  className="text-base font-medium"
+                >
                   Competência {i + 1}
                 </label>
                 <div className="flex items-center gap-2">
@@ -306,7 +337,7 @@ function ComparacaoVisao({
                       ))}
                     </SelectContent>
                   </Select>
-                  {(
+                  {
                     <Button
                       type="button"
                       variant="outline"
@@ -316,7 +347,7 @@ function ComparacaoVisao({
                     >
                       Remover
                     </Button>
-                  )}
+                  }
                 </div>
               </div>
             ))}
@@ -338,101 +369,206 @@ function ComparacaoVisao({
           <LegendaSimbolos tipos={tiposNaTela} />
         </header>
 
-        <section aria-label="Indicadores lado a lado" className="overflow-x-auto">
-          <table className="w-full text-left text-xl">
-            <caption className="sr-only">
-              Indicadores de {rotulos.join(", ")}
-            </caption>
-            <thead>
-              <tr className="border-b-2 border-primary/30 text-primary">
-                <th scope="col" className="px-3 py-3 font-display">
-                  Indicador
-                </th>
-                {ordenadas.map((o, i) => (
-                  <th
-                    key={o.competencia}
-                    scope="col"
-                    className="px-3 py-3 text-right font-display"
-                  >
-                    <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
-                      {!o.propria && <SeloSimbolo tipo="reconstruido" />}
-                      <span>{rotulos[i]}</span>
-                    </span>
-                  </th>
-                ))}
-                <th scope="col" className="px-3 py-3 text-right font-display">
-                  Δ
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {cmp.kpis.map((k) => {
-                const d = descreverDelta(
-                  { delta: k.delta, formato: k.formato, melhorQuando: k.melhorQuando },
-                  "",
-                  deltaReconstruido
-                )
-                const reconstruivel = metricas[n - 1].kpis.find((x) => x.id === k.id)?.reconstruivel
-                return (
-                  <tr key={k.id} className="border-b bg-card">
-                    <th scope="row" className="px-3 py-3 font-medium">
-                      {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
-                      <span className="flex items-start gap-2">
-                        <span className="flex size-6 shrink-0 items-center justify-center">
-                          {reconstruivel === false && <SeloSimbolo tipo="calculado" />}
-                        </span>
-                        <span>{k.rotulo}</span>
-                      </span>
-                    </th>
+        <section aria-label="Indicadores lado a lado" className="min-w-0">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+            {cmp.kpis.map((k) => {
+              const d = descreverDelta(
+                {
+                  delta: k.delta,
+                  formato: k.formato,
+                  melhorQuando: k.melhorQuando,
+                },
+                "",
+                deltaReconstruido
+              )
+              const reconstruivel = metricas[n - 1].kpis.find(
+                (x) => x.id === k.id
+              )?.reconstruivel
+              return (
+                <article
+                  key={k.id}
+                  aria-label={k.rotulo}
+                  className="flex min-w-0 flex-col gap-3 rounded-lg border border-t-4 border-t-brand bg-card p-5 shadow-(--shadow-card)"
+                >
+                  <h3 className="flex items-start gap-2 font-sans text-lg leading-tight font-medium text-muted-foreground">
+                    {reconstruivel === false && (
+                      <SeloSimbolo tipo="calculado" />
+                    )}
+                    <span>{k.rotulo}</span>
+                  </h3>
+                  <ul className="flex flex-wrap items-end gap-x-4 gap-y-3">
                     {k.valores.map((v, i) => {
+                      const ultimo = i === n - 1
                       const nota =
                         v === null
-                          ? (metricas[i].kpis.find((x) => x.id === k.id)?.detalhe ?? "sem dado")
+                          ? (metricas[i].kpis.find((x) => x.id === k.id)
+                              ?.detalhe ?? "sem dado")
                           : null
                       return (
-                        <td
+                        <li
                           key={ordenadas[i].competencia}
-                          className="num px-3 py-3 text-right font-display font-semibold whitespace-nowrap text-primary"
+                          className="flex min-w-0 flex-col"
                         >
-                          <div className="flex items-center justify-end gap-1.5">
+                          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            {!ordenadas[i].propria && (
+                              <SeloSimbolo tipo="reconstruido" />
+                            )}
+                            <span>{rotulos[i]}</span>
+                          </span>
+                          <span
+                            className={cn(
+                              "num flex items-center gap-1.5 font-display text-primary",
+                              ultimo
+                                ? "text-4xl font-bold underline decoration-2 underline-offset-4"
+                                : "text-2xl font-semibold"
+                            )}
+                          >
                             <SetaVs
                               sentido={k.setas[i]}
                               rotuloAnterior={rotulos[i - 1] ?? ""}
                             />
                             <span>{fmt(v, k.formato)}</span>
-                          </div>
+                          </span>
                           {nota && (
-                            <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
+                            <span className="max-w-40 font-sans text-sm text-muted-foreground">
                               {nota}
                             </span>
                           )}
-                        </td>
+                        </li>
                       )
                     })}
-                    <td
-                      className={cn(
-                        "num px-3 py-3 text-right font-medium whitespace-nowrap",
-                        d ? TOM[d.tom] : "text-muted-foreground"
-                      )}
+                  </ul>
+                  <p
+                    className={cn(
+                      "num mt-auto border-t pt-3 text-lg font-medium",
+                      d ? TOM[d.tom] : "text-muted-foreground"
+                    )}
+                  >
+                    <span className="mr-2 text-sm font-normal text-muted-foreground">
+                      Δ
+                    </span>
+                    {d ? (
+                      <>
+                        {d.texto.replace(/ vs\s*/, " ").trim()}
+                        {d.rotuloTom && (
+                          <span className="ml-2 text-base font-normal">
+                            {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </p>
+                </article>
+              )
+            })}
+          </div>
+          <div className="sr-only">
+            <table className="w-full text-left text-xl">
+              <caption className="sr-only">
+                Indicadores de {rotulos.join(", ")}
+              </caption>
+              <thead>
+                <tr className="border-b-2 border-primary/30 text-primary">
+                  <th scope="col" className="px-3 py-3 font-display">
+                    Indicador
+                  </th>
+                  {ordenadas.map((o, i) => (
+                    <th
+                      key={o.competencia}
+                      scope="col"
+                      className="px-3 py-3 text-right font-display"
                     >
-                      {d ? (
-                        <>
-                          {d.texto.replace(/ vs\s*/, " ").trim()}
-                          {d.rotuloTom && (
-                            <span className="ml-2 text-base font-normal">
-                              {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
+                        {!o.propria && <SeloSimbolo tipo="reconstruido" />}
+                        <span>{rotulos[i]}</span>
+                      </span>
+                    </th>
+                  ))}
+                  <th scope="col" className="px-3 py-3 text-right font-display">
+                    Δ
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {cmp.kpis.map((k) => {
+                  const d = descreverDelta(
+                    {
+                      delta: k.delta,
+                      formato: k.formato,
+                      melhorQuando: k.melhorQuando,
+                    },
+                    "",
+                    deltaReconstruido
+                  )
+                  const reconstruivel = metricas[n - 1].kpis.find(
+                    (x) => x.id === k.id
+                  )?.reconstruivel
+                  return (
+                    <tr key={k.id} className="border-b bg-card">
+                      <th scope="row" className="px-3 py-3 font-medium">
+                        {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
+                        <span className="flex items-start gap-2">
+                          <span className="flex size-6 shrink-0 items-center justify-center">
+                            {reconstruivel === false && (
+                              <SeloSimbolo tipo="calculado" />
+                            )}
+                          </span>
+                          <span>{k.rotulo}</span>
+                        </span>
+                      </th>
+                      {k.valores.map((v, i) => {
+                        const nota =
+                          v === null
+                            ? (metricas[i].kpis.find((x) => x.id === k.id)
+                                ?.detalhe ?? "sem dado")
+                            : null
+                        return (
+                          <td
+                            key={ordenadas[i].competencia}
+                            className="num px-3 py-3 text-right font-display font-semibold whitespace-nowrap text-primary"
+                          >
+                            <div className="flex items-center justify-end gap-1.5">
+                              <SetaVs
+                                sentido={k.setas[i]}
+                                rotuloAnterior={rotulos[i - 1] ?? ""}
+                              />
+                              <span>{fmt(v, k.formato)}</span>
+                            </div>
+                            {nota && (
+                              <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
+                                {nota}
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })}
+                      <td
+                        className={cn(
+                          "num px-3 py-3 text-right font-medium whitespace-nowrap",
+                          d ? TOM[d.tom] : "text-muted-foreground"
+                        )}
+                      >
+                        {d ? (
+                          <>
+                            {d.texto.replace(/ vs\s*/, " ").trim()}
+                            {d.rotuloTom && (
+                              <span className="ml-2 text-base font-normal">
+                                {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         {n >= 2 && (
@@ -462,7 +598,11 @@ function ComparacaoVisao({
             tabela={tabelaSeries(cmp.envelhecimento)}
             selos={selosCmp(cmp.envelhecimento)}
           >
-            <BarrasComparar itens={cmp.envelhecimento} series={series} animar={play} />
+            <BarrasComparar
+              itens={cmp.envelhecimento}
+              series={series}
+              animar={play}
+            />
           </GraficoCartao>
           {dists.map((d) => {
             const itens = agruparSeries(d.itens, maxItens)
