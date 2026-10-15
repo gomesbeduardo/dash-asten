@@ -20,7 +20,11 @@ import { BarrasComparar, COR } from "./graficos"
 import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
 import { deltaDeContagem, SeloDelta, SeloNova } from "./selo-delta"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
@@ -401,7 +405,9 @@ export function GraficoMes({
                 <CalendarRangeIcon className="size-5" aria-hidden />
               </Toggle>
             </TooltipTrigger>
-            <TooltipContent className="text-base">Comparar período</TooltipContent>
+            <TooltipContent className="text-base">
+              Comparar período
+            </TooltipContent>
           </Tooltip>
           {ligado && (
             <select

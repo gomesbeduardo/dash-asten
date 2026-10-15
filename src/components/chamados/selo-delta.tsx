@@ -1,5 +1,10 @@
 /** Selo de variação: [seta + valor] colorido, seguido do período em cinza. Cor e seta dizem melhor/pior; o aria-label diz por extenso. */
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon, SparklesIcon } from "lucide-react"
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  MinusIcon,
+  SparklesIcon,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { DeltaUI } from "./logica"

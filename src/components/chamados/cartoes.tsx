@@ -21,12 +21,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
-import {
-  descreverDelta,
-  idAlvo,
-  motivoSemDelta,
-  type SeloTipo,
-} from "./logica"
+import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
 import { Selos } from "./selos"
 import { SeloDelta } from "./selo-delta"
 
@@ -337,22 +332,22 @@ export function GraficoCartao({
             </p>
           )}
         </div>
-        <Toggle
-          pressed={verTabela}
-          onPressedChange={setVerTabela}
-          className="press h-10 shrink-0 gap-2 text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
-        >
-          {verTabela ? (
-            <ChartColumnIcon className="size-5" aria-hidden />
-          ) : (
-            <TableIcon className="size-5" aria-hidden />
-          )}
-          Ver dados
-        </Toggle>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+          {acoes}
+          <Toggle
+            pressed={verTabela}
+            onPressedChange={setVerTabela}
+            className="press h-10 shrink-0 gap-2 text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          >
+            {verTabela ? (
+              <ChartColumnIcon className="size-5" aria-hidden />
+            ) : (
+              <TableIcon className="size-5" aria-hidden />
+            )}
+            Ver dados
+          </Toggle>
+        </div>
       </header>
-      {acoes && (
-        <div className="flex flex-wrap items-center gap-3">{acoes}</div>
-      )}
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
       <div
         className={cn("flex min-h-0 flex-1 flex-col", verTabela && "hidden")}

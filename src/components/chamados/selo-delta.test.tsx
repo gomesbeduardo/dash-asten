@@ -46,7 +46,9 @@ describe("selo de Δ dos KPIs", () => {
   it("o aria-label diz 'melhor' quando o sentido é bom", () => {
     renderiza(kpi({ delta: 5, melhorQuando: "maior" }), "mai/26")
     expect(
-      screen.getByRole("group", { name: "+5,0 p.p. em relação a mai/26, melhor" })
+      screen.getByRole("group", {
+        name: "+5,0 p.p. em relação a mai/26, melhor",
+      })
     ).toBeInTheDocument()
   })
 

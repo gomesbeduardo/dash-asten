@@ -94,10 +94,13 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Ao longo do tempo",
 
   // Painel: setembro, com delta contra a carga própria de agosto
   await expect(
-    page.getByRole("heading", { level: 1, name: "Chamados · setembro de 2026" })
+    page.getByRole("heading", { level: 1, name: "Chamados setembro de 2026" })
   ).toBeVisible()
   await expect(kpi(page, "Não finalizados")).toContainText("7")
-  await expect(kpi(page, "Não finalizados")).toContainText("+1 vs ago/26")
+  await expect(kpi(page, "Não finalizados")).toContainText("+1")
+  await expect(
+    kpi(page, "Não finalizados").getByRole("group", { name: "+1 em relação a ago/26, pior" })
+  ).toBeVisible()
   await expect(kpi(page, "% no SLA")).toContainText("50,0%")
   // nada é reconstruído nem calculado "à parte": sem selos de origem nos KPIs
   await expect(page.getByRole("button", { name: "Calculado" })).toHaveCount(0)
