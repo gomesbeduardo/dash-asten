@@ -22,3 +22,6 @@ export const molaAba = {
   damping: 30,
   mass: 0.9,
 } as const
+
+// Teto da espera pelo indicador da aba antes de montar o conteúdo novo (ms).
+export const esperaTrocaAba = 300

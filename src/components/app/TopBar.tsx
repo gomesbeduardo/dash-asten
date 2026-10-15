@@ -36,6 +36,8 @@ export type TopBarProps = {
   outrosTipos?: GrupoTipo[]
   visoes: Visao[]
   visao: Visao
+  /** O indicador da aba terminou de animar: o conteúdo novo pode montar. */
+  onAssentou?: () => void
   /** Recebe a faixa onde o painel do tipo desenha seus controles. */
   onSlot: (el: HTMLElement | null) => void
   onAbrir: (id: string) => void
@@ -119,6 +121,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
                         aria-hidden
                         className="pointer-events-none absolute inset-0 z-0 rounded-md border border-ring/50 bg-brand-soft shadow-sm"
                         transition={reduce ? { duration: 0 } : molaAba}
+                        onLayoutAnimationComplete={p.onAssentou}
                       />
                     )}
                     <span className="relative z-10">{ROTULO_VISAO[v]}</span>

@@ -175,7 +175,8 @@ describe("nova carga", () => {
     await tituloVisivel("Comparar competências")
     await user.keyboard("e")
     await user.keyboard("p")
-    await screen.findByRole("article", { name: "Não finalizados" })
+    // A troca espera o indicador da aba assentar (esperaTrocaAba) antes de montar.
+    await screen.findByRole("article", { name: "Não finalizados" }, { timeout: 3000 })
   })
 
   it("segunda carga do mesmo mês avisa a versão e cria a v2", async () => {
