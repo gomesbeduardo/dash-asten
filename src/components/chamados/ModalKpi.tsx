@@ -63,7 +63,7 @@ export function ModalKpi({
   const dados = pontos.map((p, i) => ({
     ...p,
     atual: i === ultimo,
-    barra: p.valor ?? 0,
+    barra: p.valor,
   }))
   const fmt = (v: number | null) => formatarKpi(v, formato)
   return (
@@ -79,7 +79,7 @@ export function ModalKpi({
               <span>{titulo}</span>
             </DialogTitle>
             <DialogDescription className="text-lg">
-              Competências selecionadas, da mais antiga à mais recente.
+              Gráfico em ordem cronológica; a lista começa pelo mês atual.
             </DialogDescription>
           </DialogHeader>
           <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -96,6 +96,7 @@ export function ModalKpi({
                 <CartesianGrid vertical={false} stroke="#d8dee4" />
                 <XAxis
                   dataKey="rotulo"
+                  interval="preserveStartEnd"
                   tick={EIXO}
                   tickMargin={8}
                   tickLine={false}
@@ -106,6 +107,9 @@ export function ModalKpi({
                   tickLine={false}
                   axisLine={false}
                   tickCount={4}
+                  ticks={
+                    formato === "percentual" ? [0, 25, 50, 75, 100] : undefined
+                  }
                   domain={[0, formato === "percentual" ? 100 : "auto"]}
                   tickFormatter={(v) =>
                     formato === "percentual" ? `${v}%` : String(v)
@@ -145,8 +149,10 @@ export function ModalKpi({
                     dataKey="barra"
                     position="top"
                     offset={8}
-                    formatter={(v: unknown) => fmt(Number(v))}
-                    style={{ fontSize: 22, fontWeight: 700, fill: "#043f63" }}
+                    formatter={(v: unknown) =>
+                      v === null || v === undefined ? "—" : fmt(Number(v))
+                    }
+                    style={{ fontSize: 18, fontWeight: 700, fill: "#043f63" }}
                   />
                 </Bar>
               </BarChart>

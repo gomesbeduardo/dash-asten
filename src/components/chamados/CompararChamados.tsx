@@ -459,7 +459,10 @@ function ComparacaoVisao({
                       return (
                         <li
                           key={ordenadas[i].competencia}
-                          className="flex min-w-0 flex-col"
+                          className={cn(
+                            "flex min-w-0 flex-col",
+                            ultimo && "order-first basis-full"
+                          )}
                         >
                           <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             {!ordenadas[i].propria && (
@@ -472,7 +475,7 @@ function ComparacaoVisao({
                               "num flex items-center gap-1.5 font-display text-primary",
                               ultimo
                                 ? "text-6xl leading-none font-bold"
-                                : "text-4xl leading-none font-semibold opacity-80"
+                                : "text-3xl leading-none font-semibold opacity-80"
                             )}
                           >
                             <SetaVs
