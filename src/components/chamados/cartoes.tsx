@@ -296,6 +296,7 @@ export function GraficoCartao({
   nota,
   tabela,
   selos = [],
+  acoes,
   className,
   children,
 }: {
@@ -305,6 +306,8 @@ export function GraficoCartao({
   nota?: ReactNode
   tabela: TabelaDados
   selos?: SeloTipo[]
+  /** Controles do próprio card (ex.: comparar período), abaixo do cabeçalho. */
+  acoes?: ReactNode
   className?: string
   children: ReactNode
 }) {
@@ -351,6 +354,9 @@ export function GraficoCartao({
           Ver dados
         </Toggle>
       </header>
+      {acoes && (
+        <div className="flex flex-wrap items-center gap-3">{acoes}</div>
+      )}
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
       <div hidden={verTabela}>{children}</div>
       {nota && <p className="text-base text-muted-foreground">{nota}</p>}

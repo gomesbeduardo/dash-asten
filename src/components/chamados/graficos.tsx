@@ -12,6 +12,8 @@ import {
   YAxis,
 } from "recharts"
 
+import { useEffect, useState } from "react"
+
 import type { ItemDistribuicao, FormatoKpi } from "@/chamados"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { chartGrow } from "@/components/app/motion/tokens"
@@ -28,12 +30,31 @@ export const COR = {
 } as const
 
 const EIXO = { fontSize: "1.0000rem", fill: "#475565" }
+const EIXO_TV = { fontSize: "1.1250rem", fill: "#475565" }
 const GRADE = "#d8dee4"
 const inteiro = new Intl.NumberFormat("pt-BR")
 
 function curto(v: unknown, max = 26) {
   const s = String(v)
   return s.length > max ? `${s.slice(0, max - 1)}…` : s
+}
+
+/** Tamanho da fonte raiz (px) e altura da janela: o gráfico "TV" acompanha a tipografia fluida e a viewport. */
+function useEscalaTv() {
+  const ler = () => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+    return {
+      rem: Number.isFinite(rem) && rem > 0 ? rem : 16,
+      vh: window.innerHeight,
+    }
+  }
+  const [escala, setEscala] = useState(ler)
+  useEffect(() => {
+    const aoRedimensionar = () => setEscala(ler())
+    window.addEventListener("resize", aoRedimensionar)
+    return () => window.removeEventListener("resize", aoRedimensionar)
+  }, [])
+  return escala
 }
 
 export function animacao(animar: boolean) {
@@ -158,7 +179,7 @@ export function BarrasFaixas({
     <ChartContainer
       config={Cfg(["valor", "Chamados", COR.principal])}
       className="aspect-auto w-full"
-      style={{ height: 320 }}
+      style={{ height: "clamp(20rem, 40vh, 44rem)" }}
       role="img"
       aria-label={`Em atraso por meses desde a abertura: ${itens.map((i) => `${i.rotulo} ${i.valor}`).join("; ")}`}
     >
@@ -258,18 +279,40 @@ export function BarrasComparar({
   itens,
   series,
   animar,
+  tv = false,
 }: {
   itens: ItemSerie[]
   series: SerieComparar[]
   animar: boolean
+  /** Painel/TV: altura proporcional à viewport, barras e rótulos em rem (acompanham a tipografia fluida). */
+  tv?: boolean
 }) {
   const n = series.length
+  const { rem, vh } = useEscalaTv()
   const coloridas = series.map((s, i) => ({ ...s, cor: corDaSerie(i, n) }))
   const dados = itens.map((i) => ({
     rotulo: i.rotulo,
     ...Object.fromEntries(series.map((s, k) => [s.id, i.valores[k]])),
   }))
-  const altura = Math.max(220, itens.length * (n * 21 + 16) + 24)
+  // TV: a altura é no mínimo ~38% da viewport; se sobra espaço, a barra engrossa (1,3 a 2,6 rem).
+  const barraMin = tv ? Math.round(1.3 * rem) : 18
+  const folga = tv ? Math.round(1.1 * rem) : 16
+  const minimo = tv ? Math.round(vh * 0.38) : 220
+  const altura = Math.max(
+    minimo,
+    itens.length * (n * (barraMin + 3) + folga) + 24
+  )
+  const barra = tv
+    ? Math.round(
+        Math.min(
+          2.6 * rem,
+          Math.max(
+            barraMin,
+            ((altura - 24) / Math.max(1, itens.length) - folga) / n - 3
+          )
+        )
+      )
+    : 18
   const { ocultas, alternar } = useSeriesOcultas(
     series.map((s) => s.id).join("|"),
     series.map((s) => s.id)
@@ -311,9 +354,9 @@ export function BarrasComparar({
           <YAxis
             type="category"
             dataKey="rotulo"
-            width={220}
-            tick={EIXO}
-            tickFormatter={(v) => curto(v)}
+            width={tv ? Math.round(15 * rem) : 220}
+            tick={tv ? EIXO_TV : EIXO}
+            tickFormatter={(v) => curto(v, tv ? 32 : 26)}
             tickLine={false}
             axisLine={false}
           />
@@ -329,14 +372,17 @@ export function BarrasComparar({
                 stroke={s.cor}
                 strokeWidth={2}
                 radius={[0, 4, 4, 0]}
-                barSize={18}
+                barSize={barra}
                 {...animacao(animar)}
               >
                 <LabelList
                   dataKey={s.id}
                   position="right"
                   className="num fill-foreground"
-                  style={{ fontSize: ".9375rem", fontWeight: 600 }}
+                  style={{
+                    fontSize: tv ? "1.1250rem" : ".9375rem",
+                    fontWeight: 600,
+                  }}
                   formatter={(v) =>
                     v == null ? "—" : inteiro.format(Number(v))
                   }

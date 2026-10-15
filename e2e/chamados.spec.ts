@@ -104,7 +104,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(page.getByText(/reconstru/i)).toHaveCount(0)
   await expect(page.getByRole("table")).toHaveCount(0)
   const situacao = page.getByRole("region", { name: "Chamados por situação" })
-  await expect(situacao).toContainText("9 chamados na foto de setembro de 2026")
+  await expect(situacao).toContainText("na foto de setembro de 2026")
   await expect(page.getByLabel("Avisos")).toContainText("1 aberto depois do Mes Ref.")
 
   // Leituras: visão própria; o clique abre um modal e a página não rola

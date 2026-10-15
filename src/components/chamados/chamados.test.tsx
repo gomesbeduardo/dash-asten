@@ -302,18 +302,17 @@ describe("PainelChamados", () => {
     expect(screen.queryByText(/ano não consta na planilha/)).toBeNull()
   })
 
-  it("'Chamados por situação' mostra cada situação como vem e soma o total da foto; os abertos depois ficam em notas", async () => {
-    const user = userEvent.setup()
+  it("os cards por situação mostram cada situação como vem e o total da foto; os abertos depois ficam em notas", async () => {
     render(<PainelChamados {...await cenario(true)} />)
-    const card = await screen.findByRole("region", {
+    const topo = await screen.findByRole("region", {
       name: "Chamados por situação",
     })
-    expect(card).toHaveTextContent("9 chamados na foto de setembro de 2026")
-    await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
-    expect(within(card).getByRole("row", { name: /Em Análise/ })).toHaveTextContent("6")
-    expect(within(card).getByRole("row", { name: /Aguardando aceite/ })).toHaveTextContent("1")
-    expect(within(card).getByRole("row", { name: /Finalizado/ })).toHaveTextContent("2")
-    expect(within(card).getByRole("row", { name: /Total/ })).toHaveTextContent("9")
+    const valor = (nome: string) =>
+      within(within(topo).getByRole("article", { name: nome }))
+    expect(valor("Total de chamados").getByLabelText("9")).toBeInTheDocument()
+    expect(valor("Situação: Em Análise").getByLabelText("6")).toBeInTheDocument()
+    expect(valor("Situação: Aguardando aceite").getByLabelText("1")).toBeInTheDocument()
+    expect(valor("Situação: Finalizado").getByLabelText("2")).toBeInTheDocument()
     // nenhuma linha é excluída: as duas que ficam de fora dos números viram notas
     const avisos = screen.getByRole("contentinfo", { name: "Avisos" })
     expect(avisos).toHaveTextContent("1 aberto depois do Mes Ref.")
@@ -679,9 +678,11 @@ describe("filtros de Chamados", () => {
     const chips = screen.getByRole("list", { name: "Filtros ativos" })
     expect(chips).toHaveTextContent("Cliente: Cli B")
     // os cards por situação passam a mostrar só o recorte
+    const topo = screen.getByRole("region", { name: "Chamados por situação" })
     expect(
-      screen.getByRole("region", { name: "Chamados por situação" })
-    ).toHaveTextContent("3 chamados na foto de setembro de 2026")
+      within(within(topo).getByRole("article", { name: "Total de chamados" })).getByLabelText("3")
+    ).toBeInTheDocument()
+    expect(topo).toHaveTextContent("na foto de setembro de 2026")
 
     await user.click(within(chips).getByRole("button", { name: "Remover filtro Cliente" }))
     await waitFor(() =>
