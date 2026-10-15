@@ -151,8 +151,9 @@ describe("Painel: topo por Situação (D64)", () => {
       within(topo).getByRole("article", { name: `Situação: ${n}` })
     expect(card("Aguardando cliente")).toHaveTextContent("nova")
     expect(within(card("Finalizado")).getByLabelText("8")).toBeInTheDocument()
-    expect(card("Finalizado")).toHaveTextContent("+6 vs set/26")
-    expect(card("Em Análise")).toHaveTextContent("sem variação vs set/26")
+    // set/26 é corrigido pela foto de out (D65): 5000, 5003 e 5010 já estavam finalizados lá
+    expect(card("Finalizado")).toHaveTextContent("+3 vs set/26")
+    expect(card("Em Análise")).toHaveTextContent("nova")
     expect(
       within(topo).getByRole("article", { name: "Total de chamados" })
     ).toHaveTextContent("+5 vs set/26")

@@ -295,7 +295,9 @@ describe("PainelChamados", () => {
       entrada: false,
     })
     const { unmount } = render(<PainelChamados {...await props(await salvar("setembro.xlsx"))} />)
-    expect(await screen.findByText(/ano não consta na planilha/)).toBeInTheDocument()
+    // espera o painel (o esqueleto troca o cabeçalho ao carregar as fotos)
+    await screen.findByRole("article", { name: "Não finalizados" })
+    expect(screen.getByText(/ano não consta na planilha/)).toBeInTheDocument()
     unmount()
     render(<PainelChamados {...await props(await salvar("setembro-2025.xlsx"))} />)
     await screen.findByText(/setembro-2025\.xlsx/)

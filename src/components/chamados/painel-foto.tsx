@@ -15,6 +15,7 @@ import {
   type Distribuicao,
   type EntradaCompetencia,
   type ItemDistribuicao,
+  type ItemDistribuicaoCorrigido,
 } from "@/chamados"
 import { AnimatedNumber } from "@/components/app/motion/AnimatedNumber"
 import { entryItem } from "@/components/app/motion/variants"
@@ -23,15 +24,20 @@ import { cn } from "@/lib/utils"
 import { GraficoCartao } from "./cartoes"
 import { BarrasComparar } from "./graficos"
 import { agruparSeries, temOutros } from "./logica"
+import { MarcaCorrigido } from "./selos"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
 
-/** Situações e total do mês anterior; `null` = sem base (sem carga anterior ou filtro sem coluna). */
+/**
+ * Situações e total do período-base; `null` = sem base (sem carga anterior ou filtro sem coluna).
+ * `semFoto` (D65): o período escolhido não tem foto; não há situações para comparar.
+ */
 export type BaseAnterior = {
   situacoes: ItemDistribuicao[]
   total: number
   rotulo: string
+  semFoto?: string
 } | null
 
 function Variacao({
@@ -39,12 +45,20 @@ function Variacao({
   anterior,
   rotulo,
   nova = false,
+  semFoto,
 }: {
   atual: number
   anterior: number | null
   rotulo: string
   nova?: boolean
+  semFoto?: string
 }) {
+  if (semFoto)
+    return (
+      <p className="text-base text-muted-foreground">
+        <span aria-hidden>—</span> {semFoto}
+      </p>
+    )
   if (nova)
     return (
       <p className="flex items-center gap-1.5 text-base font-medium text-primary">
@@ -120,13 +134,20 @@ export function CartoesSituacao({
   anterior,
   mes,
   entrada,
+  corrigidoPor = "",
 }: {
   total: number
-  situacoes: ItemDistribuicao[]
+  situacoes: ItemDistribuicaoCorrigido[]
   anterior: BaseAnterior
   mes: string
   entrada: boolean
+  /** Fotos posteriores que corrigiram valores ("out/26"); vazio = nada corrigido. */
+  corrigidoPor?: string
 }) {
+  // situações que existiam no período-base e sumiram: card com 0 e a queda
+  const sumidas: ItemDistribuicaoCorrigido[] = (anterior?.situacoes ?? [])
+    .filter((b) => !situacoes.some((s) => s.rotulo === b.rotulo))
+    .map((b) => ({ rotulo: b.rotulo, valor: 0 }))
   return (
     <section aria-label="Chamados por situação" className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-4">
@@ -142,9 +163,10 @@ export function CartoesSituacao({
             atual={total}
             anterior={anterior ? anterior.total : null}
             rotulo={anterior?.rotulo ?? ""}
+            semFoto={anterior?.semFoto}
           />
         </CartaoContagem>
-        {situacoes.map((s) => {
+        {[...situacoes, ...sumidas].map((s) => {
           const antes = anterior?.situacoes.find((x) => x.rotulo === s.rotulo)
           return (
             <CartaoContagem
@@ -158,8 +180,12 @@ export function CartoesSituacao({
                 atual={s.valor}
                 anterior={antes?.valor ?? null}
                 rotulo={anterior?.rotulo ?? ""}
-                nova={!!anterior && !antes}
+                nova={!!anterior && !anterior.semFoto && !antes}
+                semFoto={anterior?.semFoto}
               />
+              {s.original !== undefined && corrigidoPor && (
+                <MarcaCorrigido por={corrigidoPor} era={n(s.original)} />
+              )}
             </CartaoContagem>
           )
         })}
@@ -202,6 +228,7 @@ export function GraficoFoto({
   max,
   className,
   animar,
+  corrigidoPor = "",
 }: {
   dist: Distribuicao
   /** Mês da carga já com os filtros aplicados; base do cálculo por período. */
@@ -212,6 +239,8 @@ export function GraficoFoto({
   max?: number
   className?: string
   animar: boolean
+  /** Fotos posteriores que corrigiram valores deste gráfico ("out/26"). */
+  corrigidoPor?: string
 }) {
   const [ligado, setLigado] = useState(false)
   const [meses, setMeses] = useState<number>(6)
@@ -255,6 +284,13 @@ export function GraficoFoto({
         ]),
       }}
       selos={temOutros(itens) ? ["outros"] : []}
+      nota={
+        corrigidoPor &&
+        !doPeriodo &&
+        (dist.itens as { original?: unknown }[]).some((i) => i.original)
+          ? `Valores corrigidos pela foto de ${corrigidoPor}.`
+          : undefined
+      }
       className={className}
       acoes={
         <>

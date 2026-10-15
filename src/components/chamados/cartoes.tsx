@@ -39,12 +39,15 @@ export function KpiCartao({
   rotuloAnterior,
   entrada,
   extra,
+  marca,
 }: {
   kpi: KpiChamados
   destaque?: boolean
   rotuloAnterior: string
   entrada: boolean
   extra?: string
+  /** Marca de valor corrigido (D65), abaixo do Δ. */
+  marca?: ReactNode
 }) {
   const reduce = useReducedMotion()
   const delta = descreverDelta(kpi, rotuloAnterior)
@@ -134,6 +137,7 @@ export function KpiCartao({
         </p>
       )}
       {extra && <p className="text-base text-muted-foreground">{extra}</p>}
+      {marca}
     </motion.article>
   )
 }

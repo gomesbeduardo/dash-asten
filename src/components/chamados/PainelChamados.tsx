@@ -1,31 +1,22 @@
 import { useEntrada } from "@/components/app/motion/useEntrada"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { ArrowRightIcon } from "lucide-react"
 
 import { formatarCompetencia, inferirCompetencia } from "@/cargas"
-import {
-  avisoColunasSemFiltro,
-  calcularMetricas,
-  type Distribuicao,
-  type EntradaCompetencia,
-} from "@/chamados"
+import { formatValue } from "@/components/app/motion/format"
+import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, KpiCartao } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BarrasFaixas } from "./graficos"
 import { Carregando } from "./Carregando"
+import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useMesDeChamados } from "./hooks"
-import {
-  colunasAusentes,
-  filtrarSheet,
-  recorteTexto,
-  temOutros,
-  type SeloTipo,
-} from "./logica"
-import { CartoesSituacao, GraficoFoto, type BaseAnterior } from "./painel-foto"
-import { LegendaSimbolos } from "./selos"
+import { recorteTexto, temOutros, type SeloTipo } from "./logica"
+import { CartoesSituacao, GraficoFoto } from "./painel-foto"
+import { LEGENDA_CORRIGIDO, LegendaSimbolos, MarcaCorrigido } from "./selos"
 
 /** Entrada do painel: mais curta que a padrão (são ~25 itens; ~110 ms cada deixaria a tela quase vazia). */
 const entradaRapida = {
@@ -57,38 +48,27 @@ export function PainelChamados({
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
   const entradaFixa = useEntrada(entrada)
-  const { sheet, filtros, metricas, leituras, anterior, semColuna } =
-    useMesDeChamados(carga, historico, obterCarga)
+  // leituras e filtros vêm do hook de sempre (a aba Leituras usa a mesma conta)
+  const { sheet, filtros, leituras, semColuna } = useMesDeChamados(
+    carga,
+    historico,
+    obterCarga
+  )
+  const [escolhaDe, setEscolha] = useState({ carga: carga.id, valor: ANTERIOR })
+  const escolha = escolhaDe.carga === carga.id ? escolhaDe.valor : ANTERIOR
+  const comparado = usePainelComparado({
+    carga,
+    historico,
+    obterCarga,
+    sheet,
+    filtros,
+    escolha,
+  })
 
   const anoPresumido = useMemo(
     () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
     [carga.workbook, carga.arquivo]
   )
-  // mês da carga com o recorte dos filtros: base do cálculo por período dos gráficos
-  const entradaAtual = useMemo<EntradaCompetencia | null>(
-    () =>
-      sheet
-        ? {
-            sheet: filtrarSheet(sheet, filtros, carga.competencia),
-            competencia: carga.competencia,
-            colunasSemFiltro: colunasAusentes(sheet, filtros),
-          }
-        : null,
-    [sheet, filtros, carga.competencia]
-  )
-  // situações do mês anterior (carga própria) para o Δ de cada card; sem base, sem Δ
-  const baseAnterior = useMemo<BaseAnterior>(() => {
-    if (!anterior || (anterior.entrada.colunasSemFiltro ?? []).length > 0)
-      return null
-    const m = calcularMetricas(anterior.entrada)
-    return m.totalChamados === null
-      ? null
-      : {
-          situacoes: m.situacoes,
-          total: m.totalChamados,
-          rotulo: formatarCompetencia(anterior.entrada.competencia),
-        }
-  }, [anterior])
   const recorte = recorteTexto(filtros)
   const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
   const cabecalho = (
@@ -117,7 +97,7 @@ export function PainelChamados({
         </p>
       </div>
     )
-  if (!metricas || anterior === undefined)
+  if (!comparado)
     return (
       <div className="flex flex-col gap-6">
         {cabecalho}
@@ -126,13 +106,26 @@ export function PainelChamados({
     )
 
   const play = entradaFixa && !reduce
+  const { metricas, entradaAtual, base, opcoes, corrigidoPor } = comparado
   // o aviso de filtro sem coluna já aparece junto dos chips
   const avisosRodape = metricas.avisos.filter(
     (a) => !a.startsWith("Sem a coluna") && !a.startsWith("Sem as colunas")
   )
-  const rotuloAnterior = anterior
-    ? formatarCompetencia(anterior.entrada.competencia)
-    : "mês anterior"
+  const rotuloAnterior = comparado.rotuloBase ?? "mês anterior"
+  const marcaDe = (k: (typeof metricas.kpis)[number]) =>
+    k.original !== undefined && corrigidoPor ? (
+      <MarcaCorrigido
+        por={corrigidoPor}
+        era={formatValue(
+          k.original,
+          k.formato === "inteiro"
+            ? "integer"
+            : k.formato === "percentual"
+              ? "percent"
+              : "decimal"
+        )}
+      />
+    ) : undefined
   const destaques = DESTAQUES.map((id) =>
     metricas.kpis.find((k) => k.id === id)
   ).filter((k) => !!k)
@@ -174,7 +167,10 @@ export function PainelChamados({
         animate="show"
       >
         {cabecalho}
-        <LegendaSimbolos tipos={tiposNaTela} />
+        <LegendaSimbolos
+          tipos={tiposNaTela}
+          extras={corrigidoPor ? [LEGENDA_CORRIGIDO] : []}
+        />
 
         {metricas.totalChamados === null ? (
           <section aria-label="Chamados por situação">{vazio}</section>
@@ -182,18 +178,41 @@ export function PainelChamados({
           <CartoesSituacao
             total={metricas.totalChamados}
             situacoes={metricas.situacoes}
-            anterior={baseAnterior}
+            anterior={base}
             mes={mes}
             entrada={play}
+            corrigidoPor={corrigidoPor}
           />
         )}
 
         <section aria-label="Indicadores" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-            <p className="flex flex-wrap items-center gap-3 text-base text-muted-foreground">
-              Variação contra {rotuloAnterior}
-              {anterior ? " (carga própria)" : ": sem carga do mês anterior"}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base text-muted-foreground">
+              <p>
+                Variação contra {rotuloAnterior}
+                {base?.semFoto
+                  ? " (sem foto: só entradas e finalizados)"
+                  : base
+                    ? " (carga própria)"
+                    : ": sem carga do mês anterior"}
+              </p>
+              <label className="flex items-center gap-2">
+                Comparar com
+                <select
+                  value={escolha}
+                  onChange={(e) =>
+                    setEscolha({ carga: carga.id, valor: e.target.value })
+                  }
+                  className="h-11 rounded-lg border border-input bg-card px-3 text-base text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  {opcoes.map((o) => (
+                    <option key={o.valor} value={o.valor}>
+                      {o.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             {irPara && (
               <button
                 type="button"
@@ -215,6 +234,7 @@ export function PainelChamados({
                 destaque
                 rotuloAnterior={rotuloAnterior}
                 entrada={play}
+                marca={marcaDe(k)}
               />
             ))}
           </div>
@@ -225,6 +245,7 @@ export function PainelChamados({
                 kpi={k}
                 rotuloAnterior={rotuloAnterior}
                 entrada={play}
+                marca={marcaDe(k)}
                 extra={
                   k.id === "aguardandoAceite" &&
                   k.valor !== null &&
@@ -245,6 +266,7 @@ export function PainelChamados({
               competencia={carga.competencia}
               sub="por cliente"
               animar={play}
+              corrigidoPor={corrigidoPor}
               className="xl:col-span-2"
             />
           )}
@@ -275,6 +297,7 @@ export function PainelChamados({
                 sub={r.sub}
                 max={r.max}
                 animar={play}
+                corrigidoPor={corrigidoPor}
               />
             )
           })}
