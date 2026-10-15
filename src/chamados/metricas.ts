@@ -24,15 +24,15 @@ import type {
 export { limitesDaCompetencia }
 
 const DIA = 86_400_000
-const SEM_INFO = "(sem informação)"
+export const SEM_INFO = "(sem informação)"
 const MAX_ITENS = 10
 
 const numero = (v: CellValue | undefined): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null
 /** Fim do dia UTC (23:59:59.999) do instante dado. */
-const fimDoDia = (t: number) => Math.floor(t / DIA) * DIA + DIA - 1
+export const fimDoDia = (t: number) => Math.floor(t / DIA) * DIA + DIA - 1
 
-type Chamado = {
+export type Chamado = {
   abertura: number
   solucao: number | null
   aceite: number | null
@@ -146,7 +146,7 @@ function montarDistribuicoes(
  * Lê a foto: separa as linhas abertas depois do fim do Mes Ref. e as sem Data de Abertura
  * (contadas à parte; nenhuma é excluída da planilha, D34) dos chamados que entram nos números.
  */
-function lerFoto(entrada: EntradaCompetencia) {
+export function lerFoto(entrada: EntradaCompetencia) {
   const { mapa } = mapearColunas(entrada.sheet)
   const col = (c: CampoChamado, row: Row) =>
     mapa[c] ? row[mapa[c]] : undefined
