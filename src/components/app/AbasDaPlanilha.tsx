@@ -33,7 +33,7 @@ export function AbasDaPlanilha(p: AbasDaPlanilhaProps) {
   const shown = p.sheets.filter((s) => visible.includes(s.id))
 
   return (
-    <div className="flex items-center gap-4 border-t px-6 py-1">
+    <div className="flex w-full basis-full items-center gap-4">
       <nav
         aria-label="Abas da planilha"
         className="min-w-0 flex-1 overflow-x-auto"
