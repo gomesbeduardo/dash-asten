@@ -63,7 +63,7 @@ const DEFINICOES = {
   finalizados:
     "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
   naoFinalizados:
-    "Chamados da foto com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
+    "Chamados da posição do mês com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
   atraso:
     "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
   slaVencido:
@@ -78,7 +78,7 @@ const DEFINICOES = {
   semSla: "Não finalizados sem SLA Previsto.",
   slaRenegociado: "Não finalizados com SLA Renegociado preenchido.",
   aguardandoAceite:
-    'Chamados da foto com Situação contendo "aceite" e sem Data de Aceite até o fim do mês do Mes Ref.',
+    'Chamados da posição do mês com Situação contendo "aceite" e sem Data de Aceite até o fim do mês do Mes Ref.',
 }
 
 export const FAIXAS_ATRASO = ["1", "2–3", "4–6", "7+"]

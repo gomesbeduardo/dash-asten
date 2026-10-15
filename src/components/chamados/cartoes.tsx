@@ -28,7 +28,6 @@ import {
   descreverDelta,
   idAlvo,
   motivoSemDelta,
-  textoDaTela,
   type SeloTipo,
 } from "./logica"
 import { Selos } from "./selos"
@@ -102,7 +101,7 @@ export function KpiCartao({
             </button>
           </TooltipTrigger>
           <TooltipContent className="max-w-md text-base">
-            {textoDaTela(kpi.definicao)}
+            {kpi.definicao}
           </TooltipContent>
         </Tooltip>
       </div>

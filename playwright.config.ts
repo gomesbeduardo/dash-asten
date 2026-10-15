@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
 const isCI = !!process.env.CI
+const porta = process.env.PW_PORT ?? "4173"
 
 export default defineConfig({
   testDir: "./e2e",
@@ -8,7 +9,7 @@ export default defineConfig({
   retries: isCI ? 1 : 0,
   reporter: isCI ? "github" : "list",
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: `http://localhost:${porta}`,
   },
   projects: [
     {
@@ -17,8 +18,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run build && npm run preview -- --port 4173 --strictPort",
-    url: "http://localhost:4173",
+    command: `npm run build && npm run preview -- --port ${porta} --strictPort`,
+    url: `http://localhost:${porta}`,
     reuseExistingServer: !isCI,
     timeout: 120_000,
   },

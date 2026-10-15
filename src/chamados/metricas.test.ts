@@ -256,6 +256,13 @@ describe("calcularMetricas (foto no Mes Ref., D63/D64)", () => {
     for (const k of m.kpis) expect(k.definicao.length).toBeGreaterThan(5)
   })
 
+  it("as definições falam em posição do mês, não em foto", () => {
+    for (const k of m.kpis) expect(k.definicao).not.toMatch(/\bfoto\b/i)
+    expect(
+      m.kpis.filter((k) => k.definicao.includes("posição do mês")).length
+    ).toBeGreaterThan(0)
+  })
+
   it("anterior preenche anterior e delta", () => {
     const ant = calcularMetricas({
       sheet: sheetChamados(LINHAS),

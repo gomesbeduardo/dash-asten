@@ -14,7 +14,7 @@ import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useMesDeChamados } from "./hooks"
-import { recorteTexto, temOutros, textoDaTela, type SeloTipo } from "./logica"
+import { recorteTexto, temOutros, type SeloTipo } from "./logica"
 import {
   AtrasoMes,
   coresDasSituacoes,
@@ -384,7 +384,7 @@ export function PainelChamados({
           >
             <ul className="flex flex-col gap-1">
               {avisosRodape.map((a) => (
-                <li key={a}>{textoDaTela(a)}</li>
+                <li key={a}>{a}</li>
               ))}
             </ul>
           </footer>
