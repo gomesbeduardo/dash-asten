@@ -35,6 +35,7 @@ import { useBarVisibility } from "./hooks/useBarVisibility"
 import { useShortcuts } from "./hooks/useShortcuts"
 import { useTelaCheia } from "./hooks/useTelaCheia"
 import { duration, saida, standard } from "./motion/tokens"
+import { useEntrada } from "./motion/useEntrada"
 
 export type ApresentacaoProps = {
   carga: Carga
@@ -56,9 +57,26 @@ export type ApresentacaoProps = {
 /**
  * Mostra o esqueleto da aba por um quadro antes de montar a visão: a montagem
  * dos painéis pesados trava a thread por ~300 ms, e sem isso a tela ficaria
- * em branco (a saída já terminou) até o fim dela.
+ * em branco (a saída já terminou) até o fim dela. Repassa a `entrada` do
+ * momento em que a aba abriu.
  */
-function Diferida({ visao, children }: { visao: Visao; children: ReactNode }) {
+function Diferida({
+  visao,
+  entrada,
+  onMontar,
+  children,
+}: {
+  visao: Visao
+  entrada: boolean
+  onMontar: () => void
+  children: (entrada: boolean) => ReactNode
+}) {
+  // Trava aqui: a visão só monta um quadro depois, quando a chave já foi marcada.
+  const entradaTravada = useEntrada(entrada)
+  useEffect(() => {
+    const t = setTimeout(onMontar, 0)
+    return () => clearTimeout(t)
+  }, [onMontar])
   const [pronto, setPronto] = useState(false)
   useEffect(() => {
     let t = 0
@@ -70,7 +88,7 @@ function Diferida({ visao, children }: { visao: Visao; children: ReactNode }) {
       clearTimeout(t)
     }
   }, [])
-  return pronto ? <>{children}</> : <Carregando forma={visao} />
+  return pronto ? <>{children(entradaTravada)}</> : <Carregando forma={visao} />
 }
 
 const Fragmento = ({ children }: { carga: Carga; children: ReactNode }) => (
@@ -163,13 +181,11 @@ export function Apresentacao(p: ApresentacaoProps) {
 
   const chave = `${carga.id}:${visao}`
   const entrada = !vistas.includes(chave)
-  useEffect(() => {
-    const t = setTimeout(
-      () => setVistas((s) => (s.includes(chave) ? s : [...s, chave])),
-      0
-    )
-    return () => clearTimeout(t)
-  }, [chave])
+  // A aba só vira "vista" quando a Diferida monta (depois da saída da anterior).
+  const marcarVista = useCallback(
+    () => setVistas((s) => (s.includes(chave) ? s : [...s, chave])),
+    [chave]
+  )
 
   const ctx = useMemo(() => ({ slot, setHold: setPainelHold, setDica }), [slot])
   const doTipo = useMemo(
@@ -260,14 +276,16 @@ export function Apresentacao(p: ApresentacaoProps) {
                 transition: { duration: reduce ? 0 : saida, ease: standard },
               }}
             >
-              <Diferida visao={visao}>
-                <Visao
-                  carga={carga}
-                  historico={doTipo}
-                  obterCarga={p.obterCarga}
-                  entrada={entrada}
-                  irPara={pedirVisao}
-                />
+              <Diferida visao={visao} entrada={entrada} onMontar={marcarVista}>
+                {(e) => (
+                  <Visao
+                    carga={carga}
+                    historico={doTipo}
+                    obterCarga={p.obterCarga}
+                    entrada={e}
+                    irPara={pedirVisao}
+                  />
+                )}
               </Diferida>
             </motion.div>
           </AnimatePresence>

@@ -4,6 +4,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import type { Carga } from "@/cargas"
 import { Apresentacao, type ApresentacaoProps } from "./Apresentacao"
 import { useBarra } from "./BarraContext"
+import { useEntrada } from "./motion/useEntrada"
 
 vi.mock("@/panels/tipos", () => {
   const Painel = () => {
@@ -14,7 +15,14 @@ vi.mock("@/panels/tipos", () => {
       </button>
     )
   }
-  return { visoesDoTipo: () => ({ Painel }) }
+  // Painel que expõe a `entrada` travada na montagem, como os reais.
+  const PainelEntrada = ({ entrada, carga }: { entrada: boolean; carga: Carga }) => {
+    const play = useEntrada(entrada)
+    return <div data-testid={`visao-${carga.id}`} data-entrada={play ? "" : undefined} />
+  }
+  return {
+    visoesDoTipo: (tipo: string) => ({ Painel: tipo === "entrada" ? PainelEntrada : Painel }),
+  }
 })
 
 const carga = {
@@ -79,5 +87,33 @@ describe("Apresentacao: barra e erro não empurram o conteúdo", () => {
     expect(alerta.className).toMatch(/fixed|absolute/)
     await userEvent.click(screen.getByRole("button", { name: "Fechar" }))
     expect(onDismissErro).toHaveBeenCalled()
+  })
+})
+
+describe("Apresentacao: entrada animada na primeira visita", () => {
+  const cargaB = { ...carga, id: "2", tipo: "entrada" } as unknown as Carga
+  const cargaA = { ...carga, id: "1", tipo: "entrada" } as unknown as Carga
+  const props = (c: Carga): ApresentacaoProps => ({
+    carga: c,
+    metas: [cargaA, cargaB],
+    metasTodas: [cargaA, cargaB],
+    onAlterar: async () => {},
+    obterCarga: async () => c,
+    onAbrir: () => {},
+    onNovaCarga: () => {},
+    onFecharCarga: () => {},
+    erro: null,
+    onDismissErro: () => {},
+  })
+
+  it("toca na primeira visita, mesmo montando após o esqueleto, e não na revisita", async () => {
+    const { rerender } = render(<Apresentacao {...props(cargaA)} />)
+    expect(await screen.findByTestId("visao-1")).toHaveAttribute("data-entrada")
+
+    rerender(<Apresentacao {...props(cargaB)} />)
+    expect(await screen.findByTestId("visao-2")).toHaveAttribute("data-entrada")
+
+    rerender(<Apresentacao {...props(cargaA)} />)
+    expect(await screen.findByTestId("visao-1")).not.toHaveAttribute("data-entrada")
   })
 })
