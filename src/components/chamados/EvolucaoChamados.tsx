@@ -1,3 +1,4 @@
+import { useEntrada } from "@/components/app/motion/useEntrada"
 import { useMemo } from "react"
 import { formatarCompetencia } from "@/cargas"
 import { motion, useReducedMotion } from "motion/react"
@@ -86,6 +87,7 @@ export function EvolucaoChamados({
   entrada,
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
+  const entradaFixa = useEntrada(entrada)
   const cargas = useCargasDoTipo(historico, obterCarga)
   const { filtros } = useFiltrosChamados()
   const dados = useMemo(
@@ -99,11 +101,11 @@ export function EvolucaoChamados({
     return (
       <div className="flex flex-col gap-4">
         {titulo}
-        <Carregando />
+        <Carregando forma="evolucao" />
       </div>
     )
   const { pontos, kpis, avisosFiltro, dimensoes } = dados
-  const play = entrada && !reduce
+  const play = entradaFixa && !reduce
   const formatoDe = (id: string): FormatoKpi =>
     kpis.find((k) => k.id === id)?.formato ?? "inteiro"
   const temReconstruido = pontos.some((p) => !p.propria)
@@ -119,6 +121,7 @@ export function EvolucaoChamados({
         className="flex flex-col gap-6"
         variants={entryContainer}
         initial={play ? "hidden" : false}
+        data-entrada={play ? "" : undefined}
         animate="show"
       >
         <header className="flex flex-col gap-2">
