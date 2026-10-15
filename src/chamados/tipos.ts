@@ -77,3 +77,38 @@ export type Evolucao = {
     valores: (number | null)[]
   }[]
 }
+
+/** KPI da foto corrigida (D65): `original` só existe quando a correção mudou o valor. */
+export type KpiCorrigido = KpiChamados & { original?: number | null }
+export type ItemDistribuicaoCorrigido = ItemDistribuicao & { original?: number }
+export type ItemFotoCorrigido = ItemFoto & {
+  original?: { finalizados: number; naoFinalizados: number }
+}
+export type DistribuicaoCorrigida = Omit<Distribuicao, "itens"> & {
+  itens: ItemFotoCorrigido[]
+}
+export type MetricasCorrigidas = Omit<
+  MetricasChamados,
+  "kpis" | "situacoes" | "distribuicoes"
+> & {
+  kpis: KpiCorrigido[]
+  situacoes: ItemDistribuicaoCorrigido[]
+  distribuicoes: DistribuicaoCorrigida[]
+  /** Mes Ref. das fotos posteriores que mudaram alguma linha. */
+  corrigidoPor: Competencia[]
+  corrigidos: number
+}
+/** Mês sem foto (D65): só entradas e finalizados; o resto é null/vazio com o motivo em `detalhe`. */
+export type MetricasParciais = Omit<MetricasChamados, "distribuicoes"> & {
+  semFoto: true
+  motivo: string
+  /** Só a série "finalizados no mês"; `naoFinalizados` é sempre null. */
+  distribuicoes: (Omit<Distribuicao, "itens"> & {
+    itens: { rotulo: string; finalizados: number; naoFinalizados: null }[]
+  })[]
+}
+export type OpcaoComparacao = {
+  competencia: Competencia
+  temFoto: boolean
+  versoes: number[]
+}
