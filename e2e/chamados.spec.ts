@@ -169,7 +169,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await page.keyboard.press("e")
   await expect(page.getByRole("heading", { level: 1, name: "Evolução" })).toBeVisible()
-  const card = page.getByRole("region", { name: "Não finalizados", exact: true })
+  const card = page.getByRole("region", { name: "% no SLA", exact: true })
   await expect(card.getByRole("button", { name: "Reconstruído pelas datas" })).toHaveCount(0)
   await card.getByRole("button", { name: /Ver dados/ }).click()
   await expect(card.getByRole("row", { name: /^ago\/26 / })).toBeVisible()

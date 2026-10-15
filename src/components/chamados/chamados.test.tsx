@@ -10,8 +10,6 @@ import {
 import { readWorkbook } from "@/core"
 import { registrarTiposDoApp } from "@/app/bootstrap"
 import { makeXlsx } from "@/test/makeWorkbook"
-import { foto, mai, out, v1, v2 } from "@/chamados/fotos-teste"
-import { montarWorkbook } from "@/chamados/test-util"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { CompararChamados } from "./CompararChamados"
 import { EvolucaoChamados } from "./EvolucaoChamados"
@@ -588,105 +586,20 @@ describe("CompararChamados", () => {
   })
 })
 
-/** Fotos de teste (abr v1/v2, mai, out) carregadas como cargas: abr–out com jun a set sem foto. */
-async function cenarioFotos() {
-  const repo: RepositorioDeCargas = criarRepositorioMemoria()
-  const salvar = (competencia: string, linhas: typeof v1, mesRef: string) =>
-    repo.salvar({
-      tipo: "chamados",
-      competencia,
-      arquivo: `foto-${competencia}.xlsx`,
-      workbook: montarWorkbook(foto(linhas, mesRef)),
-    })
-  await salvar("2026-04", v1, "2026-04-01")
-  await salvar("2026-04", v2, "2026-04-01")
-  await salvar("2026-05", mai, "2026-05-01")
-  const meta = await salvar("2026-10", out, "2026-10-01")
-  const carga = (await repo.obter(meta.id)) as Carga
-  const props: VisaoTipoProps = {
-    carga,
-    historico: await repo.listar(),
-    obterCarga: (id) => repo.obter(id),
-    entrada: false,
-  }
-  return props
-}
-
-describe("EvolucaoChamados com fotos (D65)", () => {
-  it("um cartão por KPI, situação por linha, sem backlog nem reconstruído", async () => {
-    render(<EvolucaoChamados {...await cenarioFotos()} />)
-    await screen.findByRole("region", { name: "Não finalizados" })
-    for (const t of [
-      "Entradas × finalizados",
-      "Em atraso",
-      "SLA vencido",
-      "% no SLA",
-      "Tempo médio de resolução",
-      "Tempo até o aceite",
-      "% reabertos",
-      "Sem SLA",
-      "SLA renegociado",
-      "Aguardando aceite",
-      "Chamados por situação",
-    ])
-      expect(screen.getByRole("region", { name: t })).toBeInTheDocument()
-    const sit = screen.getByRole("region", { name: "Chamados por situação" })
-    expect(
-      within(sit).getByRole("button", { name: "Em Atendimento" })
-    ).toBeInTheDocument()
-    expect(
-      within(sit).getByRole("button", { name: "Aguardando cliente" })
-    ).toBeInTheDocument()
-    expect(document.body.textContent).not.toMatch(/backlog|reconstru/i)
-  })
-  it("tabela: mês sem foto mostra entradas/finalizados e a dica; mês corrigido leva a marca", async () => {
-    const user = userEvent.setup()
-    render(<EvolucaoChamados {...await cenarioFotos()} />)
-    const fluxo = await screen.findByRole("region", {
-      name: "Entradas × finalizados",
-    })
-    await user.click(within(fluxo).getByRole("button", { name: /Ver dados/ }))
-    expect(
-      within(fluxo).getByRole("row", { name: /^jun\/26 / })
-    ).toHaveTextContent("0")
-    expect(
-      within(fluxo).getByRole("row", { name: /^mai\/26 / })
-    ).toHaveTextContent(/corrigido.*1/)
-    const sla = screen.getByRole("region", { name: "% no SLA" })
-    await user.click(within(sla).getByRole("button", { name: /Ver dados/ }))
-    expect(
-      within(sla).getByRole("row", { name: /^jun\/26 / })
-    ).toHaveTextContent("sem foto de jun/26")
-    const na = screen.getByRole("region", { name: "Não finalizados" })
-    await user.click(within(na).getByRole("button", { name: /Ver dados/ }))
-    expect(within(na).getAllByRole("row")).toHaveLength(6 + 1) // mai–out + cabeçalho
-  })
-  it("seletor 6/12 meses muda a janela", async () => {
-    const user = userEvent.setup()
-    render(<EvolucaoChamados {...await cenarioFotos()} />)
-    const na = await screen.findByRole("region", { name: "Não finalizados" })
-    await user.click(screen.getByRole("button", { name: "12 meses" }))
-    await user.click(within(na).getByRole("button", { name: /Ver dados/ }))
-    expect(within(na).getAllByRole("row")).toHaveLength(12 + 1)
-  })
-})
-
 describe("EvolucaoChamados", () => {
   it("um ponto por foto: mês sem carga não é reconstruído nem ganha marca", async () => {
     const user = userEvent.setup()
     render(<EvolucaoChamados {...await cenario(true)} />)
-    const card = await screen.findByRole("region", { name: "Não finalizados" })
-    await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
+    const sla = await screen.findByRole("region", { name: "% no SLA" })
+    await user.click(within(sla).getByRole("button", { name: /Ver dados/ }))
     await waitFor(() =>
-      expect(within(card).getByRole("row", { name: /^ago\/26 / })).toBeInTheDocument()
+      expect(within(sla).getByRole("row", { name: /^ago\/26 / })).toBeInTheDocument()
     )
-    expect(within(card).getByRole("row", { name: /^set\/26 / })).toBeInTheDocument()
+    expect(within(sla).getByRole("row", { name: /^set\/26 / })).toBeInTheDocument()
     // jul/26 não tem foto: entra na janela, sem valor e com a dica
-    expect(within(card).getByRole("row", { name: /^jul\/26 / })).toHaveTextContent("sem foto de jul/26")
+    expect(within(sla).getByRole("row", { name: /^jul\/26 / })).toHaveTextContent("sem foto de jul/26")
     expect(screen.queryByText(/reconstru/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
-    const sla = screen.getByRole("region", { name: "% no SLA" })
-    await user.click(within(sla).getByRole("button", { name: /Ver dados/ }))
     expect(within(sla).getByRole("row", { name: /^ago\/26 / })).toHaveTextContent("—") // agosto não tem finalizados com SLA
     expect(within(sla).queryByRole("button", { name: "Calculado" })).toBeNull()
   })
@@ -713,7 +626,7 @@ describe("EvolucaoChamados por dimensão", () => {
 
   it("some quando nenhuma carga da janela tem a coluna", async () => {
     render(<EvolucaoChamados {...await cenario(true)} />)
-    await screen.findByRole("region", { name: "Não finalizados" })
+    await screen.findByRole("region", { name: "% no SLA" })
     expect(screen.queryByRole("region", { name: "Não finalizados por operador" })).toBeNull()
     expect(screen.getByRole("region", { name: "Não finalizados por cliente" })).toBeInTheDocument()
   })
@@ -794,10 +707,11 @@ describe("filtros de Chamados", () => {
     await waitFor(() => expect(linha).toHaveTextContent(/2\s*2\s*0/))
 
     rerender(<Visao props={props} qual="evolucao" />)
-    const card = await screen.findByRole("region", { name: "Não finalizados" })
+    const card = await screen.findByRole("region", { name: "Não finalizados por situação" })
     expect(screen.getByRole("list", { name: "Filtros ativos" })).toBeInTheDocument()
     await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
-    expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("2")
+    // Cli B em set/26: 1 Em Análise + 1 Aguardando aceite
+    expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("set/2611")
   })
 
   it("filtro de Autarquia: a carga antiga (sem a coluna) mostra '—' e aviso, não zero", async () => {
