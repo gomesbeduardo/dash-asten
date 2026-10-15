@@ -28,3 +28,14 @@ describe("ImportScreen texto por modo", () => {
     expect(screen.queryByText(/vira telas/)).toBeNull()
   })
 })
+
+describe("ImportScreen esqueleto da lista", () => {
+  it("enquanto a lista carrega, mostra o status acessível e os blocos de esqueleto", () => {
+    const { container } = render(
+      <ImportScreen state={{ status: "idle" }} onFiles={() => {}} carregandoLista />
+    )
+    const status = screen.getByRole("status")
+    expect(status).toHaveTextContent("Carregando as cargas…")
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(3)
+  })
+})

@@ -1,11 +1,12 @@
 import { useId, useState, type ReactNode } from "react"
 import { ChevronDownIcon } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import type { CargaMeta } from "@/cargas"
 import { agruparHistorico } from "@/app/navegacao"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { duration, standard } from "./motion/tokens"
 import { competenciaLonga, dataHora, rotuloComNome, rotuloVersao } from "./formatoCarga"
 
 const nomeDaCarga = (v: CargaMeta) =>
@@ -165,18 +166,24 @@ function Grupo({
             {anteriores.length === 1 ? "versão anterior" : "versões anteriores"}
           </button>
           <div id={idLista}>
-            {mostrar && (
-              <motion.ul
-                initial={reduzir ? false : { opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: reduzir ? 0 : 0.18 }}
-                className="ml-4 flex flex-col gap-2"
-              >
-                {anteriores.map((v) => (
-                  <li key={v.id}>{linha(v, false)}</li>
-                ))}
-              </motion.ul>
-            )}
+            <AnimatePresence initial={false}>
+              {mostrar && (
+                <motion.ul
+                  initial={reduzir ? false : { opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduzir ? { opacity: 0 } : { opacity: 0, y: -4 }}
+                  transition={{
+                    duration: reduzir ? 0 : duration.fast,
+                    ease: standard,
+                  }}
+                  className="ml-4 flex flex-col gap-2"
+                >
+                  {anteriores.map((v) => (
+                    <li key={v.id}>{linha(v, false)}</li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
           </div>
         </>
       )}
