@@ -1,0 +1,83 @@
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
+import type { Carga } from "@/cargas"
+import { Apresentacao, type ApresentacaoProps } from "./Apresentacao"
+import { useBarra } from "./BarraContext"
+
+vi.mock("@/panels/tipos", () => {
+  const Painel = () => {
+    const { setHold } = useBarra()
+    return (
+      <button onClick={() => setHold(true)} type="button">
+        segurar barra
+      </button>
+    )
+  }
+  return { visoesDoTipo: () => ({ Painel }) }
+})
+
+const carga = {
+  id: "1",
+  tipo: "outro",
+  competencia: "2026-09",
+  versao: 1,
+  importadaEm: "2026-10-01T00:00:00Z",
+  arquivo: "a.xlsx",
+  linhas: 0,
+  nome: null,
+  arquivadaEm: null,
+  workbook: { sheets: [] },
+} as unknown as Carga
+
+function montar(extra: Partial<ApresentacaoProps> = {}) {
+  const props: ApresentacaoProps = {
+    carga,
+    metas: [carga],
+    metasTodas: [carga],
+    onAlterar: async () => {},
+    obterCarga: async () => carga,
+    onAbrir: () => {},
+    onNovaCarga: () => {},
+    onFecharCarga: () => {},
+    erro: null,
+    onDismissErro: () => {},
+    ...extra,
+  }
+  render(<Apresentacao {...props} />)
+  return screen.getByRole("main")
+}
+
+beforeAll(() => {
+  // jsdom não faz layout: dá uma altura à barra para o respiro aparecer.
+  Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+    configurable: true,
+    value: 100,
+  })
+})
+afterEach(() => vi.restoreAllMocks())
+
+describe("Apresentacao: barra e erro não empurram o conteúdo", () => {
+  it("gaveta segurando a barra não dá respiro ao conteúdo", async () => {
+    const main = montar()
+    await userEvent.click(screen.getByRole("button", { name: "segurar barra" }))
+    expect(main.style.paddingTop).toBe("")
+  })
+
+  it("barra fixada pela tecla H reserva o respiro", async () => {
+    const main = montar()
+    await userEvent.keyboard("h")
+    expect(main.style.paddingTop).toBe("calc(100px + 1rem)")
+  })
+
+  it("erro fica fora do fluxo do main e some ao Fechar", async () => {
+    const onDismissErro = vi.fn()
+    const main = montar({ erro: "Falhou.", onDismissErro })
+    const alerta = screen.getByRole("alert")
+    expect(alerta).toHaveTextContent("A carga atual continua aberta.")
+    expect(main.contains(alerta)).toBe(false)
+    expect(alerta.className).toMatch(/fixed|absolute/)
+    await userEvent.click(screen.getByRole("button", { name: "Fechar" }))
+    expect(onDismissErro).toHaveBeenCalled()
+  })
+})
