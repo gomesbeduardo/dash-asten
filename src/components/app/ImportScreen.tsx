@@ -32,9 +32,7 @@ export function ImportScreen({
   const nomeDoTipo = (id: string) =>
     tiposRegistrados().find((t) => t.id === id)?.nome ?? id
   const lembrada = lembradaId
-    ? metas.find(
-        (m) => m.id === lembradaId && !m.arquivadaEm
-      )
+    ? metas.find((m) => m.id === lembradaId && !m.arquivadaEm)
     : undefined
   const ultima = lembrada ?? escolherCargaInicial(metas)
   const loading = state.status === "loading"
@@ -47,11 +45,10 @@ export function ImportScreen({
           Carregar a planilha da competência
         </h1>
         <p className="max-w-prose text-xl text-muted-foreground">
-          Escolha a planilha do mês (ou várias de uma vez), confirme o tipo e a competência, e ela vira
-          telas para apresentar.{" "}
-          {modoApi()
-            ? "A carga fica guardada no banco do app e aparece em qualquer computador."
-            : "As cargas ficam guardadas só neste navegador; nada é enviado a lugar nenhum."}
+          Escolha a planilha do mês (ou várias de uma vez) e confirme o tipo e a
+          competência.
+          {!modoApi() &&
+            " As cargas ficam guardadas só neste navegador; nada é enviado a lugar nenhum."}
         </p>
       </div>
 
@@ -72,7 +69,10 @@ export function ImportScreen({
         </div>
       )}
 
-      <section aria-labelledby="cargas-existentes" className="flex flex-col gap-4">
+      <section
+        aria-labelledby="cargas-existentes"
+        className="flex flex-col gap-4"
+      >
         <h2 id="cargas-existentes" className="text-2xl text-primary">
           Cargas que já existem
         </h2>
