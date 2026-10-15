@@ -74,9 +74,9 @@ export function Apresentacao(p: ApresentacaoProps) {
   const disponiveis = useMemo<Visao[]>(
     () => [
       "painel",
-      ...(visoes.Leituras ? (["leituras"] as const) : []),
-      ...(visoes.Comparar ? (["comparar"] as const) : []),
       ...(visoes.Evolucao ? (["evolucao"] as const) : []),
+      ...(visoes.Comparar ? (["comparar"] as const) : []),
+      ...(visoes.Leituras ? (["leituras"] as const) : []),
     ],
     [visoes]
   )

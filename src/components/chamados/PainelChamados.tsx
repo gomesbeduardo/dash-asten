@@ -1,7 +1,8 @@
+import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { ArrowRightIcon } from "lucide-react"
 
-import { formatarCompetencia } from "@/cargas"
+import { formatarCompetencia, inferirCompetencia } from "@/cargas"
 import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
 import { entryContainer } from "@/components/app/motion/variants"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -49,6 +50,10 @@ export function PainelChamados({
   const { sheet, filtros, metricas, leituras, anterior, semColuna } =
     useMesDeChamados(carga, historico, obterCarga)
 
+  const anoPresumido = useMemo(
+    () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
+    [carga.workbook, carga.arquivo]
+  )
   const recorte = recorteTexto(filtros)
   const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
   const cabecalho = (
@@ -58,6 +63,7 @@ export function PainelChamados({
         {carga.versao > 1 && `versão ${carga.versao} · `}carga de{" "}
         {new Date(carga.importadaEm).toLocaleDateString("pt-BR")} ·{" "}
         {carga.arquivo}
+        {anoPresumido && " · ano não consta na planilha"}
       </p>
       <ChipsFiltrosChamados />
       <AvisoFiltroSemColuna

@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { LIMITE_NOME, nomeSugerido } from "./formatoCarga"
+import { cn } from "@/lib/utils"
 import { DICA_ORIGEM, MESES } from "./NovaCargaDialog"
 
 export type ItemLido = { workbook: Workbook; original: ArrayBuffer }
@@ -54,6 +55,7 @@ type Linha = {
   mes: number
   ano: string
   origem: OrigemCompetencia
+  anoPresumido: boolean
   nome: string
   linhas: number
   estado: Estado
@@ -73,6 +75,7 @@ function linhaInicial(item: ItemLido, chave: number): Linha {
     mes,
     ano: String(ano),
     origem: comp.origem,
+    anoPresumido: comp.anoPresumido,
     nome: nomeSugerido(item.workbook.fileName),
     linhas: item.workbook.sheets.reduce((n, s) => n + s.rows.length, 0),
     estado: "aguardando",
@@ -124,7 +127,9 @@ export function NovaCargaLoteDialog({
     setLinhas(next)
   }
   const atualizar = (chave: number, p: Partial<Linha>) =>
-    mudar(linhasRef.current.map((l) => (l.chave === chave ? { ...l, ...p } : l)))
+    mudar(
+      linhasRef.current.map((l) => (l.chave === chave ? { ...l, ...p } : l))
+    )
 
   const versoes = useMemo(() => {
     const validas = linhas.filter((l) => l.estado !== "guardada")
@@ -255,7 +260,10 @@ export function NovaCargaLoteDialog({
                 const versao = versoes.get(l.chave) ?? 1
                 return (
                   <TableRow key={l.chave}>
-                    <TableCell className="max-w-56 whitespace-normal break-all font-medium" title={nome}>
+                    <TableCell
+                      className="max-w-56 font-medium break-all whitespace-normal"
+                      title={nome}
+                    >
                       {nome}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -298,10 +306,19 @@ export function NovaCargaLoteDialog({
                           value={String(l.mes)}
                           disabled={travada}
                           onValueChange={(v) =>
-                            atualizar(l.chave, { mes: Number(v) })
+                            atualizar(l.chave, {
+                              mes: Number(v),
+                              anoPresumido: false,
+                            })
                           }
                         >
-                          <SelectTrigger aria-label={`Mês de ${nome}`}>
+                          <SelectTrigger
+                            aria-label={`Mês de ${nome}`}
+                            className={cn(
+                              l.anoPresumido &&
+                                "border-amber-500 ring-2 ring-amber-500/40"
+                            )}
+                          >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -315,42 +332,58 @@ export function NovaCargaLoteDialog({
                         <Input
                           aria-label={`Ano de ${nome}`}
                           inputMode="numeric"
-                          className="w-24 tabular-nums"
+                          className={cn(
+                            "w-24 tabular-nums",
+                            l.anoPresumido &&
+                              "border-amber-500 ring-2 ring-amber-500/40"
+                          )}
                           disabled={travada}
                           value={l.ano}
                           onChange={(e) =>
-                            atualizar(l.chave, { ano: e.target.value })
+                            atualizar(l.chave, {
+                              ano: e.target.value,
+                              anoPresumido: false,
+                            })
                           }
                         />
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {DICA_ORIGEM[l.origem]}
                       </p>
-                      {l.estado !== "guardada" && versao > 1 && anoOk(l.ano) && (
-                        <p className="mt-1 border-l-4 border-brand pl-2 text-sm">
-                          Vira a versão {versao} deste mês
+                      {l.anoPresumido && (
+                        <p className="mt-1 text-sm font-medium text-amber-700 dark:text-amber-400">
+                          Ano não encontrado na planilha — confira
                         </p>
                       )}
-                      {l.estado !== "guardada" && versao > 1 && anoOk(l.ano) && (
-                        <div className="mt-2 flex flex-col gap-1">
-                          <label
-                            htmlFor={`nome-${l.chave}`}
-                            className="text-sm font-medium"
-                          >
-                            Nome (opcional)
-                          </label>
-                          <Input
-                            id={`nome-${l.chave}`}
-                            aria-label={`Nome (opcional) de ${nome}`}
-                            maxLength={LIMITE_NOME}
-                            disabled={travada}
-                            value={l.nome}
-                            onChange={(e) =>
-                              atualizar(l.chave, { nome: e.target.value })
-                            }
-                          />
-                        </div>
-                      )}
+                      {l.estado !== "guardada" &&
+                        versao > 1 &&
+                        anoOk(l.ano) && (
+                          <p className="mt-1 border-l-4 border-brand pl-2 text-sm">
+                            Vira a versão {versao} deste mês
+                          </p>
+                        )}
+                      {l.estado !== "guardada" &&
+                        versao > 1 &&
+                        anoOk(l.ano) && (
+                          <div className="mt-2 flex flex-col gap-1">
+                            <label
+                              htmlFor={`nome-${l.chave}`}
+                              className="text-sm font-medium"
+                            >
+                              Nome (opcional)
+                            </label>
+                            <Input
+                              id={`nome-${l.chave}`}
+                              aria-label={`Nome (opcional) de ${nome}`}
+                              maxLength={LIMITE_NOME}
+                              disabled={travada}
+                              value={l.nome}
+                              onChange={(e) =>
+                                atualizar(l.chave, { nome: e.target.value })
+                              }
+                            />
+                          </div>
+                        )}
                     </TableCell>
                     <TableCell aria-live="polite" className="whitespace-normal">
                       <EstadoDaLinha l={l} />
@@ -362,7 +395,9 @@ export function NovaCargaLoteDialog({
                         disabled={travada}
                         aria-label={`Tirar ${nome} do lote`}
                         onClick={() =>
-                          mudar(linhasRef.current.filter((x) => x.chave !== l.chave))
+                          mudar(
+                            linhasRef.current.filter((x) => x.chave !== l.chave)
+                          )
                         }
                       >
                         <XIcon aria-hidden />
@@ -375,18 +410,32 @@ export function NovaCargaLoteDialog({
           </Table>
         </div>
 
-        <p role="status" aria-live="polite" className="min-h-6 text-base font-medium">
+        <p
+          role="status"
+          aria-live="polite"
+          className="min-h-6 text-base font-medium"
+        >
           {resumo}
         </p>
 
         <DialogFooter>
-          <Button variant="outline" size="lg" disabled={enviando} onClick={onCancel}>
+          <Button
+            variant="outline"
+            size="lg"
+            disabled={enviando}
+            onClick={onCancel}
+          >
             Cancelar
           </Button>
           {terminou && comErro > 0 && (
             <>
               {guardadasN > 0 && (
-                <Button variant="outline" size="lg" disabled={enviando} onClick={concluir}>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled={enviando}
+                  onClick={concluir}
+                >
                   Concluir
                 </Button>
               )}
