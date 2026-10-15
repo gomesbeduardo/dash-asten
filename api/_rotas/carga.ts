@@ -1,6 +1,6 @@
 // GET    /api/cargas/:id → carga completa (metadados + workbook) | 404
 // PATCH  /api/cargas/:id → { nome?, tipo?, competencia?, arquivada? } → metadados atualizados (D58)
-// DELETE /api/cargas/:id → 204 só com ADMIN_TOKEN (D66: no app, excluir = arquivar)
+// DELETE /api/cargas/:id → 204 (com ADMIN_TOKEN configurado, exige X-Admin-Token; sem ele, liberado na fase de testes)
 import { Prisma } from "../_generated/prisma/client.js"
 import { naoAutorizado, sessaoValida } from "../_lib/auth.js"
 import { getDb } from "../_lib/db.js"
