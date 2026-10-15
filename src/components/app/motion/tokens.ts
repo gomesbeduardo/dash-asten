@@ -13,3 +13,11 @@ export const rise = 10 // px, subida da entrada (8–12)
 type Bezier = [number, number, number, number]
 export const standard = ease.standard as unknown as Bezier
 export const emphasized = ease.emphasized as unknown as Bezier
+
+// Mola do indicador da aba ativa (TopBar): assenta suave, com um leve esticar.
+export const molaAba = {
+  type: "spring",
+  stiffness: 380,
+  damping: 30,
+  mass: 0.9,
+} as const

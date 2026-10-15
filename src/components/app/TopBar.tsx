@@ -1,5 +1,5 @@
 import type { Ref } from "react"
-import { motion, useReducedMotion } from "motion/react"
+import { LayoutGroup, motion, useReducedMotion } from "motion/react"
 import {
   FolderOpenIcon,
   HistoryIcon,
@@ -18,7 +18,7 @@ import { useSessao } from "@/app/sessao/SessaoContext"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CompetenciaSelector } from "./CompetenciaSelector"
-import { duration, standard } from "./motion/tokens"
+import { duration, molaAba, standard } from "./motion/tokens"
 
 const ROTULO_VISAO: Record<Visao, string> = {
   painel: "Painel",
@@ -93,47 +93,50 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         </div>
 
         <nav aria-label="Visões" className="min-w-0 flex-1">
-          <div role="tablist" className="flex gap-1">
-            {p.visoes.map((v) => {
-              const active = v === p.visao
-              return (
-                <button
-                  key={v}
-                  role="tab"
-                  type="button"
-                  aria-selected={active}
-                  onClick={() => p.onVisao(v)}
-                  className={cn(
-                    "shrink-0 border-b-4 px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-ring",
-                    active
-                      ? "border-brand font-semibold text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {ROTULO_VISAO[v]}
-                </button>
-              )
-            })}
-          </div>
+          <LayoutGroup id="topbar-abas">
+            <div role="tablist" className="flex gap-1">
+              {p.visoes.map((v) => {
+                const active = v === p.visao
+                return (
+                  <button
+                    key={v}
+                    role="tab"
+                    type="button"
+                    aria-selected={active}
+                    onClick={() => p.onVisao(v)}
+                    className={cn(
+                      "relative shrink-0 rounded-md px-4 py-2 text-base transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none",
+                      active
+                        ? "font-semibold text-brand-ink"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="topbar-aba-ativa"
+                        data-testid="indicador-aba"
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 z-0 rounded-md border border-ring/50 bg-brand-soft shadow-sm"
+                        transition={reduce ? { duration: 0 } : molaAba}
+                      />
+                    )}
+                    <span className="relative z-10">{ROTULO_VISAO[v]}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </LayoutGroup>
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="default"
-            size="lg"
-            onClick={p.onNovaCarga}
-          >
+          <Button variant="default" size="lg" onClick={p.onNovaCarga}>
             <FolderOpenIcon aria-hidden /> Nova carga
           </Button>
           <Button variant="outline" size="lg" onClick={p.onHistorico}>
             <HistoryIcon aria-hidden /> Histórico
           </Button>
           <Button variant="ghost" size="lg" onClick={p.onClear}>
-            {p.podeApagar ? (
-              <Trash2Icon aria-hidden />
-            ) : (
-              <XIcon aria-hidden />
-            )}{" "}
+            {p.podeApagar ? <Trash2Icon aria-hidden /> : <XIcon aria-hidden />}{" "}
             {p.podeApagar ? "Limpar" : "Fechar carga"}
           </Button>
           {p.onTelaCheia && (
@@ -155,8 +158,10 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
       </div>
       <div ref={onSlot} />
       <p className="border-t px-6 py-1 text-sm text-muted-foreground">
-        {p.dica && `${p.dica} · `}{p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
-        {p.visoes.length > 1 && " · P painel · L leituras · C comparar · E evolução"}
+        {p.dica && `${p.dica} · `}
+        {p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
+        {p.visoes.length > 1 &&
+          " · P painel · L leituras · C comparar · E evolução"}
       </p>
     </motion.header>
   )
