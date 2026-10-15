@@ -191,3 +191,33 @@ describe("NovaCargaLoteDialog", () => {
     expect(p.onConcluir.mock.calls[0][0]).toHaveLength(2)
   })
 })
+
+describe("NovaCargaLoteDialog: ano presumido", () => {
+  const AVISO = "Ano não encontrado na planilha — confira"
+  const itens = () => [item("setembro.xlsx", OUTRO), item("chamados-agosto-2026.xlsx")]
+
+  it("mostra o aviso só na linha cujo ano foi presumido", async () => {
+    montar({ itens: itens() })
+    const presumida = (await screen.findByText("setembro.xlsx")).closest("tr")!
+    const explicita = screen.getByText("chamados-agosto-2026.xlsx").closest("tr")!
+    expect(within(presumida).getByText(AVISO)).toBeInTheDocument()
+    expect(within(explicita).queryByText(AVISO)).toBeNull()
+  })
+
+  it("trocar o ano tira o aviso", async () => {
+    const user = userEvent.setup()
+    montar({ itens: itens() })
+    const ano = await screen.findByLabelText("Ano de setembro.xlsx")
+    await user.clear(ano)
+    await user.type(ano, "2025")
+    expect(screen.queryByText(AVISO)).toBeNull()
+  })
+
+  it("confirmar sem mudar continua permitido", async () => {
+    const user = userEvent.setup()
+    const p = montar({ itens: itens() })
+    await screen.findByText(AVISO)
+    await user.click(screen.getByRole("button", { name: "Confirmar 2 cargas" }))
+    await waitFor(() => expect(p.guardar).toHaveBeenCalledTimes(2))
+  })
+})

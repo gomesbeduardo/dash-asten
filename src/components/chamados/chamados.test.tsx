@@ -264,6 +264,32 @@ describe("PainelChamados", () => {
     ).toBeInTheDocument()
   })
 
+  it("aviso sutil no cabeçalho quando o ano não consta na planilha da carga", async () => {
+    const semData: L[] = [[null, "Cli A", "Em Análise", null, null]]
+    const repo: RepositorioDeCargas = criarRepositorioMemoria()
+    const salvar = async (arquivo: string) => {
+      const meta = await repo.salvar({
+        tipo: "chamados",
+        competencia: "2025-09",
+        arquivo,
+        workbook: readWorkbook(xlsx(semData), arquivo),
+      })
+      return (await repo.obter(meta.id)) as Carga
+    }
+    const props = async (carga: Carga) => ({
+      carga,
+      historico: await repo.listar(),
+      obterCarga: (id: string) => repo.obter(id),
+      entrada: false,
+    })
+    const { unmount } = render(<PainelChamados {...await props(await salvar("setembro.xlsx"))} />)
+    expect(await screen.findByText(/ano não consta na planilha/)).toBeInTheDocument()
+    unmount()
+    render(<PainelChamados {...await props(await salvar("setembro-2025.xlsx"))} />)
+    await screen.findByText(/setembro-2025\.xlsx/)
+    expect(screen.queryByText(/ano não consta na planilha/)).toBeNull()
+  })
+
   it("'Situação na competência' soma o total de linhas da planilha (nenhuma excluída)", async () => {
     const user = userEvent.setup()
     render(<PainelChamados {...await cenario(true)} />)
