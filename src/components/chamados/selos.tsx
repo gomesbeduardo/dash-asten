@@ -1,11 +1,5 @@
 import type { ReactNode } from "react"
-import {
-  CalculatorIcon,
-  FileClockIcon,
-  HistoryIcon,
-  LayersIcon,
-  SplitIcon,
-} from "lucide-react"
+import { LayersIcon } from "lucide-react"
 
 import {
   Tooltip,
@@ -17,40 +11,8 @@ import type { SeloTipo } from "./logica"
 
 export const SELOS: Record<
   SeloTipo,
-  { texto: string; Icon: typeof HistoryIcon; explicacao: string; curta: string }
+  { texto: string; Icon: typeof LayersIcon; explicacao: string; curta: string }
 > = {
-  reconstruido: {
-    curta:
-      "sem carga própria do mês; calculado pelas datas da planilha mais recente",
-    texto: "Reconstruído pelas datas",
-    Icon: HistoryIcon,
-    explicacao:
-      "Calculado a partir das datas de abertura e solução da planilha mais recente, porque não há carga própria daquele mês. Indicadores que dependem da data da exportação ficam sem valor.",
-  },
-  calculado: {
-    curta:
-      "usa colunas da data da exportação; só vale para a carga do próprio mês",
-    texto: "Calculado",
-    Icon: CalculatorIcon,
-    explicacao:
-      "Usa colunas da data da exportação (Situação, Qtd Reabertura, SLA Renegociado). Só vale para a carga do próprio mês; meses anteriores não podem ser reconstruídos.",
-  },
-  exportacao: {
-    curta:
-      "situação na data da exportação, não no fim do mês",
-    texto: "Situação na exportação",
-    Icon: FileClockIcon,
-    explicacao:
-      "É a situação (ou o responsável) do chamado na data em que a planilha foi exportada, não no fim do mês.",
-  },
-  derivado: {
-    curta:
-      "classificado pelas datas de abertura e solução; nenhuma linha excluída",
-    texto: "Derivado das datas",
-    Icon: SplitIcon,
-    explicacao:
-      "Cada chamado é classificado pelas datas de abertura e solução em relação ao mês. Nenhuma linha da planilha é excluída.",
-  },
   outros: {
     curta:
       "itens além dos maiores somados em “Outros”; o total se mantém",
@@ -171,4 +133,4 @@ export function LegendaSimbolos({
   )
 }
 
-const ORDEM: SeloTipo[] = ["reconstruido", "calculado", "exportacao", "derivado", "outros"]
+const ORDEM: SeloTipo[] = ["outros"]

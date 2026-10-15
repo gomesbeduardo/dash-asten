@@ -93,7 +93,7 @@ async function cenario(comAgosto: boolean, comOperador = false) {
   return props
 }
 
-/** Cargas próprias de vários meses (a última é a atual). Jul e anteriores: só o backlog antigo (4). */
+/** Cargas próprias de vários meses (a última é a atual). Jul e anteriores: só os 4 chamados antigos, ainda não finalizados. */
 async function cenarioN(competencias: string[]) {
   const repo: RepositorioDeCargas = criarRepositorioMemoria()
   const dados = (c: string): L[] =>
@@ -129,15 +129,11 @@ beforeEach(() => {
   Element.prototype.scrollIntoView ??= () => {}
 })
 
-/** O símbolo vem antes do texto no DOM (D41). */
-const antes = (simbolo: Node, texto: Node) =>
-  expect(simbolo.compareDocumentPosition(texto) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-
 describe("PainelChamados", () => {
   it("mostra o cabeçalho, KPIs com delta colorido+ícone e '—' com o detalhe", async () => {
     render(<PainelChamados {...await cenario(true)} />)
     const backlog = await screen.findByRole("article", {
-      name: "Backlog aberto",
+      name: "Não finalizados",
     })
     expect(
       screen.getByRole("heading", {
@@ -154,7 +150,7 @@ describe("PainelChamados", () => {
 
   it("mostra os KPIs Tempo até o aceite e SLA renegociado", async () => {
     render(<PainelChamados {...await cenario(true)} />)
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     expect(
       screen.getByRole("article", { name: "Tempo até o aceite" })
     ).toBeInTheDocument()
@@ -163,27 +159,28 @@ describe("PainelChamados", () => {
     ).toBeInTheDocument()
   })
 
-  it("sem carga do mês anterior reconstrói e explica o que exige a carga", async () => {
+  it("sem carga do mês anterior não há Δ e nada é reconstruído", async () => {
     render(<PainelChamados {...await cenario(false)} />)
     const sla = await screen.findByRole("article", { name: "% no SLA" })
-    expect(sla).toHaveTextContent("— vs ago/26")
-    expect(sla).toHaveTextContent("exige a carga daquele mês")
-    expect(screen.getAllByText("Reconstruído pelas datas").length).toBeGreaterThan(0)
-    expect(screen.getByRole("article", { name: "Backlog aberto" })).toHaveTextContent(
-      "vs ago/26"
-    )
+    expect(sla).toHaveTextContent("— vs mês anterior")
+    expect(sla).toHaveTextContent("sem base no mês anterior")
+    const nao = screen.getByRole("article", { name: "Não finalizados" })
+    expect(within(nao).getByLabelText("7")).toBeInTheDocument()
+    expect(nao).toHaveTextContent("— vs mês anterior")
+    expect(screen.getByText(/sem carga do mês anterior/)).toBeInTheDocument()
+    expect(screen.queryByText(/reconstru/i)).toBeNull()
   })
 
   it("a definição do indicador aparece no tooltip", async () => {
     const user = userEvent.setup()
     render(<PainelChamados {...await cenario(true)} />)
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     await user.tab()
     await user.hover(
-      screen.getByRole("button", { name: "Definição de Backlog aberto" })
+      screen.getByRole("button", { name: "Definição de Não finalizados" })
     )
     expect(
-      (await screen.findAllByText(/Chamados abertos até o fim do mês/))[0]
+      (await screen.findAllByText(/Situação diferente de Finalizado/))[0]
     ).toBeInTheDocument()
   })
 
@@ -191,59 +188,27 @@ describe("PainelChamados", () => {
     const user = userEvent.setup()
     const irPara = vi.fn()
     render(<PainelChamados {...await cenario(true)} irPara={irPara} />)
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     expect(screen.queryByRole("heading", { name: "Leituras do mês" })).toBeNull()
-    expect(screen.queryByText(/abertos há mais de 180 dias/)).toBeNull()
+    expect(screen.queryByText(/em atraso há 7 meses/)).toBeNull()
     await user.click(screen.getByRole("button", { name: /\d+ leituras? do mês/ }))
     expect(irPara).toHaveBeenCalledWith("leituras")
   })
 
-  it("selos: mês anterior reconstruído, indicador calculado, situação derivada e da exportação", async () => {
-    render(<PainelChamados {...await cenario(false)} />)
-    const backlog = await screen.findByRole("article", { name: "Backlog aberto" })
-    // variação contra mês reconstruído aparece escrita no próprio delta
-    expect(backlog).toHaveTextContent(/vs ago\/26 \(reconstruído\)/)
-    const indicadores = screen.getByRole("region", { name: "Indicadores" })
-    expect(within(indicadores).getAllByText("Reconstruído pelas datas").length).toBeGreaterThan(0)
-    const sla = screen.getByRole("article", { name: "% no SLA" })
-    // KPI apertado: só o símbolo, na linha do rótulo, e nada de texto do selo no cartão
-    expect(within(sla).getByRole("button", { name: "Calculado" })).toBeInTheDocument()
-    expect(within(sla).queryByText("Calculado")).toBeNull()
-    antes(within(sla).getByRole("button", { name: "Calculado" }), within(sla).getByText(/^%\s*no SLA/))
-    expect(
-      within(screen.getByRole("region", { name: "Situação na competência" })).getByRole("button", {
-        name: "Derivado das datas",
-      })
-    ).toBeInTheDocument()
-    expect(
-      within(
-        screen.getByRole("region", { name: "Backlog por situação atual (na exportação)" })
-      ).getByRole("button", { name: "Situação na exportação" })
-    ).toBeInTheDocument()
-    // a legenda visível diz o que cada símbolo da tela significa
-    const legenda = screen.getByRole("region", { name: "Legenda dos símbolos" })
-    for (const nome of ["Calculado", "Derivado das datas", "Situação na exportação"]) {
-      expect(within(legenda).getByText(nome)).toBeInTheDocument()
-    }
-    expect(within(legenda).queryByText("Agrupado em Outros")).toBeNull()
-  })
-
-  it("o tooltip do selo explica como o dado foi obtido", async () => {
-    const user = userEvent.setup()
-    render(<PainelChamados {...await cenario(false)} />)
-    const sla = await screen.findByRole("article", { name: "% no SLA" })
-    await user.hover(within(sla).getByRole("button", { name: "Calculado" }))
-    expect(
-      (await screen.findAllByText(/colunas da data da exportação/))[0]
-    ).toBeInTheDocument()
-  })
-
-  it("com a carga do mês anterior não há selo de reconstruído nem no delta", async () => {
+  it("não há selos de reconstrução, cálculo, derivação nem de exportação (D63/D64)", async () => {
     render(<PainelChamados {...await cenario(true)} />)
-    const backlog = await screen.findByRole("article", { name: "Backlog aberto" })
-    expect(backlog).not.toHaveTextContent("(reconstruído)")
-    expect(screen.queryByText("Reconstruído pelas datas")).toBeNull()
-    // o selo explica a origem também no tooltip
+    const nao = await screen.findByRole("article", { name: "Não finalizados" })
+    expect(nao).not.toHaveTextContent("(reconstruído)")
+    for (const nome of [
+      "Reconstruído pelas datas",
+      "Calculado",
+      "Derivado das datas",
+      "Situação na exportação",
+    ]) {
+      expect(screen.queryByRole("button", { name: nome })).toBeNull()
+      expect(screen.queryByText(nome)).toBeNull()
+    }
+    expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
   })
 
   it("'Agrupado em Outros' marca o gráfico cujo total virou Outros", async () => {
@@ -266,10 +231,10 @@ describe("PainelChamados", () => {
         entrada={false}
       />
     )
-    const card = await screen.findByRole("region", { name: "Backlog por cliente" })
+    const card = await screen.findByRole("region", { name: "Por cliente" })
     expect(within(card).getByRole("button", { name: "Agrupado em Outros" })).toBeInTheDocument()
     expect(
-      within(screen.getByRole("region", { name: "Backlog por atividade" })).queryByRole("button", {
+      within(screen.getByRole("region", { name: "Por atividade" })).queryByRole("button", {
         name: "Agrupado em Outros",
       })
     ).toBeNull()
@@ -278,7 +243,7 @@ describe("PainelChamados", () => {
     ).toBeInTheDocument()
   })
 
-  it("mostra backlog por operador (selo de exportação) e por área (8 maiores + Outros)", async () => {
+  it("mostra não finalizados por operador e por área (8 maiores + Outros), com as duas séries", async () => {
     const repo: RepositorioDeCargas = criarRepositorioMemoria()
     const cab = [...CAB, "Área", "Operador"]
     const linhas = Array.from({ length: 12 }, (_, i) => [
@@ -300,13 +265,14 @@ describe("PainelChamados", () => {
         entrada={false}
       />
     )
-    const area = await screen.findByRole("region", { name: "Backlog por área" })
+    const area = await screen.findByRole("region", { name: "Por área" })
     expect(within(area).getByRole("button", { name: "Agrupado em Outros" })).toBeInTheDocument()
-    expect(within(area).getByRole("img").getAttribute("aria-label")).toMatch(/Outros 4/)
+    expect(within(area).getByRole("img").getAttribute("aria-label")).toMatch(
+      /Finalizados no mês contra Não finalizados:.*Outros 0, 4/
+    )
     expect(within(area).getByRole("img").getAttribute("aria-label")).not.toMatch(/Módulo 9/)
-    const op = screen.getByRole("region", { name: "Backlog por operador (na exportação)" })
-    expect(op).toHaveTextContent(/carga de trabalho/)
-    expect(within(op).getByRole("button", { name: /Situação na exportação/ })).toBeInTheDocument()
+    const op = screen.getByRole("region", { name: "Por operador" })
+    expect(op).toHaveTextContent(/finalizados no mês × não finalizados, por operador/)
     expect(within(op).queryByRole("button", { name: "Agrupado em Outros" })).toBeNull()
   })
 
@@ -336,28 +302,32 @@ describe("PainelChamados", () => {
     expect(screen.queryByText(/ano não consta na planilha/)).toBeNull()
   })
 
-  it("'Situação na competência' soma o total de linhas da planilha (nenhuma excluída)", async () => {
+  it("'Chamados por situação' mostra cada situação como vem e soma o total da foto; os abertos depois ficam em notas", async () => {
     const user = userEvent.setup()
     render(<PainelChamados {...await cenario(true)} />)
     const card = await screen.findByRole("region", {
-      name: "Situação na competência",
+      name: "Chamados por situação",
     })
-    expect(card).toHaveTextContent("11 chamados na planilha, nenhum excluído")
+    expect(card).toHaveTextContent("9 chamados na foto de setembro de 2026")
     await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
-    const total = within(card).getByRole("row", { name: /Total/ })
-    expect(total).toHaveTextContent("11")
-    expect(within(card).getByRole("row", { name: /Sem data de abertura/ })).toHaveTextContent("1")
-    expect(within(card).getByRole("row", { name: /Aberto após a competência/ })).toHaveTextContent("1")
+    expect(within(card).getByRole("row", { name: /Em Análise/ })).toHaveTextContent("6")
+    expect(within(card).getByRole("row", { name: /Aguardando aceite/ })).toHaveTextContent("1")
+    expect(within(card).getByRole("row", { name: /Finalizado/ })).toHaveTextContent("2")
+    expect(within(card).getByRole("row", { name: /Total/ })).toHaveTextContent("9")
+    // nenhuma linha é excluída: as duas que ficam de fora dos números viram notas
+    const avisos = screen.getByRole("contentinfo", { name: "Avisos" })
+    expect(avisos).toHaveTextContent("1 aberto depois do Mes Ref.")
+    expect(avisos).toHaveTextContent("1 chamado(s) sem Data de Abertura")
   })
 
   it("não mostra tabela de linhas soltas (D36); 'Ver dados' só tem os números do gráfico", async () => {
     render(<PainelChamados {...await cenario(true)} />)
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     expect(screen.queryByRole("heading", { name: "Dados" })).toBeNull()
     expect(screen.queryByRole("columnheader", { name: "Código" })).toBeNull()
     expect(screen.queryByRole("table")).toBeNull()
     expect(
-      screen.getByText(/Esta situação é a da data da exportação/)
+      screen.getByText(/Cada situação aparece como vem na planilha/)
     ).toBeInTheDocument()
   })
 })
@@ -370,15 +340,15 @@ describe("LeiturasChamados", () => {
         <LeiturasChamados {...await cenario(true)} />
       </FiltrosChamadosProvider>
     )
-    const crit = await screen.findByRole("button", { name: /Crítico.*abertos há mais de 180 dias/s })
+    const crit = await screen.findByRole("button", { name: /Crítico.*em atraso há 7 meses/s })
     expect(screen.getByRole("button", { name: /Atenção.*concentra/s })).toBeInTheDocument()
     const rolagem = vi.spyOn(Element.prototype, "scrollIntoView")
     await user.click(crit)
     const modal = await screen.findByRole("dialog")
     expect(modal).toHaveTextContent("Regra que disparou")
-    expect(modal).toHaveTextContent(/180 dias/)
-    expect(within(modal).getByRole("region", { name: "Números que sustentam" })).toHaveTextContent("Abertos há mais de 180 dias")
-    expect(within(modal).getByRole("region", { name: "Evidência" })).toHaveTextContent("Envelhecimento do backlog")
+    expect(modal).toHaveTextContent(/7 meses/)
+    expect(within(modal).getByRole("region", { name: "Números que sustentam" })).toHaveTextContent("Abertos há 7 meses ou mais")
+    expect(within(modal).getByRole("region", { name: "Evidência" })).toHaveTextContent("Em atraso por meses desde a abertura")
     expect(rolagem).not.toHaveBeenCalled()
     await user.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
@@ -397,19 +367,18 @@ describe("LeiturasChamados", () => {
     )
     await user.click(await screen.findByRole("button", { name: /Atenção.*concentra/s }))
     const modal = await screen.findByRole("dialog")
-    expect(within(modal).getByRole("region", { name: "Evidência" })).toHaveTextContent("Backlog por cliente")
+    expect(within(modal).getByRole("region", { name: "Evidência" })).toHaveTextContent("Não finalizados por cliente")
     await user.click(within(modal).getByRole("button", { name: /Filtrar por isto/ }))
     expect(await screen.findByRole("list", { name: "Filtros ativos" })).toHaveTextContent("Cliente: Cli A")
     expect(screen.queryByRole("dialog")).toBeNull()
-    // as leituras passam a refletir o recorte: só há Cli A no backlog
+    // as leituras passam a refletir o recorte: só há Cli A entre os não finalizados
     expect(await screen.findByText(/Cli A concentra 100%/)).toBeInTheDocument()
   })
 
-  it("leitura que usa a situação da exportação leva o selo", async () => {
+  it("nenhuma leitura leva selo de origem (a Situação é a da foto)", async () => {
     const props = await cenario(true)
     render(<LeiturasChamados {...props} />)
     await screen.findByRole("button", { name: /Crítico/ })
-    // gargalo de aceite só aparece se atingir o limite; aqui não: nenhum selo indevido
     expect(screen.queryByRole("button", { name: "Situação na exportação" })).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
   })
@@ -420,7 +389,7 @@ describe("CompararChamados", () => {
     screen.getAllByRole("columnheader").map((c) => c.textContent?.trim())
   const seletores = () => screen.getAllByRole("combobox", { name: /^Competência \d$/ })
 
-  it("compara o backlog por área, mas não o por operador (responsável na exportação)", async () => {
+  it("compara os não finalizados por área, mas não por operador (responsável da foto)", async () => {
     const repo: RepositorioDeCargas = criarRepositorioMemoria()
     const cab = [...CAB, "Área", "Operador"]
     const mk = (n: number) =>
@@ -446,8 +415,8 @@ describe("CompararChamados", () => {
         entrada={false}
       />
     )
-    expect(await screen.findByRole("region", { name: "Backlog por área" })).toBeInTheDocument()
-    expect(screen.queryByRole("region", { name: /Backlog por operador/ })).toBeNull()
+    expect(await screen.findByRole("region", { name: "Não finalizados por área" })).toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: /por operador/ })).toBeNull()
   })
 
   it("começa com duas competências (anterior e atual), mostra o Δ e não deixa remover", async () => {
@@ -457,7 +426,7 @@ describe("CompararChamados", () => {
     expect(um).toHaveTextContent("Agosto de 2026")
     expect(dois).toHaveTextContent("Setembro de 2026")
     expect(cabecalhos()).toEqual(["Indicador", "ago/26", "set/26", "Δ"])
-    const linha = screen.getByRole("row", { name: /Backlog aberto/ })
+    const linha = screen.getByRole("row", { name: /Não finalizados/ })
     expect(linha).toHaveTextContent("+1")
     expect(linha).toHaveTextContent("pior")
     expect(screen.getByRole("button", { name: "Adicionar competência" })).toBeEnabled()
@@ -485,7 +454,7 @@ describe("CompararChamados", () => {
     const cards = within(secao).getAllByRole("article")
     expect(cards).toHaveLength(12)
     const backlog = within(secao).getByRole("article", {
-      name: /Backlog aberto/,
+      name: /Não finalizados/,
     })
     for (const r of ["jul/26", "ago/26", "set/26"])
       expect(within(backlog).getByText(r)).toBeInTheDocument()
@@ -504,7 +473,7 @@ describe("CompararChamados", () => {
     expect(tres[2]).toHaveTextContent("Julho de 2026")
     // colunas cronológicas, independente da ordem dos seletores
     expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26", "Δ"])
-    const linha = screen.getByRole("row", { name: /Backlog aberto/ })
+    const linha = screen.getByRole("row", { name: /Não finalizados/ })
     expect(linha).toHaveTextContent(/4\s*6\s*7\s*\+3/) // Δ = set (7) − jul (4)
     const celulas = within(linha).getAllByRole("cell")
     expect(within(celulas[0]).queryByRole("img")).toBeNull() // primeira coluna sem seta
@@ -582,9 +551,9 @@ describe("CompararChamados", () => {
   it("clicar no cartão do indicador abre o modal com os valores por competência e o Esc devolve o foco", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
-    const cartao = await screen.findByRole("button", { name: /Backlog aberto/ })
+    const cartao = await screen.findByRole("button", { name: /Ver gráfico de Não finalizados/ })
     await user.click(cartao)
-    const modal = await screen.findByRole("dialog", { name: "Backlog aberto" })
+    const modal = await screen.findByRole("dialog", { name: "Não finalizados" })
     const lista = within(modal).getByRole("list", { name: "Valores por competência" })
     const itens = within(lista).getAllByRole("listitem")
     expect(itens).toHaveLength(2)
@@ -602,92 +571,65 @@ describe("CompararChamados", () => {
     await waitFor(() => expect(cartao).toHaveFocus())
   })
 
-  it("com uma só carga oferece meses reconstruídos e marca '—' nos que exigem a carga", async () => {
+  it("com uma só carga só oferece a própria competência: mês sem foto não é reconstruído", async () => {
     render(<CompararChamados {...await cenario(false)} />)
     const user = userEvent.setup()
     const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await user.click(um)
-    // rótulo secundário "reconstruído", sem parênteses colados ao nome do mês
-    const opcao = await screen.findByRole("option", { name: /Agosto de 2026/ })
-    expect(within(opcao).getByText("reconstruído")).toBeInTheDocument()
-    expect(opcao).not.toHaveTextContent("(")
+    expect(await screen.findAllByRole("option")).toHaveLength(1)
+    expect(screen.getByRole("option", { name: /Setembro de 2026/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Agosto de 2026/ })).toBeNull()
     await user.keyboard("{Escape}")
-    const sla = screen.getByRole("row", { name: /% no SLA/ })
-    expect(sla).toHaveTextContent("exige a carga daquele mês")
-    // mês reconstruído: selo no cabeçalho da coluna e Δ marcado
-    const cabA = screen.getByRole("columnheader", { name: /^ago\/26/ })
-    const cabB = screen.getByRole("columnheader", { name: /^set\/26/ })
-    expect(within(cabA).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
-    expect(within(cabA).queryByText("Reconstruído pelas datas")).toBeNull()
-    antes(within(cabA).getByRole("button"), within(cabA).getByText(/^ago\/26/))
-    // set é carga própria: sem símbolo, e nenhuma das duas células empilha nada abaixo do rótulo
-    expect(within(cabB).queryByRole("button")).toBeNull()
-    for (const cab of [cabA, cabB]) expect(cab.querySelector("div, p, span.flex, span.block")).toBeNull()
-    expect(screen.getByRole("row", { name: /Backlog aberto/ })).toHaveTextContent("(reconstruído)")
-    expect(within(sla).getByRole("button", { name: "Calculado" })).toBeInTheDocument()
-    const rotuloSla = within(sla).getByRole("rowheader")
-    antes(within(rotuloSla).getByRole("button"), within(rotuloSla).getByText("% no SLA"))
-    const legenda = screen.getByRole("region", { name: "Legenda dos símbolos" })
-    expect(within(legenda).getByText("Reconstruído pelas datas")).toBeInTheDocument()
-    expect(within(legenda).getByText("Calculado")).toBeInTheDocument()
+    expect(screen.queryByText(/reconstru/i)).toBeNull()
+    expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
+    expect(cabecalhos()).toEqual(["Indicador", "set/26", "Δ"])
   })
 })
 
 describe("EvolucaoChamados", () => {
-  it("marca como reconstruídos os meses sem carga e deixa a carga própria sem marca", async () => {
+  it("um ponto por foto: mês sem carga não é reconstruído nem ganha marca", async () => {
     const user = userEvent.setup()
     render(<EvolucaoChamados {...await cenario(true)} />)
-    const card = await screen.findByRole("region", { name: "Backlog aberto" })
+    const card = await screen.findByRole("region", { name: "Não finalizados" })
     await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
     await waitFor(() =>
-      expect(within(card).getByRole("row", { name: /jul\/26/ })).toBeInTheDocument()
+      expect(within(card).getByRole("row", { name: /^ago\/26 / })).toBeInTheDocument()
     )
-    expect(within(card).getByRole("row", { name: /jul\/26 \(reconstruído\)/ })).toBeInTheDocument()
-    expect(within(card).getByRole("row", { name: /^ago\/26 / })).toBeInTheDocument() // carga própria
     expect(within(card).getByRole("row", { name: /^set\/26 / })).toBeInTheDocument()
-    const legenda = screen.getByRole("region", { name: "Legenda dos símbolos" })
-    expect(within(legenda).getByText(/Tracejado e ponto vazado/)).toBeInTheDocument()
-    expect(within(legenda).getByText("Reconstruído pelas datas")).toBeInTheDocument()
+    expect(within(card).queryByRole("row", { name: /jul\/26/ })).toBeNull()
+    expect(screen.queryByText(/reconstru/i)).toBeNull()
+    expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
     const sla = screen.getByRole("region", { name: "% no SLA" })
     await user.click(within(sla).getByRole("button", { name: /Ver dados/ }))
-    expect(within(sla).getByRole("row", { name: /jul\/26 \(reconstruído\)/ })).toHaveTextContent("—")
-    // indicador que exige a carga do mês e meses reconstruídos levam selo
-    expect(within(sla).getByRole("button", { name: "Calculado" })).toBeInTheDocument()
-    expect(within(card).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
-    antes(
-      within(card).getByRole("button", { name: "Reconstruído pelas datas" }),
-      within(card).getByRole("heading", { name: "Backlog aberto" })
-    )
-    antes(
-      within(sla).getByRole("button", { name: "Calculado" }),
-      within(sla).getByRole("heading", { name: "% no SLA" })
-    )
+    expect(within(sla).getByRole("row", { name: /^ago\/26 / })).toHaveTextContent("—") // agosto não tem finalizados com SLA
+    expect(within(sla).queryByRole("button", { name: "Calculado" })).toBeNull()
   })
 })
 
 describe("EvolucaoChamados por dimensão", () => {
-  it("mostra backlog por operador e por cliente, com toggles, selos e tracejado nos reconstruídos", async () => {
+  it("mostra não finalizados por operador e por cliente, com toggles e sem selos de reconstrução", async () => {
     const user = userEvent.setup()
     render(<EvolucaoChamados {...await cenario(false, true)} />)
-    const op = await screen.findByRole("region", { name: "Backlog por operador" })
+    const op = await screen.findByRole("region", { name: "Não finalizados por operador" })
     expect(within(op).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "true")
     expect(within(op).getByRole("button", { name: "Bia" })).toBeInTheDocument()
-    expect(within(op).getByRole("button", { name: "Situação na exportação" })).toBeInTheDocument()
-    expect(within(op).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
+    expect(within(op).queryByRole("button", { name: "Situação na exportação" })).toBeNull()
+    expect(within(op).queryByRole("button", { name: "Reconstruído pelas datas" })).toBeNull()
     await user.click(within(op).getByRole("button", { name: "Ana" }))
     expect(within(op).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "false")
     await user.click(within(op).getByRole("button", { name: /Ver dados/ }))
-    expect(within(op).getByRole("row", { name: /ago\/26 \(reconstruído\)/ })).toBeInTheDocument()
-    const cli = screen.getByRole("region", { name: "Backlog por cliente" })
-    expect(cli).toHaveTextContent("5 maiores clientes no backlog de set/26")
+    expect(within(op).getByRole("row", { name: /^set\/26 / })).toBeInTheDocument()
+    expect(within(op).queryByRole("row", { name: /reconstruído/ })).toBeNull()
+    const cli = screen.getByRole("region", { name: "Não finalizados por cliente" })
+    expect(cli).toHaveTextContent("5 maiores clientes nos não finalizados de set/26")
     expect(within(cli).getByRole("button", { name: "Cli A" })).toBeInTheDocument()
   })
 
   it("some quando nenhuma carga da janela tem a coluna", async () => {
     render(<EvolucaoChamados {...await cenario(true)} />)
-    await screen.findByRole("region", { name: "Backlog aberto" })
-    expect(screen.queryByRole("region", { name: "Backlog por operador" })).toBeNull()
-    expect(screen.getByRole("region", { name: "Backlog por cliente" })).toBeInTheDocument()
+    await screen.findByRole("region", { name: "Não finalizados" })
+    expect(screen.queryByRole("region", { name: "Não finalizados por operador" })).toBeNull()
+    expect(screen.getByRole("region", { name: "Não finalizados por cliente" })).toBeInTheDocument()
   })
 })
 
@@ -725,26 +667,26 @@ describe("filtros de Chamados", () => {
   it("filtrar por cliente recorta KPIs, título e mostra chips removíveis", async () => {
     const user = userEvent.setup()
     render(<Visao props={await cenario(true)} qual="painel" />)
-    const backlog = await screen.findByRole("article", { name: "Backlog aberto" })
+    const backlog = await screen.findByRole("article", { name: "Não finalizados" })
     expect(within(backlog).getByLabelText("7")).toBeInTheDocument()
 
     await filtrarPorCliente(user, "Cli B")
-    const depois = await screen.findByRole("article", { name: "Backlog aberto" })
+    const depois = await screen.findByRole("article", { name: "Não finalizados" })
     await waitFor(() => expect(within(depois).getByLabelText("2")).toBeInTheDocument())
     expect(
       screen.getByRole("heading", { level: 1, name: "Chamados · setembro de 2026 · Cliente: Cli B" })
     ).toBeInTheDocument()
     const chips = screen.getByRole("list", { name: "Filtros ativos" })
     expect(chips).toHaveTextContent("Cliente: Cli B")
-    // a situação na competência passa a mostrar o recorte e o total da planilha
+    // os cards por situação passam a mostrar só o recorte
     expect(
-      screen.getByRole("region", { name: "Situação na competência" })
-    ).toHaveTextContent("de 11 na planilha")
+      screen.getByRole("region", { name: "Chamados por situação" })
+    ).toHaveTextContent("3 chamados na foto de setembro de 2026")
 
     await user.click(within(chips).getByRole("button", { name: "Remover filtro Cliente" }))
     await waitFor(() =>
       expect(
-        within(screen.getByRole("article", { name: "Backlog aberto" })).getByLabelText("7")
+        within(screen.getByRole("article", { name: "Não finalizados" })).getByLabelText("7")
       ).toBeInTheDocument()
     )
     expect(screen.queryByRole("list", { name: "Filtros ativos" })).toBeNull()
@@ -754,17 +696,17 @@ describe("filtros de Chamados", () => {
     const user = userEvent.setup()
     const props = await cenario(true)
     const { rerender } = render(<Visao props={props} qual="painel" />)
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     await filtrarPorCliente(user, "Cli B")
 
     rerender(<Visao props={props} qual="comparar" />)
-    const linha = await screen.findByRole("row", { name: /Backlog aberto/ })
+    const linha = await screen.findByRole("row", { name: /Não finalizados/ })
     expect(screen.getByRole("list", { name: "Filtros ativos" })).toHaveTextContent("Cliente: Cli B")
     // Ago (Cli B: 2) → Set (Cli B: 2): sem variação
     await waitFor(() => expect(linha).toHaveTextContent(/2\s*2\s*0/))
 
     rerender(<Visao props={props} qual="evolucao" />)
-    const card = await screen.findByRole("region", { name: "Backlog aberto" })
+    const card = await screen.findByRole("region", { name: "Não finalizados" })
     expect(screen.getByRole("list", { name: "Filtros ativos" })).toBeInTheDocument()
     await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
     expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("2")
@@ -812,7 +754,7 @@ describe("filtros de Chamados", () => {
       entrada: false,
     }
     render(<Visao props={props} qual="comparar" />)
-    await screen.findByRole("row", { name: /Backlog aberto/ })
+    await screen.findByRole("row", { name: /Não finalizados/ })
     await user.keyboard("f")
     const painel = await screen.findByRole("dialog", { name: "Filtros" })
     await user.click(within(painel).getByRole("combobox", { name: "Autarquia" }))
@@ -822,14 +764,14 @@ describe("filtros de Chamados", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "Filtros" })).toBeNull()
     )
-    const linha = await screen.findByRole("row", { name: /Backlog aberto/ })
+    const linha = await screen.findByRole("row", { name: /Não finalizados/ })
     await waitFor(() => expect(linha).toHaveTextContent("—"))
     expect(linha).toHaveTextContent("7")
     expect(
       screen.getByText("Sem a coluna Autarquia nesta carga: filtro não se aplica")
     ).toBeInTheDocument()
-    // envelhecimento da carga antiga: "—", nunca 0 (D61)
-    const env = screen.getByRole("region", { name: "Envelhecimento do backlog" })
+    // atraso por faixa da carga antiga: "—", nunca 0 (D61)
+    const env = screen.getByRole("region", { name: "Em atraso por meses desde a abertura" })
     await user.click(within(env).getByRole("button", { name: /Ver dados/ }))
     const linhas = within(env).getAllByRole("row").slice(1)
     expect(linhas.length).toBeGreaterThan(0)
@@ -880,7 +822,7 @@ describe("filtros de Chamados", () => {
       entrada: false,
     })
     const { rerender } = render(<Visao props={await mk(nova)} qual="comparar" />)
-    await screen.findByRole("row", { name: /Backlog aberto/ })
+    await screen.findByRole("row", { name: /Não finalizados/ })
     await user.keyboard("f")
     const dlg = await screen.findByRole("dialog", { name: "Filtros" })
     await user.click(within(dlg).getByRole("combobox", { name: "Autarquia" }))
@@ -892,11 +834,11 @@ describe("filtros de Chamados", () => {
     )
     rerender(<Visao props={await mk(antiga)} qual="painel" />)
     const env = await screen.findByRole("region", {
-      name: "Envelhecimento do backlog",
+      name: "Em atraso por meses desde a abertura",
     })
     expect(env).toHaveTextContent("Sem dados com este filtro nesta carga")
     expect(env.querySelector("[role=img]")).toBeNull()
-    const sit = screen.getByRole("region", { name: "Situação na competência" })
+    const sit = screen.getByRole("region", { name: "Chamados por situação" })
     expect(sit).toHaveTextContent("Sem dados com este filtro nesta carga")
     expect(sit.querySelector("[role=img]")).toBeNull()
     expect(sit).not.toHaveTextContent(/0 chamados/)

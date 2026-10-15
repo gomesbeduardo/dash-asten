@@ -81,7 +81,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   const confirmar = page.getByRole("dialog", { name: "Confirmar a carga" })
   await expect(confirmar.getByRole("combobox", { name: "Tipo" })).toContainText(/chamados/i)
   await confirmar.getByRole("button", { name: "Confirmar carga" }).click()
-  await expect(kpi(page, "Backlog aberto")).toBeVisible()
+  await expect(kpi(page, "Não finalizados")).toBeVisible()
 
   await page.mouse.move(400, 40)
   await page.getByRole("button", { name: /Nova carga/ }).click()
@@ -96,14 +96,16 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(
     page.getByRole("heading", { level: 1, name: "Chamados · setembro de 2026" })
   ).toBeVisible()
-  await expect(kpi(page, "Backlog aberto")).toContainText("7")
-  await expect(kpi(page, "Backlog aberto")).toContainText("+1 vs ago/26")
+  await expect(kpi(page, "Não finalizados")).toContainText("7")
+  await expect(kpi(page, "Não finalizados")).toContainText("+1 vs ago/26")
   await expect(kpi(page, "% no SLA")).toContainText("50,0%")
-  await expect(kpi(page, "% no SLA").getByRole("button", { name: "Calculado" })).toBeVisible()
-  await expect(page.getByRole("region", { name: "Legenda dos símbolos" })).toContainText("Calculado")
+  // nada é reconstruído nem calculado "à parte": sem selos de origem nos KPIs
+  await expect(page.getByRole("button", { name: "Calculado" })).toHaveCount(0)
+  await expect(page.getByText(/reconstru/i)).toHaveCount(0)
   await expect(page.getByRole("table")).toHaveCount(0)
-  const situacao = page.getByRole("region", { name: "Situação na competência" })
-  await expect(situacao).toContainText("11 chamados na planilha, nenhum excluído")
+  const situacao = page.getByRole("region", { name: "Chamados por situação" })
+  await expect(situacao).toContainText("9 chamados na foto de setembro de 2026")
+  await expect(page.getByLabel("Avisos")).toContainText("1 aberto depois do Mes Ref.")
 
   // Leituras: visão própria; o clique abre um modal e a página não rola
   await page.keyboard.press("l")
@@ -111,7 +113,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
     page.getByRole("heading", { level: 1, name: /^Leituras · setembro/ })
   ).toBeVisible()
   const antes = await page.evaluate(() => window.scrollY)
-  await page.getByRole("button", { name: /Crítico.*180 dias/ }).click()
+  await page.getByRole("button", { name: /Crítico.*7 meses/ }).click()
   const modal = page.getByRole("dialog")
   await expect(modal).toContainText("Regra que disparou")
   await expect(modal).toContainText("Números que sustentam")
@@ -132,7 +134,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(
     page.getByRole("heading", { level: 1, name: /Cliente: Cli B/ })
   ).toBeVisible()
-  await expect(kpi(page, "Backlog aberto")).toContainText("2")
+  await expect(kpi(page, "Não finalizados")).toContainText("2")
   await expect(page.getByRole("list", { name: "Filtros ativos" })).toBeVisible()
 
   // O filtro persiste em Comparar; trocar os meses mostra o Δ
@@ -141,7 +143,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(page.getByRole("combobox", { name: "Competência 1" })).toContainText("Agosto de 2026")
   await expect(page.getByRole("combobox", { name: "Competência 2" })).toContainText("Setembro de 2026")
   await page.getByRole("button", { name: "Limpar filtros" }).first().click()
-  const linha = page.getByRole("row", { name: /Backlog aberto/ })
+  const linha = page.getByRole("row", { name: /Não finalizados/ })
   await expect(linha).toContainText("+1")
   // 2 é o mínimo; com só duas cargas não há terceira competência para adicionar
   await expect(page.getByRole("button", { name: "Remover competência 1" })).toBeDisabled()
@@ -161,15 +163,15 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(modalCmp).toBeHidden()
   await expect(cartao).toBeFocused()
 
-  // Evolução: meses sem carga própria vêm marcados como reconstruídos
+  // Evolução: um ponto por foto; mês sem carga não é reconstruído
   // O seletor segue focado (como o select nativo): tira o foco para o atalho valer.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await page.keyboard.press("e")
   await expect(page.getByRole("heading", { level: 1, name: "Evolução" })).toBeVisible()
-  const card = page.getByRole("region", { name: "Backlog aberto" })
-  await expect(card.getByRole("button", { name: "Reconstruído pelas datas" })).toBeVisible()
-  await expect(page.getByRole("region", { name: "Legenda dos símbolos" })).toContainText("Tracejado e ponto vazado")
+  const card = page.getByRole("region", { name: "Não finalizados", exact: true })
+  await expect(card.getByRole("button", { name: "Reconstruído pelas datas" })).toHaveCount(0)
   await card.getByRole("button", { name: /Ver dados/ }).click()
-  await expect(card.getByRole("row", { name: /jul\/26 \(reconstruído\)/ })).toBeVisible()
+  await expect(card.getByRole("row", { name: /^ago\/26 / })).toBeVisible()
   await expect(card.getByRole("row", { name: /^set\/26 / })).toBeVisible()
+  await expect(card.getByRole("row", { name: /jul\/26/ })).toHaveCount(0)
 })
