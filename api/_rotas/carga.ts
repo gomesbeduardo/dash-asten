@@ -1,10 +1,23 @@
 // GET    /api/cargas/:id → carga completa (metadados + workbook) | 404
 // PATCH  /api/cargas/:id → { nome?, tipo?, competencia?, arquivada? } → metadados atualizados (D58)
-// DELETE /api/cargas/:id → 204
+// DELETE /api/cargas/:id → 204 só com ADMIN_TOKEN (D66: no app, excluir = arquivar)
 import { Prisma } from "../_generated/prisma/client.js"
 import { naoAutorizado, sessaoValida } from "../_lib/auth.js"
 import { getDb } from "../_lib/db.js"
-import { ErroDeEntrada, ehCompetencia, ehId, ehTipo, erro, json, lerJson, paraMeta, protegido, validarNome } from "../_lib/http.js"
+import {
+  ErroDeEntrada,
+  adminAutorizado,
+  ehCompetencia,
+  ehId,
+  ehTipo,
+  erro,
+  json,
+  jsonComprimido,
+  lerJson,
+  paraMeta,
+  protegido,
+  validarNome,
+} from "../_lib/http.js"
 
 // Os dados de uma carga (id) nunca mudam depois de criada: recarregar cria outra versão, com outro id.
 // Por isso o navegador pode guardá-la para sempre (privado: só a sessão de quem pediu). Os metadados
@@ -21,6 +34,7 @@ const SELECAO_META = {
   linhas: true,
   nome: true,
   arquivadaEm: true,
+  mesRef: true,
 } as const
 
 export function GET(request: Request, id: string): Promise<Response> {
@@ -35,9 +49,7 @@ async function obter(request: Request, id: string): Promise<Response> {
     select: { ...SELECAO_META, dados: true },
   })
   if (!carga) return erro("Carga não encontrada.", 404)
-  return new Response(JSON.stringify({ ...paraMeta(carga), workbook: carga.dados }), {
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": CACHE_IMUTAVEL },
-  })
+  return jsonComprimido({ ...paraMeta(carga), workbook: carga.dados }, request, { "Cache-Control": CACHE_IMUTAVEL })
 }
 
 type Alteracao = { nome?: string | null; tipo?: string; competencia?: string; arquivada?: boolean }
@@ -121,6 +133,7 @@ export function DELETE(request: Request, id: string): Promise<Response> {
 
 async function excluir(request: Request, id: string): Promise<Response> {
   if (!sessaoValida(request)) return naoAutorizado()
+  if (!adminAutorizado(request)) return erro("Exclusão definitiva desativada: use arquivar.", 403)
   if (!ehId(id)) return erro("Carga não encontrada.", 404)
   await getDb().carga.deleteMany({ where: { id } })
   return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } })

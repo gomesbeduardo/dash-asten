@@ -22,13 +22,16 @@ model Carga {
   nome        String?
   /// Carga arquivada: some das listas por padrão, nada é apagado; null = ativa. D58.
   arquivadaEm DateTime? @map("arquivada_em") @db.Timestamptz(6)
+  /// Mes Ref. lido da planilha no envio (AAAA-MM), para auditoria quando a competência foi editada. D63.
+  mesRef      String?   @map("mes_ref") @db.Char(7)
   linhas      Int
   /// Workbook normalizado (abas, colunas, linhas); datas em ISO 8601.
   dados       Json
   /// .xlsx original, para reprocessar se o leitor ou as regras mudarem.
   original    Bytes?
 
+  // O índice único também atende as listagens por (tipo, competência, versão): o B-tree é lido nos dois sentidos.
+  // CHECKs de formato ficam na migração 0004 (o Prisma não modela CHECK).
   @@unique([tipo, competencia, versao])
-  @@index([tipo, competencia(sort: Desc), versao(sort: Desc)])
   @@map("cargas")
 }

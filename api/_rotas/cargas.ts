@@ -16,6 +16,7 @@ const SELECAO_META = {
   linhas: true,
   nome: true,
   arquivadaEm: true,
+  mesRef: true,
 } as const
 
 export function GET(request: Request): Promise<Response> {
@@ -31,7 +32,16 @@ async function listar(request: Request): Promise<Response> {
   return json(cargas.map(paraMeta))
 }
 
-type NovaCargaDto = { tipo: string; competencia: string; arquivo: string; nome?: string | null; workbook: { sheets: { rows: unknown[] }[] }; originalBase64?: string }
+type NovaCargaDto = {
+  tipo: string
+  competencia: string
+  arquivo: string
+  nome?: string | null
+  /** Mes Ref. lido da planilha (D63), guardado mesmo se a competência foi editada. */
+  mesRef?: string | null
+  workbook: { sheets: { rows: unknown[] }[] }
+  originalBase64?: string
+}
 
 function validar(corpo: unknown): NovaCargaDto {
   const c = corpo as Partial<NovaCargaDto> | null
@@ -39,6 +49,8 @@ function validar(corpo: unknown): NovaCargaDto {
   if (!ehTipo(c.tipo)) throw new ErroDeEntrada("Tipo inválido.", 400)
   if (!ehCompetencia(c.competencia)) throw new ErroDeEntrada("Competência inválida (use AAAA-MM).", 400)
   c.nome = validarNome(c.nome)
+  if (c.mesRef !== undefined && c.mesRef !== null && !ehCompetencia(c.mesRef))
+    throw new ErroDeEntrada("Mes Ref. inválido (use AAAA-MM).", 400)
   // eslint-disable-next-line no-control-regex -- recusa caracteres de controle no nome do arquivo
   if (typeof c.arquivo !== "string" || c.arquivo.length === 0 || c.arquivo.length > 255 || /[\u0000-\u001f\u007f/\\<>]/.test(c.arquivo))
     throw new ErroDeEntrada("Nome de arquivo inválido.", 400)
@@ -82,6 +94,7 @@ async function salvar(request: Request): Promise<Response> {
             versao: (_max.versao ?? 0) + 1,
             arquivo: nova.arquivo,
             nome: nova.nome ?? null,
+            mesRef: nova.mesRef ?? null,
             linhas,
             dados: nova.workbook as Prisma.InputJsonValue,
             original,
