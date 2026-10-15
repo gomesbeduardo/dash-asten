@@ -2,11 +2,9 @@ import type { CellValue, Row } from "@/core"
 import {
   classificarLinha,
   limitesDaCompetencia,
-  reabertoPendente,
-  ROTULO_SITUACAO_COMPETENCIA,
+  mesesAteCompetencia,
   tempo,
   texto,
-  type SituacaoNaCompetencia,
 } from "./situacao"
 import {
   mapearColunas,
@@ -18,6 +16,7 @@ import type {
   Distribuicao,
   EntradaCompetencia,
   ItemDistribuicao,
+  ItemFoto,
   KpiChamados,
   MetricasChamados,
 } from "./tipos"
@@ -41,10 +40,13 @@ type Chamado = {
   slaPrevisto: number | null
   /** SLA Renegociado isolado (o `sla` vigente mistura com o previsto). */
   slaReneg: number | null
+  /** Situação normalizada (minúsculas, sem acento). */
   situacao: string
+  /** Situação como vem na coluna; vazio = "(sem informação)". */
+  situacaoTexto: string
   reabertura: number | null
-  /** Decisão única de backlog: a classificação "aberto-no-fim" (situacao.ts). */
-  aberto: boolean
+  /** Situação ≠ Finalizado (D64). */
+  naoFinalizado: boolean
   tempoResolucao: number | null
   row: Row
 }
@@ -57,53 +59,150 @@ export function avisoColunasSemFiltro(rotulos: string[]): string {
 }
 
 const DEFINICOES = {
-  backlog:
-    "Chamados abertos até o fim do mês e sem Data de Solução até o fim do mês (reconstruído pelas datas).",
-  entradas: "Chamados com Data de Abertura dentro do mês.",
-  saidas: "Chamados com Data de Solução dentro do mês.",
-  sla: "Entre os solucionados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
+  entradas: "Chamados com Data de Abertura dentro do mês do Mes Ref.",
+  finalizados:
+    "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
+  naoFinalizados:
+    "Chamados da foto com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
   atraso:
-    "Chamados do backlog cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês.",
-  semSla:
-    "Chamados do backlog sem SLA Previsto (considera só o SLA Previsto, pois o renegociado é da data da exportação).",
-  abertosApos:
-    "Chamados abertos depois do fim da competência. Pertencem à competência seguinte e aparecem só para referência; não entram nos demais indicadores.",
+    "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
+  slaVencido:
+    "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês do Mes Ref.; sem SLA não conta.",
+  sla: "Entre os finalizados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
   tempoMedio:
-    "Média, em dias corridos, entre abertura e solução dos chamados solucionados no mês.",
-  reabertos: "Entre os solucionados no mês, % com ao menos uma reabertura.",
-  aguardandoAceite:
-    'Chamados abertos até o fim do mês, com Situação contendo "aceite" e sem Data de Aceite até o fim do mês (a Situação é a da data da exportação).',
+    "Média, em dias corridos, entre abertura e solução dos chamados finalizados no mês.",
   tempoAceite:
     "Média, em dias corridos, entre a Data de Solução e a Data de Aceite dos chamados aceitos no mês (mede quanto o cliente demora para aceitar; diferenças negativas são ignoradas).",
-  slaRenegociado:
-    "Chamados do backlog com SLA Renegociado preenchido (o campo é da data da exportação).",
+  reabertos:
+    "Entre os finalizados no mês, % com ao menos uma reabertura (Qtd Reabertura maior que zero).",
+  semSla: "Não finalizados sem SLA Previsto.",
+  slaRenegociado: "Não finalizados com SLA Renegociado preenchido.",
+  aguardandoAceite:
+    'Chamados da foto com Situação contendo "aceite" e sem Data de Aceite até o fim do mês do Mes Ref.',
 }
 
-/** KPIs que dependem de colunas da data da exportação (Situação, Qtd Reabertura, SLA Renegociado). */
-const NAO_RECONSTRUIVEIS = new Set([
-  "aguardandoAceite",
-  "reabertos",
-  "sla",
-  "atraso",
-  "slaRenegociado",
-])
+export const FAIXAS_ATRASO = ["1", "2–3", "4–6", "7+"]
+const faixaDeAtraso = (meses: number) =>
+  meses <= 1 ? 0 : meses <= 3 ? 1 : meses <= 6 ? 2 : 3
+
+/** Período em ms UTC (inclusive nos dois extremos). */
+export type Periodo = { inicio: number; fim: number }
 
 function distribuir(
   chamados: Chamado[],
-  chave: string | undefined
-): ItemDistribuicao[] {
+  chave: string | undefined,
+  finalizado: (c: Chamado) => boolean
+): ItemFoto[] {
   if (!chave) return []
-  const cont = new Map<string, number>()
+  const cont = new Map<string, ItemFoto>()
   for (const c of chamados) {
+    const f = finalizado(c)
+    if (!f && !c.naoFinalizado) continue
     const r = texto(c.row[chave]) ?? SEM_INFO
-    cont.set(r, (cont.get(r) ?? 0) + 1)
+    const it = cont.get(r) ?? { rotulo: r, finalizados: 0, naoFinalizados: 0 }
+    if (f) it.finalizados++
+    else it.naoFinalizados++
+    cont.set(r, it)
   }
-  const ord = [...cont.entries()]
-    .map(([rotulo, valor]) => ({ rotulo, valor }))
-    .sort((a, b) => b.valor - a.valor || a.rotulo.localeCompare(b.rotulo))
+  const total = (i: ItemFoto) => i.finalizados + i.naoFinalizados
+  const ord = [...cont.values()].sort(
+    (a, b) => total(b) - total(a) || a.rotulo.localeCompare(b.rotulo)
+  )
   if (ord.length <= MAX_ITENS) return ord
-  const outros = ord.slice(MAX_ITENS).reduce((s, i) => s + i.valor, 0)
-  return [...ord.slice(0, MAX_ITENS), { rotulo: "Outros", valor: outros }]
+  const resto = ord.slice(MAX_ITENS)
+  return [
+    ...ord.slice(0, MAX_ITENS),
+    {
+      rotulo: "Outros",
+      finalizados: resto.reduce((s, i) => s + i.finalizados, 0),
+      naoFinalizados: resto.reduce((s, i) => s + i.naoFinalizados, 0),
+    },
+  ]
+}
+
+const DIMENSOES: [Distribuicao["id"], string, CampoChamado][] = [
+  ["cliente", "Por cliente", "cliente"],
+  ["areaSuperior", "Por área superior", "areaSuperior"],
+  ["atividade", "Por atividade", "atividade"],
+  ["area", "Por área", "area"],
+  ["operador", "Por operador", "operador"],
+]
+
+function montarDistribuicoes(
+  chamados: Chamado[],
+  mapa: MapaColunas,
+  finalizado: (c: Chamado) => boolean
+): Distribuicao[] {
+  return DIMENSOES.filter(([, , campo]) => mapa[campo]).map(
+    ([id, titulo, campo]) => ({
+      id,
+      titulo,
+      itens: distribuir(chamados, mapa[campo], finalizado),
+    })
+  )
+}
+
+/**
+ * Lê a foto: separa as linhas abertas depois do fim do Mes Ref. e as sem Data de Abertura
+ * (contadas à parte; nenhuma é excluída da planilha, D34) dos chamados que entram nos números.
+ */
+function lerFoto(entrada: EntradaCompetencia) {
+  const { mapa } = mapearColunas(entrada.sheet)
+  const col = (c: CampoChamado, row: Row) =>
+    mapa[c] ? row[mapa[c]] : undefined
+  const chamados: Chamado[] = []
+  let abertosDepois = 0
+  let semAbertura = 0
+  for (const row of entrada.sheet.rows) {
+    const posicao = classificarLinha(row, mapa, entrada.competencia)
+    if (posicao === "aberto-depois") {
+      abertosDepois++
+      continue
+    }
+    if (posicao === "sem-abertura") {
+      semAbertura++
+      continue
+    }
+    const reneg = tempo(col("slaRenegociado", row))
+    const literal = texto(col("situacao", row))
+    const situacao = normalizar(literal ?? "")
+    chamados.push({
+      abertura: tempo(col("abertura", row))!,
+      solucao: tempo(col("solucao", row)),
+      aceite: tempo(col("aceite", row)),
+      sla: reneg ?? tempo(col("slaPrevisto", row)),
+      slaPrevisto: tempo(col("slaPrevisto", row)),
+      slaReneg: reneg,
+      situacao,
+      situacaoTexto: literal ?? SEM_INFO,
+      reabertura: numero(col("qtdReabertura", row)),
+      naoFinalizado: situacao !== "finalizado",
+      tempoResolucao: numero(col("tempoResolucao", row)),
+      row,
+    })
+  }
+  return { mapa, chamados, abertosDepois, semAbertura }
+}
+
+const noPeriodo = (t: number | null, p: Periodo) =>
+  t !== null && t >= p.inicio && t <= p.fim
+
+/**
+ * Distribuições por cliente, área superior, área, atividade e operador recalculadas para
+ * "finalizados no período": Situação Finalizado e Data de Solução entre `inicio` e `fim`.
+ * A série de não finalizados não muda. Alimenta o toggle do card (D64).
+ */
+export function distribuicoesFinalizadosNoPeriodo(
+  entrada: EntradaCompetencia,
+  periodo: Periodo
+): Distribuicao[] {
+  const { mapa, chamados } = lerFoto(entrada)
+  if ((entrada.colunasSemFiltro ?? []).length > 0 || !mapa.situacao) return []
+  return montarDistribuicoes(
+    chamados,
+    mapa,
+    (c) => !c.naoFinalizado && noPeriodo(c.solucao, periodo)
+  )
 }
 
 function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
@@ -118,107 +217,81 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
       detalhe: "filtro sem a coluna nesta carga",
     })),
     distribuicoes: m.distribuicoes.map((d) => ({ ...d, itens: [] })),
-    envelhecimento: [],
-    porSituacaoNaCompetencia: [],
-    linhasConsideradas: null,
-    linhasPosteriores: null,
+    situacoes: [],
+    atrasoFaixas: [],
+    totalChamados: null,
+    abertosDepois: null,
     linhasSemAbertura: null,
     colunasSemFiltro: sem,
-    baseAguardandoAceite: null,
     avisos: [...m.avisos, avisoColunasSemFiltro(sem)],
   }
 }
 
 function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
-  const { mapa } = mapearColunas(entrada.sheet)
-  const { inicio, fim } = limitesDaCompetencia(entrada.competencia)
+  const { mapa, chamados, abertosDepois, semAbertura } = lerFoto(entrada)
+  const mes = limitesDaCompetencia(entrada.competencia)
+  const { fim } = mes
   const avisos: string[] = []
-  const nome = (c: CampoChamado) => c
-  const faltam = (campos: CampoChamado[]) => campos.filter((c) => !mapa[c])
-  const col = (c: CampoChamado, row: Row) =>
-    mapa[c] ? row[mapa[c]] : undefined
 
-  const ausentes = faltam([
-    "abertura",
-    "situacao",
-    "solucao",
-    "slaPrevisto",
-    "slaRenegociado",
-    "aceite",
-    "qtdReabertura",
-  ])
+  const ausentes = (
+    [
+      "abertura",
+      "situacao",
+      "solucao",
+      "slaPrevisto",
+      "slaRenegociado",
+      "aceite",
+      "qtdReabertura",
+    ] as CampoChamado[]
+  ).filter((c) => !mapa[c])
   if (ausentes.length)
     avisos.push(
-      `Colunas não encontradas: ${ausentes.map(nome).join(", ")}. Os indicadores que dependem delas ficam sem valor.`
+      `Colunas não encontradas: ${ausentes.join(", ")}. Os indicadores que dependem delas ficam sem valor.`
+    )
+  if (abertosDepois > 0)
+    avisos.push(
+      `${abertosDepois} ${abertosDepois === 1 ? "aberto" : "abertos"} depois do Mes Ref.`
+    )
+  if (semAbertura > 0)
+    avisos.push(
+      `${semAbertura} chamado(s) sem Data de Abertura — mostrados à parte`
     )
 
-  const chamados: Chamado[] = []
-  const contagem: Record<SituacaoNaCompetencia, number> = {
-    "aberto-no-fim": 0,
-    "resolvido-no-mes": 0,
-    "resolvido-antes": 0,
-    "aberto-apos": 0,
-    "sem-abertura": 0,
-  }
-  let reabertosPendentes = 0
-  for (const row of entrada.sheet.rows) {
-    const abertura = tempo(col("abertura", row))
-    const situacaoCompetencia = classificarLinha(row, mapa, entrada.competencia)
-    contagem[situacaoCompetencia]++
-    if (abertura === null || abertura > fim) continue
-    const solucaoTempo = tempo(col("solucao", row))
-    if (
-      reabertoPendente(row, mapa) &&
-      solucaoTempo !== null &&
-      solucaoTempo <= fim
-    )
-      reabertosPendentes++
-    const reneg = tempo(col("slaRenegociado", row))
-    chamados.push({
-      abertura,
-      solucao: solucaoTempo,
-      aceite: tempo(col("aceite", row)),
-      sla: reneg ?? tempo(col("slaPrevisto", row)),
-      slaPrevisto: tempo(col("slaPrevisto", row)),
-      slaReneg: reneg,
-      situacao: normalizar(texto(col("situacao", row)) ?? ""),
-      reabertura: numero(col("qtdReabertura", row)),
-      aberto: situacaoCompetencia === "aberto-no-fim",
-      tempoResolucao: numero(col("tempoResolucao", row)),
-      row,
-    })
-  }
-  if (contagem["aberto-apos"] > 0)
-    avisos.push(
-      `${contagem["aberto-apos"]} chamado(s) abertos após o fim da competência — mostrados à parte`
-    )
-  if (contagem["sem-abertura"] > 0)
-    avisos.push(
-      `${contagem["sem-abertura"]} chamado(s) sem Data de Abertura — mostrados à parte`
-    )
-
-  if (reabertosPendentes > 0)
-    avisos.push(
-      `${reabertosPendentes} chamado(s) reabertos depois da solução e não finalizados contam como resolvidos pela Data de Solução`
-    )
-
+  const temSituacao = !!mapa.situacao
   const temSolucao = !!mapa.solucao
   const temSla = !!(mapa.slaPrevisto || mapa.slaRenegociado)
-  const noMes = (t: number | null) => t !== null && t >= inicio && t <= fim
+  const noMes = (t: number | null) => noPeriodo(t, mes)
 
-  const backlog = temSolucao ? chamados.filter((c) => c.aberto) : []
-  const saidas = temSolucao ? chamados.filter((c) => noMes(c.solucao)) : []
+  const naoFinalizados = temSituacao
+    ? chamados.filter((c) => c.naoFinalizado)
+    : []
+  const finalizados =
+    temSituacao && temSolucao
+      ? chamados.filter((c) => !c.naoFinalizado && noMes(c.solucao))
+      : []
   const entradas = chamados.filter((c) => noMes(c.abertura))
 
-  const comSla = saidas.filter((c) => c.sla !== null)
+  // Em atraso (ciclo = Mes Ref.): não finalizado aberto antes do mês, por meses de distância.
+  const atrasados = naoFinalizados.filter((c) => c.abertura < mes.inicio)
+  const atrasoFaixas: ItemDistribuicao[] = FAIXAS_ATRASO.map((rotulo) => ({
+    rotulo,
+    valor: 0,
+  }))
+  for (const c of atrasados) {
+    atrasoFaixas[
+      faixaDeAtraso(mesesAteCompetencia(c.abertura, entrada.competencia))
+    ].valor++
+  }
+
+  const comSla = finalizados.filter((c) => c.sla !== null)
   const sla =
-    temSolucao && temSla && comSla.length > 0
+    temSla && comSla.length > 0
       ? (comSla.filter((c) => c.solucao! <= fimDoDia(c.sla!)).length /
           comSla.length) *
         100
       : null
 
-  const dias = saidas
+  const dias = finalizados
     .map((c) => {
       const d = (c.solucao! - c.abertura) / DIA
       return d >= 0 ? d : c.tempoResolucao
@@ -242,149 +315,120 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
     : null
 
   const reabertos =
-    mapa.qtdReabertura && saidas.length
-      ? (saidas.filter((c) => (c.reabertura ?? 0) > 0).length / saidas.length) *
+    mapa.qtdReabertura && finalizados.length
+      ? (finalizados.filter((c) => (c.reabertura ?? 0) > 0).length /
+          finalizados.length) *
         100
       : null
-  const aguardandoAceite = (c: Chamado) =>
-    c.situacao.includes("aceite") && !(c.aceite !== null && c.aceite <= fim)
-  const aguardando = mapa.situacao
-    ? chamados.filter(aguardandoAceite).length
-    : null
-  // backlog + resolvidos (até o fim) que ainda aguardam aceite: base coerente do % aguardando
-  const baseAguardandoAceite = mapa.situacao
+  const aguardando = temSituacao
     ? chamados.filter(
-        (c) => c.aberto || (c.solucao !== null && aguardandoAceite(c))
+        (c) =>
+          c.situacao.includes("aceite") &&
+          !(c.aceite !== null && c.aceite <= fim)
       ).length
     : null
 
   const k = (
-    id: string,
+    id: keyof typeof DEFINICOES,
     rotulo: string,
     valor: number | null,
     formato: KpiChamados["formato"],
     melhorQuando: KpiChamados["melhorQuando"]
-  ): KpiChamados => {
-    const reconstruivel = !NAO_RECONSTRUIVEIS.has(id)
-    const anular = !reconstruivel && entrada.cargaPropria === false
-    return {
-      id,
-      rotulo,
-      valor: anular ? null : valor,
-      formato,
-      anterior: null,
-      delta: null,
-      melhorQuando,
-      definicao: DEFINICOES[id as keyof typeof DEFINICOES],
-      reconstruivel,
-      ...(anular ? { detalhe: "exige a carga daquele mês" } : {}),
-    }
-  }
+  ): KpiChamados => ({
+    id,
+    rotulo,
+    valor,
+    formato,
+    anterior: null,
+    delta: null,
+    melhorQuando,
+    definicao: DEFINICOES[id],
+  })
 
   const kpis: KpiChamados[] = [
-    k(
-      "backlog",
-      "Backlog aberto",
-      temSolucao ? backlog.length : null,
-      "inteiro",
-      "menor"
-    ),
     k("entradas", "Entradas no mês", entradas.length, "inteiro", "neutro"),
     k(
-      "saidas",
-      "Saídas no mês",
-      temSolucao ? saidas.length : null,
+      "finalizados",
+      "Finalizados no mês",
+      temSituacao && temSolucao ? finalizados.length : null,
       "inteiro",
       "maior"
     ),
     k(
-      "abertosApos",
-      "Abertos após a competência",
-      contagem["aberto-apos"],
+      "naoFinalizados",
+      "Não finalizados",
+      temSituacao ? naoFinalizados.length : null,
       "inteiro",
-      "neutro"
+      "menor"
     ),
-    k("sla", "% no SLA", sla, "percentual", "maior"),
     k(
       "atraso",
       "Em atraso",
-      temSolucao && temSla
-        ? backlog.filter((c) => c.sla !== null && fimDoDia(c.sla) < fim).length
+      temSituacao ? atrasados.length : null,
+      "inteiro",
+      "menor"
+    ),
+    k(
+      "slaVencido",
+      "SLA vencido",
+      temSituacao && temSla
+        ? naoFinalizados.filter((c) => c.sla !== null && fimDoDia(c.sla) < fim)
+            .length
         : null,
       "inteiro",
       "menor"
     ),
+    k("sla", "% no SLA", sla, "percentual", "maior"),
+    k("tempoMedio", "Tempo médio de resolução", tempoMedio, "dias", "menor"),
+    k("tempoAceite", "Tempo até o aceite", tempoAceite, "dias", "menor"),
+    k("reabertos", "% reabertos", reabertos, "percentual", "menor"),
     k(
       "semSla",
       "Sem SLA",
-      temSolucao && mapa.slaPrevisto
-        ? backlog.filter((c) => c.slaPrevisto === null).length
+      temSituacao && mapa.slaPrevisto
+        ? naoFinalizados.filter((c) => c.slaPrevisto === null).length
         : null,
       "inteiro",
       "menor"
     ),
-    k("tempoMedio", "Tempo médio de resolução", tempoMedio, "dias", "menor"),
-    k("reabertos", "% reabertos", reabertos, "percentual", "menor"),
-    k("aguardandoAceite", "Aguardando aceite", aguardando, "inteiro", "neutro"),
-    k("tempoAceite", "Tempo até o aceite", tempoAceite, "dias", "menor"),
     k(
       "slaRenegociado",
       "SLA renegociado",
-      temSolucao && mapa.slaRenegociado
-        ? backlog.filter((c) => c.slaReneg !== null).length
+      temSituacao && mapa.slaRenegociado
+        ? naoFinalizados.filter((c) => c.slaReneg !== null).length
         : null,
       "inteiro",
       "neutro"
     ),
+    k("aguardandoAceite", "Aguardando aceite", aguardando, "inteiro", "neutro"),
   ]
 
-  const defs: [Distribuicao["id"], string, CampoChamado][] = [
-    ["cliente", "Backlog por cliente", "cliente"],
-    ["areaSuperior", "Backlog por área superior", "areaSuperior"],
-    ["atividade", "Backlog por atividade", "atividade"],
-    ["situacao", "Backlog por situação atual (na exportação)", "situacao"],
-    ["area", "Backlog por área", "area"],
-    ["operador", "Backlog por operador (na exportação)", "operador"],
-  ]
-  const distribuicoes: Distribuicao[] = defs
-    .filter(([, , campo]) => mapa[campo as keyof MapaColunas])
-    .map(([id, titulo, campo]) => ({
-      id,
-      titulo,
-      itens: distribuir(backlog, mapa[campo]),
-      reconstruivel: id !== "situacao" && id !== "operador",
-    }))
-
-  const faixas: [string, number][] = [
-    ["0–30 dias", 30],
-    ["31–90 dias", 90],
-    ["91–180 dias", 180],
-    ["> 180 dias", Infinity],
-  ]
-  const envelhecimento: ItemDistribuicao[] = faixas.map(([rotulo]) => ({
-    rotulo,
-    valor: 0,
-  }))
-  for (const c of backlog) {
-    const idade = Math.floor((fim - c.abertura) / DIA)
-    envelhecimento[faixas.findIndex(([, max]) => idade <= max)].valor++
-  }
+  const porSituacao = new Map<string, number>()
+  if (temSituacao)
+    for (const c of chamados)
+      porSituacao.set(
+        c.situacaoTexto,
+        (porSituacao.get(c.situacaoTexto) ?? 0) + 1
+      )
+  const situacoes = [...porSituacao.entries()]
+    .map(([rotulo, valor]) => ({ rotulo, valor }))
+    .sort((a, b) => b.valor - a.valor || a.rotulo.localeCompare(b.rotulo))
 
   return {
     competencia: entrada.competencia,
     kpis,
-    distribuicoes,
-    envelhecimento,
-    baseAguardandoAceite: temSolucao ? baseAguardandoAceite : null,
-    linhasConsideradas: chamados.length,
-    linhasPosteriores: contagem["aberto-apos"],
-    linhasSemAbertura: contagem["sem-abertura"],
-    porSituacaoNaCompetencia: (
-      Object.keys(contagem) as SituacaoNaCompetencia[]
-    ).map((s) => ({
-      rotulo: ROTULO_SITUACAO_COMPETENCIA[s],
-      valor: contagem[s],
-    })),
+    distribuicoes: temSituacao
+      ? montarDistribuicoes(
+          chamados,
+          mapa,
+          (c) => !c.naoFinalizado && noMes(c.solucao)
+        )
+      : [],
+    situacoes,
+    totalChamados: chamados.length,
+    atrasoFaixas: temSituacao ? atrasoFaixas : [],
+    abertosDepois,
+    linhasSemAbertura: semAbertura,
     avisos,
   }
 }

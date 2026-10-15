@@ -60,6 +60,7 @@ describe("mapearColunas", () => {
     const { mapa, faltando } = mapearColunas(montarSheet(rotulos, []))
     const idx = (r: string) => `c${rotulos.indexOf(r)}`
     expect(mapa).toEqual({
+      mesRef: idx("Mes Ref."),
       abertura: idx("Data Abertura"),
       codigo: idx("Código"),
       tipo: idx("Tipo"),
@@ -79,6 +80,23 @@ describe("mapearColunas", () => {
       qtdReabertura: idx("Qtd Reabertura"),
     })
     expect(faltando).toEqual([])
+  })
+
+  it("reconhece Mes Ref. e variantes, e ele não entra no reconhecimento do tipo", () => {
+    for (const r of [
+      "Mes Ref.",
+      "Mês Ref",
+      "Mes Referência",
+      "Mês de Referência",
+      "Competência",
+      "Referência",
+    ])
+      expect(mapearColunas(montarSheet([r], [])).mapa.mesRef, r).toBe("c0")
+    const comMes = montarSheet(["Mes Ref.", "Data Abertura", "Situação"], [])
+    const sem = montarSheet(["Data Abertura", "Situação"], [])
+    expect(tipoChamados.reconhecer(montarWorkbook(comMes))).toBe(
+      tipoChamados.reconhecer(montarWorkbook(sem))
+    )
   })
 
   it("separa Área de Área Superior", () => {
