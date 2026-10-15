@@ -36,6 +36,36 @@ function barra(visible: boolean) {
 }
 
 describe("TopBar", () => {
+  it("o slot dos filtros fica na faixa de controles, junto das ações (sem faixa própria)", () => {
+    let slot: HTMLElement | null = null
+    const { container } = render(
+      <TopBar
+        visible
+        tipoNome="Chamados"
+        atual={atual}
+        grupos={[]}
+        visoes={["painel"]}
+        visao="painel"
+        onSlot={(el) => {
+          slot = el ?? slot
+        }}
+        onAbrir={() => {}}
+        onVisao={() => {}}
+        onNovaCarga={() => {}}
+        onHistorico={() => {}}
+        podeApagar={false}
+        onClear={() => {}}
+        onSelectorOpenChange={() => {}}
+        dica={null}
+      />
+    )
+    const acoes = screen.getByRole("button", { name: /Nova carga/ })
+      .parentElement!
+    expect(slot).not.toBeNull()
+    expect(slot!.parentElement).toBe(acoes.parentElement)
+    expect(container.querySelector("header")!.contains(slot)).toBe(true)
+  })
+
   it("Nova carga só pede para abrir o envio (não abre o seletor do sistema)", async () => {
     const onNovaCarga = vi.fn()
     render(

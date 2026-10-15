@@ -93,7 +93,7 @@ export function FiltrosChamadosProvider({
     <FiltrosContext.Provider value={valor}>
       {slot &&
         createPortal(
-          <div className="flex items-center justify-end gap-4 border-t px-6 py-1">
+          <div className="flex items-center gap-4">
             <Button variant="default" size="lg" onClick={abrir}>
               <FilterIcon aria-hidden /> Filtros
               {total > 0 && (
