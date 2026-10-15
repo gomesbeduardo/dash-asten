@@ -38,7 +38,7 @@ export function ImportScreen({
   const loading = state.status === "loading"
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center gap-10 px-6 py-12">
+    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center gap-10 px-6 py-12 3xl:max-w-5xl">
       <img src={logo} alt="Asten" className="h-12 w-auto self-start" />
       <div className="flex flex-col gap-3">
         <h1 className="text-5xl leading-tight text-primary">
