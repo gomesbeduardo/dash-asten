@@ -149,6 +149,17 @@ describe("PainelChamados", () => {
     expect(within(sla).getByLabelText("50,0%")).toBeInTheDocument()
   })
 
+  it("mostra os KPIs Tempo até o aceite e SLA renegociado", async () => {
+    render(<PainelChamados {...await cenario(true)} />)
+    await screen.findByRole("article", { name: "Backlog aberto" })
+    expect(
+      screen.getByRole("article", { name: "Tempo até o aceite" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("article", { name: "SLA renegociado" })
+    ).toBeInTheDocument()
+  })
+
   it("sem carga do mês anterior reconstrói e explica o que exige a carga", async () => {
     render(<PainelChamados {...await cenario(false)} />)
     const sla = await screen.findByRole("article", { name: "% no SLA" })
@@ -469,7 +480,7 @@ describe("CompararChamados", () => {
       name: "Indicadores lado a lado",
     })
     const cards = within(secao).getAllByRole("article")
-    expect(cards).toHaveLength(10)
+    expect(cards).toHaveLength(12)
     const backlog = within(secao).getByRole("article", {
       name: /Backlog aberto/,
     })
