@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
-import { COR } from "./graficos"
+import { animacao, COR } from "./graficos"
 import { SeloSimbolo } from "./selos"
 import { formatarKpi } from "./logica"
 
@@ -119,7 +119,7 @@ export function ModalKpi({
                   dataKey="barra"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={96}
-                  isAnimationActive={animar}
+                  {...animacao(animar)}
                   shape={(p: {
                     x?: number
                     y?: number
