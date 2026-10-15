@@ -1,6 +1,6 @@
 import type { Competencia } from "@/cargas/types"
 import type { CellValue, Row, Sheet } from "@/core"
-import { mapearColunas, type MapaColunas } from "./mapeamento"
+import { mapearColunas, normalizar, type MapaColunas } from "./mapeamento"
 
 export type SituacaoNaCompetencia =
   | "aberto-no-fim"
@@ -34,6 +34,19 @@ export const texto = (v: CellValue | undefined): string | null => {
   if (v === null || v === undefined) return null
   const s = v instanceof Date ? v.toISOString().slice(0, 10) : String(v).trim()
   return s === "" ? null : s
+}
+
+/**
+ * Reaberto depois da solução e ainda não finalizado: Data Ultima Reabertura > Data de Solução
+ * e Situação (da exportação) diferente de "finalizado". Só informativo: não muda a classificação (D34/D61).
+ */
+export function reabertoPendente(row: Row, mapa: MapaColunas): boolean {
+  if (!mapa.ultimaReabertura || !mapa.solucao || !mapa.situacao) return false
+  const reabertura = tempo(row[mapa.ultimaReabertura])
+  const solucao = tempo(row[mapa.solucao])
+  if (reabertura === null || solucao === null || reabertura <= solucao)
+    return false
+  return normalizar(texto(row[mapa.situacao]) ?? "") !== "finalizado"
 }
 
 /** Situação do chamado no último dia da competência (reconstruída pelas datas). Nenhuma linha é excluída. */

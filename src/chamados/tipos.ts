@@ -41,6 +41,8 @@ export type EntradaCompetencia = {
   sheet: Sheet
   competencia: Competencia
   cargaPropria?: boolean
+  /** Rótulos dos filtros ativos cuja coluna não existe nesta carga: KPIs ficam sem valor (nunca zero). */
+  colunasSemFiltro?: string[]
 }
 export type Comparacao = {
   a: MetricasChamados
