@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { ErroDeCarga, type AlteracaoDeCarga, type Carga, type CargaMeta } from "@/cargas"
@@ -11,6 +12,7 @@ import { usePrecarga } from "@/app/precarga"
 import { useRepositorio } from "@/app/RepositorioContext"
 import { useListaInicial } from "@/app/sessao/SessaoContext"
 import { guardarUltimaAbertura, lerUltimaAbertura } from "@/app/ultima-abertura"
+import { Avisos, type AvisoItem } from "@/components/app/Avisos"
 import { Apresentacao } from "@/components/app/Apresentacao"
 import { ImportScreen } from "@/components/app/ImportScreen"
 import { NovaCargaDialog } from "@/components/app/NovaCargaDialog"
@@ -22,6 +24,7 @@ import {
 } from "@/components/app/NovaCargaLoteDialog"
 import { useAvisoAoSair } from "@/components/app/hooks/useAvisoAoSair"
 import { useImpedirAbrirArquivo } from "@/components/app/hooks/useArrasteNaJanela"
+import { cn } from "@/lib/utils"
 import {
   useWorkbookLoader,
   type LoteLido,
@@ -295,62 +298,24 @@ export function App() {
   const erro =
     erroRepo ?? (loader.state.status === "error" ? loader.state.message : null)
 
-  return (
-    <>
-      {atualVista ? (
-        <Apresentacao
-          key={atualVista.tipo}
-          carga={atualVista}
-          metas={ativas}
-          metasTodas={metas}
-          onAlterar={alterar}
-          obterCarga={repo.obter}
-          onAbrir={abrir}
-          onNovaCarga={receberArquivos}
-          onApagarTudo={repo.limparTudo ? apagarTudo : undefined}
-          onFecharCarga={fecharCarga}
-          erro={erro}
-          onDismissErro={() => {
-            loader.dismiss()
-            setErroRepo(null)
-          }}
-        />
-      ) : (
-        <ImportScreen
-          state={
-            erroRepo ? { status: "error", message: erroRepo } : loader.state
-          }
-          onFiles={receberArquivos}
-          metas={ativas}
-          carregandoLista={!pronto}
-          onAbrir={abrir}
-          lembradaId={lerUltimaAbertura().cargaId}
-          abrindo={abrindo}
-        />
-      )}
-      {abrindo && atual && (
-        <p
-          role="status"
-          className="fixed bottom-4 left-4 z-50 rounded-md border bg-card px-4 py-2 text-base shadow-md"
-        >
-          Abrindo a carga…
-        </p>
-      )}
-      {loader.state.status === "loading" && atual && (
-        <p
-          role="status"
-          className="fixed bottom-4 left-4 z-50 rounded-md border bg-card px-4 py-2 text-base shadow-md"
-        >
-          {loader.state.progresso
-            ? `Lendo ${loader.state.progresso.atual} de ${loader.state.progresso.total}…`
-            : "Lendo a planilha…"}
-        </p>
-      )}
-      {aviso && (
-        <p
-          role="status"
-          className="fixed bottom-4 left-4 z-50 flex items-center gap-3 rounded-md border bg-card py-2 pl-4 pr-2 text-base shadow-md"
-        >
+  const itensAviso: AvisoItem[] = []
+  if (abrindo && atual) {
+    itensAviso.push({ id: "abrindo", conteudo: "Abrindo a carga…" })
+  }
+  if (loader.state.status === "loading" && atual) {
+    itensAviso.push({
+      id: "lendo",
+      conteudo: loader.state.progresso
+        ? `Lendo ${loader.state.progresso.atual} de ${loader.state.progresso.total}…`
+        : "Lendo a planilha…",
+    })
+  }
+  if (aviso) {
+    itensAviso.push({
+      id: "aviso",
+      className: "flex items-center gap-3 py-2 pl-4 pr-2",
+      conteudo: (
+        <>
           {aviso}
           <button
             type="button"
@@ -359,8 +324,69 @@ export function App() {
           >
             Fechar
           </button>
-        </p>
-      )}
+        </>
+      ),
+    })
+  }
+
+  return (
+    <>
+      {/* A tela que entra faz fade; a que sai desmonta (sem instante de tela vazia). */}
+      <AnimatePresence initial={false}>
+        {atualVista ? (
+          <motion.div
+            key={`apresentacao-${atualVista.tipo}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {/* Trocar de competência: o conteúdo antigo fica atenuado até a nova carga chegar. */}
+            <div
+              aria-busy={abrindo}
+              className={cn(
+                "transition-opacity duration-150 motion-reduce:transition-none",
+                abrindo && "opacity-60"
+              )}
+            >
+              <Apresentacao
+                key={atualVista.tipo}
+                carga={atualVista}
+                metas={ativas}
+                metasTodas={metas}
+                onAlterar={alterar}
+                obterCarga={repo.obter}
+                onAbrir={abrir}
+                onNovaCarga={receberArquivos}
+                onApagarTudo={repo.limparTudo ? apagarTudo : undefined}
+                onFecharCarga={fecharCarga}
+                erro={erro}
+                onDismissErro={() => {
+                  loader.dismiss()
+                  setErroRepo(null)
+                }}
+              />
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="envio"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <ImportScreen
+              state={
+                erroRepo ? { status: "error", message: erroRepo } : loader.state
+              }
+              onFiles={receberArquivos}
+              metas={ativas}
+              carregandoLista={!pronto}
+              onAbrir={abrir}
+              lembradaId={lerUltimaAbertura().cargaId}
+              abrindo={abrindo}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <Avisos itens={itensAviso} />
       {lote && (
         <NovaCargaLoteDialog
           itens={lote.itens}

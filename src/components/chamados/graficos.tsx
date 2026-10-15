@@ -36,7 +36,7 @@ function curto(v: unknown, max = 26) {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s
 }
 
-function animacao(animar: boolean) {
+export function animacao(animar: boolean) {
   return {
     isAnimationActive: animar,
     animationDuration: chartGrow,

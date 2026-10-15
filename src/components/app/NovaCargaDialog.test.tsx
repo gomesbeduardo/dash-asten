@@ -80,6 +80,40 @@ describe("NovaCargaDialog: ano presumido", () => {
   })
 })
 
+describe("NovaCargaDialog: confirmação pendente", () => {
+  function montarAssincrono() {
+    let resolver!: () => void
+    let rejeitar!: (e: Error) => void
+    const onConfirm = vi.fn(
+      () =>
+        new Promise<void>((res, rej) => {
+          resolver = res
+          rejeitar = rej
+        })
+    )
+    render(<NovaCargaDialog workbook={workbook("reuniao-setembro-2026.xlsx")} metas={[]} onConfirm={onConfirm} onCancel={() => {}} />)
+    return { resolver: () => resolver(), rejeitar: (e: Error) => rejeitar(e) }
+  }
+
+  it("enquanto a promessa pende: botão desabilitado, 'Guardando…' e aria-busy; volta ao resolver", async () => {
+    const { resolver } = montarAssincrono()
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar carga" }))
+    const botao = await screen.findByRole("button", { name: /Guardando…/ })
+    expect(botao).toBeDisabled()
+    expect(botao).toHaveAttribute("aria-busy", "true")
+    resolver()
+    expect(await screen.findByRole("button", { name: "Confirmar carga" })).toBeEnabled()
+  })
+
+  it("volta ao normal também quando a promessa é rejeitada", async () => {
+    const { rejeitar } = montarAssincrono()
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar carga" }))
+    await screen.findByRole("button", { name: /Guardando…/ })
+    rejeitar(new Error("falhou"))
+    expect(await screen.findByRole("button", { name: "Confirmar carga" })).toBeEnabled()
+  })
+})
+
 describe("NovaCargaDialog: Mes Ref. (D63)", () => {
   const comMesRef = (...meses: string[]) =>
     readWorkbook(makeXlsx({ Dados: [["Área", "Mes Ref."], ...meses.map((m) => ["TI", m])] }), "qualquer.xlsx")

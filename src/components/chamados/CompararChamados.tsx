@@ -1,3 +1,4 @@
+import { useEntrada } from "@/components/app/motion/useEntrada"
 import { useMemo, useRef, useState } from "react"
 import { ArrowDownIcon, ArrowUpIcon, EqualIcon, PlusIcon } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
@@ -67,6 +68,7 @@ export function CompararChamados({
   entrada,
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
+  const entradaFixa = useEntrada(entrada)
   const cargas = useCargasDoTipo(historico, obterCarga)
   const sheetAtual = useMemo(
     () => escolherAba(carga.workbook),
@@ -102,7 +104,7 @@ export function CompararChamados({
     return (
       <div className="flex flex-col gap-4">
         {cabecalho}
-        <Carregando />
+        <Carregando forma="comparar" />
       </div>
     )
   if (opcoes.length === 0)
@@ -115,7 +117,7 @@ export function CompararChamados({
       sheets={sheets}
       sheetAtual={sheetAtual}
       competenciaAtual={carga.competencia}
-      play={entrada && !reduce}
+      play={entradaFixa && !reduce}
     />
   )
 }
@@ -280,6 +282,7 @@ function ComparacaoVisao({
         className="flex flex-col gap-8"
         variants={entryContainer}
         initial={play ? "hidden" : false}
+        data-entrada={play ? "" : undefined}
         animate="show"
       >
         <header className="flex flex-col gap-4">

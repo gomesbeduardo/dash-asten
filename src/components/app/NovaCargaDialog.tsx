@@ -1,3 +1,4 @@
+import { Loader2Icon } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import {
@@ -65,7 +66,7 @@ export function NovaCargaDialog({
     tipo: string
     competencia: string
     nome?: string
-  }) => void
+  }) => void | Promise<void>
   onCancel: () => void
 }) {
   const inicial = useMemo(() => {
@@ -90,6 +91,24 @@ export function NovaCargaDialog({
   const [editado, setEditado] = useState(false)
   const [presumido, setPresumido] = useState(inicial.anoPresumido)
   const [nome, setNome] = useState(() => nomeSugerido(workbook.fileName))
+
+  // Enquanto a promessa de guardar não resolve, o botão mostra o estado pendente.
+  const [guardando, setGuardando] = useState(false)
+
+  async function confirmar() {
+    setGuardando(true)
+    try {
+      await onConfirm({
+        tipo,
+        competencia,
+        ...(versao > 1 ? { nome } : {}),
+      })
+    } catch {
+      // O erro é tratado por quem guarda (aviso na tela); aqui só destrava o botão.
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   const anoNum = Number(ano)
   const anoValido = Number.isInteger(anoNum) && anoNum >= 1990 && anoNum <= 2100
@@ -248,12 +267,18 @@ export function NovaCargaDialog({
           </Button>
           <Button
             size="lg"
-            disabled={!anoValido}
-            onClick={() =>
-              onConfirm({ tipo, competencia, ...(versao > 1 ? { nome } : {}) })
-            }
+            disabled={!anoValido || guardando}
+            aria-busy={guardando}
+            onClick={confirmar}
           >
-            Confirmar carga
+            {guardando ? (
+              <>
+                <Loader2Icon className="motion-safe:animate-spin" aria-hidden />
+                Guardando…
+              </>
+            ) : (
+              "Confirmar carga"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

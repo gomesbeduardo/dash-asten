@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import type { CargaMeta } from "@/cargas"
@@ -104,5 +104,15 @@ describe("ListaCargasAgrupada", () => {
     montar([arq], { podeAbrir: (m: CargaMeta) => !m.arquivadaEm })
     expect(screen.getByText("arquivada")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /^Abrir/ })).toBeNull()
+  })
+
+  it("recolher as versões anteriores as remove do DOM depois da saída", async () => {
+    const user = userEvent.setup()
+    montar([S1, S2])
+    const botao = screen.getByRole("button", { name: /1 versão anterior/ })
+    await user.click(botao)
+    expect(await screen.findByText("set-1.xlsx")).toBeInTheDocument()
+    await user.click(botao)
+    await waitFor(() => expect(screen.queryByText("set-1.xlsx")).toBeNull())
   })
 })

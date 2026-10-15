@@ -883,3 +883,26 @@ describe("estado de carregamento", () => {
     expect(status).toHaveTextContent(/Carregando/)
   })
 })
+
+describe("entrada com dados que chegam depois do 1º render", () => {
+  it("Evolução mantém a entrada ligada mesmo que o prop vire false antes dos dados", async () => {
+    const props = await cenario(true)
+    let liberar!: () => void
+    const porta = new Promise<void>((r) => (liberar = r))
+    const obterCarga = async (id: string) => {
+      await porta
+      return props.obterCarga(id)
+    }
+    const arvore = (entrada: boolean) => (
+      <FiltrosChamadosProvider carga={props.carga}>
+        <EvolucaoChamados {...props} obterCarga={obterCarga} entrada={entrada} />
+      </FiltrosChamadosProvider>
+    )
+    const { container, rerender } = render(arvore(true))
+    expect(screen.getByRole("status")).toBeInTheDocument()
+    rerender(arvore(false))
+    liberar()
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull())
+    expect(container.querySelector("[data-entrada]")).not.toBeNull()
+  })
+})

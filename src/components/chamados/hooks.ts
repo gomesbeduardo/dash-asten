@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 
 import type { Carga, CargaMeta } from "@/cargas"
+import { espiarCarga } from "@/cargas/comCache"
 import {
   calcularMetricas,
   escolherAba,
@@ -25,12 +26,22 @@ export function useCargasDoTipo(
 ): CargaComAba[] | null {
   const versoes = useMemo(() => ultimasVersoes(historico), [historico])
   const chave = versoes.map((m) => m.id).join("|")
+  // Cargas já no cache: o 1º render já traz os dados (sem esqueleto nem tick assíncrono).
+  const imediato = useMemo(() => {
+    const cargas = versoes.map((m) => espiarCarga(obterCarga, m.id))
+    if (cargas.some((c) => c === undefined)) return null
+    return versoes.flatMap((meta, i) => {
+      const sheet = escolherAba(cargas[i]!.workbook)
+      return sheet ? [{ meta, sheet }] : []
+    })
+  }, [versoes, obterCarga])
   const [pronto, setPronto] = useState<{
     chave: string
     itens: CargaComAba[]
   } | null>(null)
 
   useEffect(() => {
+    if (imediato) return
     let cancelado = false
     Promise.all(
       versoes.map(async (meta) => {
@@ -52,8 +63,9 @@ export function useCargasDoTipo(
     return () => {
       cancelado = true
     }
-  }, [versoes, chave, obterCarga])
+  }, [versoes, chave, obterCarga, imediato])
 
+  if (imediato) return imediato
   return pronto?.chave === chave ? pronto.itens : null
 }
 
@@ -67,12 +79,28 @@ export function useAnterior(
   sheet: Sheet | null
 ): Anterior | null | undefined {
   const chave = `${carga.id}|${historico.map((m) => m.id).join(",")}`
+  // Anterior próprio já no cache: o 1º render já o tem (sem tick assíncrono).
+  const imediato = useMemo<Anterior | null | undefined>(() => {
+    const meta = metaAnterior(historico, carga.competencia)
+    // Sem carga do mês anterior: "sem anterior" já no 1º render (sem esqueleto).
+    if (!meta) return null
+    const anterior = espiarCarga(obterCarga, meta.id)
+    const aba = anterior ? escolherAba(anterior.workbook) : null
+    if (!aba) return undefined
+    return {
+      entrada: { sheet: aba, competencia: meta.competencia },
+      propria: true,
+    }
+    // chave resume carga/historico.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chave, obterCarga])
   const [pronto, setPronto] = useState<{
     chave: string
     valor: Anterior | null
   } | null>(null)
 
   useEffect(() => {
+    if (imediato !== undefined) return
     let cancelado = false
     ;(async () => {
       let valor: Anterior | null = null
@@ -95,8 +123,9 @@ export function useAnterior(
     }
     // chave resume carga/historico; obterCarga e sheet são estáveis por carga.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chave, obterCarga, sheet])
+  }, [chave, obterCarga, sheet, imediato])
 
+  if (imediato !== undefined) return imediato
   return pronto?.chave === chave ? pronto.valor : undefined
 }
 

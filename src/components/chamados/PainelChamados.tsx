@@ -1,3 +1,4 @@
+import { useEntrada } from "@/components/app/motion/useEntrada"
 import { useMemo } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import { ArrowRightIcon } from "lucide-react"
@@ -56,6 +57,7 @@ export function PainelChamados({
   irPara,
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
+  const entradaFixa = useEntrada(entrada)
   const { sheet, filtros, metricas, leituras, anterior, semColuna } =
     useMesDeChamados(carga, historico, obterCarga)
 
@@ -95,11 +97,11 @@ export function PainelChamados({
     return (
       <div className="flex flex-col gap-6">
         {cabecalho}
-        <Carregando texto="Carregando o painel…" />
+        <Carregando texto="Carregando o painel…" forma="painel" />
       </div>
     )
 
-  const play = entrada && !reduce
+  const play = entradaFixa && !reduce
   // o aviso de filtro sem coluna já aparece junto dos chips
   const avisosRodape = metricas.avisos.filter(
     (a) => !a.startsWith("Sem a coluna") && !a.startsWith("Sem as colunas")
@@ -161,6 +163,7 @@ export function PainelChamados({
         className="flex flex-col gap-8"
         variants={entryContainer}
         initial={play ? "hidden" : false}
+        data-entrada={play ? "" : undefined}
         animate="show"
       >
         {cabecalho}

@@ -1,3 +1,4 @@
+import { useEntrada } from "@/components/app/motion/useEntrada"
 import { motion, useReducedMotion } from "motion/react"
 
 import { formatarCompetencia } from "@/cargas"
@@ -18,6 +19,7 @@ export function LeiturasChamados({
   entrada,
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
+  const entradaFixa = useEntrada(entrada)
   const { sheet, filtros, metricas, leituras, anterior } = useMesDeChamados(
     carga,
     historico,
@@ -45,11 +47,11 @@ export function LeiturasChamados({
     return (
       <div className="flex flex-col gap-6">
         {cabecalho}
-        <Carregando texto="Carregando as leituras…" />
+        <Carregando texto="Carregando as leituras…" forma="leituras" />
       </div>
     )
 
-  const play = entrada && !reduce
+  const play = entradaFixa && !reduce
 
   return (
     <TooltipProvider>
@@ -57,6 +59,7 @@ export function LeiturasChamados({
         className="flex flex-col gap-6"
         variants={entryContainer}
         initial={play ? "hidden" : false}
+        data-entrada={play ? "" : undefined}
         animate="show"
       >
         {cabecalho}
