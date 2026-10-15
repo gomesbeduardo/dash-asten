@@ -82,3 +82,49 @@ describe("PATCH /api/cargas/:id (D58)", () => {
     }
   })
 })
+
+describe("DELETE /api/cargas/:id (D66: excluir = arquivar)", () => {
+  const ID = "tz4a98xxat96iws9zmbrgj3a"
+  const del = (headers?: Record<string, string>) => DELETE(req(`/api/rota?r=cargas/${ID}`, { method: "DELETE", headers }))
+
+  it("sem ADMIN_TOKEN configurado, exclusão definitiva fica desativada (403), mesmo com login desligado", async () => {
+    vi.stubEnv("LOGIN_DESATIVADO", "1")
+    try {
+      const r = await del()
+      expect(r.status).toBe(403)
+      expect((await r.json()).erro).toMatch(/arquivar/i)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it("com ADMIN_TOKEN, exige o cabeçalho X-Admin-Token igual; id inválido com token certo → 404", async () => {
+    vi.stubEnv("LOGIN_DESATIVADO", "1")
+    vi.stubEnv("ADMIN_TOKEN", "segredo-de-teste-com-32-caracteres!!")
+    try {
+      expect((await del()).status).toBe(403)
+      expect((await del({ "X-Admin-Token": "errado" })).status).toBe(403)
+      const r = await DELETE(req("/api/rota?r=cargas/nao-e-id", { method: "DELETE", headers: { "X-Admin-Token": "segredo-de-teste-com-32-caracteres!!" } }))
+      expect(r.status).toBe(404)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+})
+
+describe("POST /api/cargas: mesRef opcional (D63)", () => {
+  const corpo = (extra: Record<string, unknown>) =>
+    JSON.stringify({ tipo: "chamados", competencia: "2026-10", arquivo: "a.xlsx", workbook: { sheets: [{ rows: [] }] }, ...extra })
+  const post = (extra: Record<string, unknown>) =>
+    POST(req("/api/rota?r=cargas", { method: "POST", body: corpo(extra), headers: { "Content-Type": "application/json" } }))
+
+  it("mesRef fora do formato AAAA-MM → 400 antes do banco", async () => {
+    vi.stubEnv("LOGIN_DESATIVADO", "1")
+    try {
+      expect((await post({ mesRef: "2026-13" })).status).toBe(400)
+      expect((await post({ mesRef: 202610 })).status).toBe(400)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+})

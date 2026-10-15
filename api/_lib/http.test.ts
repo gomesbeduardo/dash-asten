@@ -1,6 +1,40 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest"
-import { ehCompetencia, ehTipo, paraMeta, validarNome } from "./http.js"
+import { gunzipSync } from "node:zlib"
+import { adminAutorizado, ehCompetencia, ehTipo, jsonComprimido, paraMeta, validarNome } from "./http.js"
+
+describe("jsonComprimido (carga grande cabe no limite de resposta)", () => {
+  const corpo = { workbook: { sheets: [{ rows: Array.from({ length: 50 }, (_, i) => ({ a: i })) }] } }
+  const pedido = (aceita?: string) => new Request("https://x.test/api/cargas/x", { headers: aceita ? { "Accept-Encoding": aceita } : {} })
+
+  it("com Accept-Encoding gzip devolve o JSON comprimido, com Content-Encoding e Vary", async () => {
+    const r = jsonComprimido(corpo, pedido("gzip, deflate, br"), { "Cache-Control": "private" })
+    expect(r.headers.get("Content-Encoding")).toBe("gzip")
+    expect(r.headers.get("Vary")).toBe("Accept-Encoding")
+    expect(r.headers.get("Cache-Control")).toBe("private")
+    const texto = gunzipSync(Buffer.from(await r.arrayBuffer())).toString("utf8")
+    expect(JSON.parse(texto)).toEqual(corpo)
+  })
+
+  it("sem gzip no Accept-Encoding devolve JSON puro", async () => {
+    const r = jsonComprimido(corpo, pedido())
+    expect(r.headers.get("Content-Encoding")).toBeNull()
+    expect(await r.json()).toEqual(corpo)
+  })
+})
+
+describe("adminAutorizado (exclusão definitiva)", () => {
+  const com = (token?: string) => new Request("https://x.test/", { headers: token ? { "X-Admin-Token": token } : {} })
+  it("sem ADMIN_TOKEN configurado ninguém passa; com ele, só o cabeçalho igual", () => {
+    expect(adminAutorizado(com("qualquer"), undefined)).toBe(false)
+    expect(adminAutorizado(com(), "segredo-32-caracteres-xxxxxxxxxxx")).toBe(false)
+    expect(adminAutorizado(com("errado"), "segredo-32-caracteres-xxxxxxxxxxx")).toBe(false)
+    expect(adminAutorizado(com("segredo-32-caracteres-xxxxxxxxxxx"), "segredo-32-caracteres-xxxxxxxxxxx")).toBe(true)
+  })
+  it("token curto demais no ambiente é ignorado (exige 24+ caracteres)", () => {
+    expect(adminAutorizado(com("curto"), "curto")).toBe(false)
+  })
+})
 
 describe("validarNome (D58)", () => {
   it("vazio vira null e espaços são normalizados", () => {

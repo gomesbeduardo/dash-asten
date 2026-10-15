@@ -1,5 +1,6 @@
 // Respostas e validações comuns da API de cargas.
-import { gunzipSync } from "node:zlib"
+import { timingSafeEqual } from "node:crypto"
+import { gunzipSync, gzipSync } from "node:zlib"
 import { isCuid } from "@paralleldrive/cuid2"
 
 export const LIMITE_CORPO = 4 * 1024 * 1024
@@ -13,6 +14,29 @@ export function json(corpo: unknown, status = 200): Response {
 
 export function erro(mensagem: string, status: number): Response {
   return json({ erro: mensagem }, status)
+}
+
+/**
+ * JSON comprimido com gzip quando o navegador aceita. A resposta de uma função na Vercel tem
+ * limite de 4,5 MB: uma carga de ~20 mil linhas vira ~12 MB de JSON, mas ~0,5 MB comprimida.
+ */
+export function jsonComprimido(corpo: unknown, request: Request, extra: Record<string, string> = {}): Response {
+  const texto = JSON.stringify(corpo)
+  const headers: Record<string, string> = { "Content-Type": "application/json; charset=utf-8", Vary: "Accept-Encoding", ...extra }
+  if (!/\bgzip\b/.test(request.headers.get("accept-encoding") ?? "")) return new Response(texto, { headers })
+  return new Response(new Uint8Array(gzipSync(texto)), { headers: { ...headers, "Content-Encoding": "gzip" } })
+}
+
+/**
+ * Exclusão definitiva (D66: no app, excluir = arquivar). Só com ADMIN_TOKEN no ambiente (24+ caracteres)
+ * e o cabeçalho X-Admin-Token igual; sem a variável, ninguém apaga de vez — nem com o login desligado (D52).
+ */
+export function adminAutorizado(request: Request, token = process.env.ADMIN_TOKEN): boolean {
+  if (!token || token.length < 24) return false
+  const enviado = request.headers.get("x-admin-token") ?? ""
+  const a = Buffer.from(enviado)
+  const b = Buffer.from(token)
+  return a.length === b.length && timingSafeEqual(a, b)
 }
 
 /** IDs são CUID2 (gerados pelo Prisma); qualquer outra coisa é rejeitada antes de tocar o banco. */
@@ -64,6 +88,8 @@ export type CargaMetaDto = {
   nome: string | null
   /** Quando foi arquivada (D58); null = ativa. */
   arquivadaEm: string | null
+  /** Mes Ref. lido da planilha no envio (D63), para auditoria quando a competência foi editada; null = sem a coluna. */
+  mesRef: string | null
 }
 
 export function paraMeta(c: {
@@ -76,6 +102,7 @@ export function paraMeta(c: {
   linhas: number
   nome: string | null
   arquivadaEm: Date | null
+  mesRef?: string | null
 }): CargaMetaDto {
   return {
     id: c.id,
@@ -87,6 +114,7 @@ export function paraMeta(c: {
     linhas: c.linhas,
     nome: c.nome,
     arquivadaEm: c.arquivadaEm ? c.arquivadaEm.toISOString() : null,
+    mesRef: c.mesRef ?? null,
   }
 }
 
