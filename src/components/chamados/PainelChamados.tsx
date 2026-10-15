@@ -10,23 +10,15 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, KpiCartao } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
-import { BarrasFaixas, BarrasRanking, COR } from "./graficos"
+import { BarrasComparar, BarrasFaixas, BarrasRanking } from "./graficos"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
-import { limitarItens, recorteTexto, temOutros, type SeloTipo } from "./logica"
-import { LegendaSimbolos, Selo } from "./selos"
+import { agruparSeries, recorteTexto, temOutros, type SeloTipo } from "./logica"
+import { LegendaSimbolos } from "./selos"
 
-const DESTAQUES = ["backlog", "sla", "atraso", "saidas"]
+const DESTAQUES = ["naoFinalizados", "sla", "atraso", "finalizados"]
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
-
-const COR_SITUACAO: Record<string, string> = {
-  "Aberto no fim do mês": COR.principal,
-  "Resolvido no mês": COR.verde,
-  "Resolvido antes do mês": COR.cinza,
-  "Aberto após a competência": COR.roxo,
-  "Sem data de abertura": COR.laranja,
-}
 
 const tabelaDe = (
   itens: { rotulo: string; valor: number }[],
@@ -38,6 +30,23 @@ const tabelaDe = (
     ...(total ? [["Total", n(itens.reduce((s, i) => s + i.valor, 0))]] : []),
   ],
 })
+
+const SERIES_FOTO = [
+  { id: "finalizados", rotulo: "Finalizados no mês" },
+  { id: "naoFinalizados", rotulo: "Não finalizados" },
+]
+const tabelaFoto = (itens: Distribuicao["itens"]) => ({
+  colunas: ["Categoria", "Finalizados no mês", "Não finalizados"],
+  linhas: itens.map((i) => [i.rotulo, n(i.finalizados), n(i.naoFinalizados)]),
+})
+/** Itens com as duas séries da D64 (finalizados no mês × não finalizados), no formato do gráfico agrupado. */
+const itensFoto = (itens: Distribuicao["itens"], max?: number) => {
+  const base = itens.map((i) => ({
+    rotulo: i.rotulo,
+    valores: [i.finalizados, i.naoFinalizados] as (number | null)[],
+  }))
+  return max ? agruparSeries(base, max) : base
+}
 
 /** Painel estratégico do mês (D31–D36): KPIs com delta e gráficos. Sem tabela de linhas soltas. */
 export function PainelChamados({
@@ -100,17 +109,14 @@ export function PainelChamados({
   const rotuloAnterior = anterior
     ? formatarCompetencia(anterior.entrada.competencia)
     : "mês anterior"
-  const anteriorPropria = anterior?.propria ?? false
   const destaques = DESTAQUES.map((id) =>
     metricas.kpis.find((k) => k.id === id)
   ).filter((k) => !!k)
   const demais = metricas.kpis.filter((k) => !DESTAQUES.includes(k.id))
+  const naoFinalizados =
+    metricas.kpis.find((k) => k.id === "naoFinalizados")?.valor ?? null
   const dist = (id: Distribuicao["id"]) =>
     metricas.distribuicoes.find((d) => d.id === id)
-  const totalLinhas = metricas.porSituacaoNaCompetencia.reduce(
-    (s, i) => s + i.valor,
-    0
-  )
   const mes = formatarCompetencia(carga.competencia, "longo")
   const semDados = semColuna.length > 0
   const vazio = (
@@ -118,53 +124,35 @@ export function PainelChamados({
       Sem dados com este filtro nesta carga
     </p>
   )
-  const selosDe = (itens: { rotulo: string }[], ...mais: SeloTipo[]) => [
-    ...mais,
-    ...(temOutros(itens) ? (["outros"] as const) : []),
-  ]
+  const selosDe = (itens: { rotulo: string }[]): SeloTipo[] =>
+    temOutros(itens) ? ["outros"] : []
 
   const rankings: {
     id: Distribuicao["id"]
     sub: string
     max?: number
-    exportacao?: boolean
   }[] = [
-    { id: "atividade", sub: "chamados abertos no fim do mês, por atividade" },
+    { id: "atividade", sub: "finalizados no mês × não finalizados, por atividade" },
     {
       id: "areaSuperior",
-      sub: "chamados abertos no fim do mês, por área superior",
+      sub: "finalizados no mês × não finalizados, por área superior",
     },
     {
       id: "area",
-      sub: "chamados abertos no fim do mês, por área (módulo)",
+      sub: "finalizados no mês × não finalizados, por área (módulo)",
       max: 8,
     },
     {
       id: "operador",
-      sub: "carga de trabalho: chamados abertos no fim do mês, por responsável atual",
-      exportacao: true,
+      sub: "finalizados no mês × não finalizados, por operador",
     },
   ]
-  const itensDe = (r: (typeof rankings)[number]) => {
-    const d = dist(r.id)
-    return d && r.max ? limitarItens(d.itens, r.max) : d?.itens
-  }
   const cliente = dist("cliente")
-  const situacaoAtual = dist("situacao")
   // símbolos que aparecem nesta tela, para a legenda
   const tiposNaTela: SeloTipo[] = [
-    ...(metricas.kpis.some((k) => !k.reconstruivel)
-      ? (["calculado"] as const)
-      : []),
-    "derivado",
-    ...(situacaoAtual ? (["exportacao"] as const) : []),
-    ...(rankings.some((r) => dist(r.id) && r.exportacao)
-      ? (["exportacao"] as const)
-      : []),
-    ...([
-      cliente?.itens,
-      ...rankings.map(itensDe),
-    ].some((itens) => itens && temOutros(itens))
+    ...([cliente, ...rankings.map((r) => dist(r.id))].some(
+      (d) => d && temOutros(d.itens)
+    )
       ? (["outros"] as const)
       : []),
   ]
@@ -185,11 +173,7 @@ export function PainelChamados({
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
             <p className="flex flex-wrap items-center gap-3 text-base text-muted-foreground">
               Variação contra {rotuloAnterior}
-              {anteriorPropria ? (
-                " (carga própria)"
-              ) : (
-                <Selo tipo="reconstruido" />
-              )}
+              {anterior ? " (carga própria)" : ": sem carga do mês anterior"}
             </p>
             {irPara && (
               <button
@@ -211,7 +195,6 @@ export function PainelChamados({
                 kpi={k}
                 destaque
                 rotuloAnterior={rotuloAnterior}
-                anteriorPropria={anteriorPropria}
                 entrada={play}
               />
             ))}
@@ -222,13 +205,12 @@ export function PainelChamados({
                 key={k.id}
                 kpi={k}
                 rotuloAnterior={rotuloAnterior}
-                anteriorPropria={anteriorPropria}
                 entrada={play}
                 extra={
                   k.id === "aguardandoAceite" &&
                   k.valor !== null &&
-                  metricas.baseAguardandoAceite
-                    ? `de ${n(metricas.baseAguardandoAceite)} (backlog + resolvidos sem aceite)`
+                  naoFinalizados
+                    ? `de ${n(naoFinalizados)} não finalizados`
                     : undefined
                 }
               />
@@ -240,25 +222,29 @@ export function PainelChamados({
           {cliente && (
             <GraficoCartao
               id="cliente"
-              titulo="Backlog por cliente"
-              subtitulo={`maiores clientes no backlog · ${mes}`}
-              tabela={tabelaDe(cliente.itens)}
+              titulo="Por cliente"
+              subtitulo={`finalizados no mês × não finalizados · ${mes}`}
+              tabela={tabelaFoto(cliente.itens)}
               selos={selosDe(cliente.itens)}
               className="xl:col-span-2"
             >
-              <BarrasRanking itens={cliente.itens} animar={play} />
+              <BarrasComparar
+                itens={itensFoto(cliente.itens)}
+                series={SERIES_FOTO}
+                animar={play}
+              />
             </GraficoCartao>
           )}
           <GraficoCartao
-            id="envelhecimento"
-            titulo="Envelhecimento do backlog"
-            subtitulo="dias desde a abertura até o fim do mês"
-            tabela={tabelaDe(metricas.envelhecimento)}
+            id="atrasoFaixas"
+            titulo="Em atraso por meses desde a abertura"
+            subtitulo="não finalizados abertos antes do mês do Mes Ref."
+            tabela={tabelaDe(metricas.atrasoFaixas)}
           >
             {semDados ? (
               vazio
             ) : (
-              <BarrasFaixas itens={metricas.envelhecimento} animar={play} />
+              <BarrasFaixas itens={metricas.atrasoFaixas} animar={play} />
             )}
           </GraficoCartao>
         </div>
@@ -266,63 +252,42 @@ export function PainelChamados({
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {rankings.map((r) => {
             const d = dist(r.id)
-            const itens = itensDe(r)
-            return d && itens ? (
+            if (!d) return null
+            const itens = itensFoto(d.itens, r.max)
+            return (
               <GraficoCartao
                 key={r.id}
                 id={r.id}
                 titulo={d.titulo}
                 subtitulo={r.sub}
-                tabela={tabelaDe(d.itens)}
-                selos={selosDe(
-                  itens,
-                  ...(r.exportacao ? (["exportacao"] as const) : [])
-                )}
+                tabela={tabelaFoto(d.itens)}
+                selos={selosDe(itens)}
               >
-                <BarrasRanking itens={itens} animar={play} />
+                <BarrasComparar itens={itens} series={SERIES_FOTO} animar={play} />
               </GraficoCartao>
-            ) : null
+            )
           })}
         </div>
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <GraficoCartao
-            id="situacaoCompetencia"
-            titulo="Situação na competência"
+            id="situacoes"
+            titulo="Chamados por situação"
             subtitulo={
               semDados
                 ? "sem dados com este filtro nesta carga"
-                : totalLinhas === sheet.rows.length
-                  ? `${n(totalLinhas)} chamados na planilha, nenhum excluído`
-                  : `${n(totalLinhas)} chamados no recorte, de ${n(sheet.rows.length)} na planilha; nenhum excluído`
+                : `${n(metricas.totalChamados ?? 0)} chamados na foto de ${mes}`
             }
-            nota="Todas as linhas da planilha aparecem aqui, classificadas pelas datas. Os abertos após a competência pertencem ao mês seguinte e ficam só como referência."
-            tabela={tabelaDe(metricas.porSituacaoNaCompetencia, true)}
-            selos={["derivado"]}
+            nota="Cada situação aparece como vem na planilha. Os chamados abertos depois do Mes Ref. ficam só na nota abaixo, fora destes números."
+            tabela={tabelaDe(metricas.situacoes, true)}
             className="xl:col-span-2"
           >
             {semDados ? (
               vazio
             ) : (
-              <BarrasRanking
-                itens={metricas.porSituacaoNaCompetencia}
-                corDoItem={(i) => COR_SITUACAO[i.rotulo] ?? COR.principal}
-                animar={play}
-              />
+              <BarrasRanking itens={metricas.situacoes} animar={play} />
             )}
           </GraficoCartao>
-          {situacaoAtual && (
-            <GraficoCartao
-              id="situacao"
-              titulo="Backlog por situação atual (na exportação)"
-              subtitulo="chamados do backlog, por situação"
-              nota="Esta situação é a da data da exportação da planilha, não a do fim do mês."
-              tabela={tabelaDe(situacaoAtual.itens)}
-              selos={selosDe(situacaoAtual.itens, "exportacao")}
-            >
-              <BarrasRanking itens={situacaoAtual.itens} animar={play} />
-            </GraficoCartao>
-          )}
         </div>
 
         {avisosRodape.length > 0 && (

@@ -1,17 +1,15 @@
 export { tipoChamados, mapearColunas, escolherAba } from "./mapeamento"
 export type { CampoChamado, MapaColunas } from "./mapeamento"
-export { calcularMetricas, avisoColunasSemFiltro } from "./metricas"
-export type * from "./tipos"
 export {
-  compararCompetencias,
-  evolucao,
-  reconstruirAnteriores,
-} from "./comparativo"
+  calcularMetricas,
+  avisoColunasSemFiltro,
+  distribuicoesFinalizadosNoPeriodo,
+  FAIXAS_ATRASO,
+} from "./metricas"
+export type { Periodo } from "./metricas"
+export type * from "./tipos"
+export { compararCompetencias, evolucao } from "./comparativo"
 export { gerarLeituras } from "./leituras"
 export type { Severidade, FiltroSugerido, Leitura } from "./leituras"
-export {
-  classificarLinha,
-  classificarLinhas,
-  ROTULO_SITUACAO_COMPETENCIA,
-} from "./situacao"
-export type { SituacaoNaCompetencia } from "./situacao"
+export { classificarLinha, classificarLinhas } from "./situacao"
+export type { PosicaoNaFoto } from "./situacao"

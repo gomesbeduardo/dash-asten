@@ -1,5 +1,4 @@
 /** Gráficos de Chamados (Recharts via shadcn chart). Cores só das fichas existentes; rótulo direto em cada barra. */
-import { useId } from "react"
 import {
   Bar,
   BarChart,
@@ -146,7 +145,7 @@ export function BarrasRanking({
   )
 }
 
-/** Envelhecimento: uma barra por faixa; "> 180 dias" em vermelho, com rótulo escrito. */
+/** Atraso por ciclo: uma barra por faixa de meses; "7+" em vermelho, com rótulo escrito. */
 export function BarrasFaixas({
   itens,
   animar,
@@ -154,14 +153,14 @@ export function BarrasFaixas({
   itens: ItemDistribuicao[]
   animar: boolean
 }) {
-  const critica = (i: ItemDistribuicao) => i.rotulo.startsWith(">")
+  const critica = (i: ItemDistribuicao) => i.rotulo === "7+"
   return (
     <ChartContainer
       config={Cfg(["valor", "Chamados", COR.principal])}
       className="aspect-auto w-full"
       style={{ height: 320 }}
       role="img"
-      aria-label={`Envelhecimento do backlog: ${itens.map((i) => `${i.rotulo} ${i.valor}`).join("; ")}`}
+      aria-label={`Em atraso por meses desde a abertura: ${itens.map((i) => `${i.rotulo} ${i.valor}`).join("; ")}`}
     >
       <BarChart
         data={itens}
@@ -239,8 +238,6 @@ export function BarrasFaixas({
 export type SerieComparar = {
   id: string
   rotulo: string
-  /** Mês reconstruído pelas datas: barra hachurada, nunca cheia. */
-  reconstruido?: boolean
 }
 
 // Da mais antiga à mais recente: a última (mais recente) fica sempre no azul principal e,
@@ -266,7 +263,6 @@ export function BarrasComparar({
   series: SerieComparar[]
   animar: boolean
 }) {
-  const uid = useId().replace(/:/g, "")
   const n = series.length
   const coloridas = series.map((s, i) => ({ ...s, cor: corDaSerie(i, n) }))
   const dados = itens.map((i) => ({
@@ -285,7 +281,6 @@ export function BarrasComparar({
           id: s.id,
           rotulo: s.rotulo,
           cor: s.cor,
-          tracejado: s.reconstruido,
         }))}
         ocultas={ocultas}
         onAlternar={alternar}
@@ -311,21 +306,6 @@ export function BarrasComparar({
           margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
           barGap={3}
         >
-          <defs>
-            {coloridas.map((s) => (
-              <pattern
-                key={s.id}
-                id={`hachura-${uid}-${s.id}`}
-                patternUnits="userSpaceOnUse"
-                width="8"
-                height="8"
-                patternTransform="rotate(45)"
-              >
-                <rect width="8" height="8" fill="var(--card)" />
-                <rect width="4" height="8" fill={s.cor} />
-              </pattern>
-            ))}
-          </defs>
           <CartesianGrid horizontal={false} stroke={GRADE} />
           <XAxis type="number" hide />
           <YAxis
@@ -345,7 +325,7 @@ export function BarrasComparar({
                 key={s.id}
                 dataKey={s.id}
                 name={s.rotulo}
-                fill={s.reconstruido ? `url(#hachura-${uid}-${s.id})` : s.cor}
+                fill={s.cor}
                 stroke={s.cor}
                 strokeWidth={2}
                 radius={[0, 4, 4, 0]}
@@ -371,7 +351,7 @@ export function BarrasComparar({
 
 export type SerieLinha = { id: string; rotulo: string; cor: string }
 
-/** Mini gráfico de linha. Cargas próprias: linha cheia e ponto cheio; reconstruído: tracejado e ponto vazado. */
+/** Mini gráfico de linha: um ponto por foto (competência); sem dado (null) quebra a linha. */
 export function LinhaMini({
   linhas,
   series,
@@ -390,9 +370,7 @@ export function LinhaMini({
   )
   const visiveis = series.filter((s) => !ocultas.includes(s.id))
   // Eixo Y se ajusta às séries visíveis (escala legível; valores não mudam).
-  const tudo = linhas.flatMap((l) =>
-    visiveis.flatMap((s) => [l[`${s.id}_p`], l[`${s.id}_r`]])
-  )
+  const tudo = linhas.flatMap((l) => visiveis.map((s) => l[s.id]))
   const nums = tudo.filter((v): v is number => typeof v === "number")
   const max = nums.length ? Math.max(...nums) : 1
   const topo =
@@ -410,7 +388,7 @@ export function LinhaMini({
         aria-label={series
           .map(
             (s) =>
-              `${s.rotulo}: ${linhas.map((l) => `${l.rotulo} ${formatarKpi((l[`${s.id}_p`] ?? l[`${s.id}_r`]) as number | null, formato)}`).join(", ")}`
+              `${s.rotulo}: ${linhas.map((l) => `${l.rotulo} ${formatarKpi(l[s.id] as number | null, formato)}`).join(", ")}`
           )
           .join(". ")}
       >
@@ -434,46 +412,10 @@ export function LinhaMini({
           <Tooltip
             content={<Dica formatar={(v) => formatarKpi(v, formato)} />}
           />
-          {visiveis.flatMap((s) => [
+          {visiveis.map((s) => (
             <Line
-              key={`${s.id}_r`}
-              dataKey={`${s.id}_r`}
-              name={`${s.rotulo} (reconstruído)`}
-              type="linear"
-              stroke={s.cor}
-              strokeWidth={3}
-              strokeDasharray="6 5"
-              connectNulls={false}
-              legendType="none"
-              dot={(p: {
-                cx?: number
-                cy?: number
-                index?: number
-                payload?: LinhaSerie
-              }) =>
-                p.payload &&
-                !p.payload.propria &&
-                p.payload[`${s.id}_r`] !== null &&
-                Number.isFinite(p.cy) ? (
-                  <circle
-                    key={`r${p.index}`}
-                    cx={p.cx}
-                    cy={p.cy}
-                    r={5}
-                    fill="var(--card)"
-                    stroke={s.cor}
-                    strokeWidth={2.5}
-                  />
-                ) : (
-                  <g key={`r${p.index}`} />
-                )
-              }
-              activeDot={false}
-              {...animacao(animar)}
-            />,
-            <Line
-              key={`${s.id}_p`}
-              dataKey={`${s.id}_p`}
+              key={s.id}
+              dataKey={s.id}
               name={s.rotulo}
               type="linear"
               stroke={s.cor}
@@ -485,7 +427,7 @@ export function LinhaMini({
                 index?: number
                 payload?: LinhaSerie
               }) =>
-                p.payload?.[`${s.id}_p`] !== null && Number.isFinite(p.cy) ? (
+                p.payload?.[s.id] !== null && Number.isFinite(p.cy) ? (
                   <circle
                     key={`p${p.index}`}
                     cx={p.cx}
@@ -500,8 +442,8 @@ export function LinhaMini({
                 )
               }
               {...animacao(animar)}
-            />,
-          ])}
+            />
+          ))}
         </LineChart>
       </ChartContainer>
     </div>

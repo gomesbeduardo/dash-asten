@@ -16,7 +16,6 @@ import {
 } from "./filtros"
 import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
-import { LegendaSimbolos, type ItemLegenda } from "./selos"
 import {
   formatarKpi,
   linhasDeSerie,
@@ -25,23 +24,24 @@ import {
   pontosDaEvolucao,
   type PontoEvolucao,
   type SeriesDimensao,
-  type SeloTipo,
 } from "./logica"
 
 type Cartao = { id: string; titulo: string; series: SerieLinha[] }
 
 const CARTOES: Cartao[] = [
   {
-    id: "backlog",
-    titulo: "Backlog aberto",
-    series: [{ id: "backlog", rotulo: "Backlog", cor: COR.principal }],
+    id: "naoFinalizados",
+    titulo: "Não finalizados",
+    series: [
+      { id: "naoFinalizados", rotulo: "Não finalizados", cor: COR.principal },
+    ],
   },
   {
     id: "fluxo",
-    titulo: "Entradas × saídas",
+    titulo: "Entradas × finalizados",
     series: [
       { id: "entradas", rotulo: "Entradas", cor: COR.laranja },
-      { id: "saidas", rotulo: "Saídas", cor: COR.principal },
+      { id: "finalizados", rotulo: "Finalizados", cor: COR.principal },
     ],
   },
   {
@@ -65,9 +65,9 @@ const CARTOES: Cartao[] = [
     series: [{ id: "reabertos", rotulo: "% reabertos", cor: COR.roxo }],
   },
   {
-    id: "abertosApos",
-    titulo: "Abertos após a competência",
-    series: [{ id: "abertosApos", rotulo: "Abertos após", cor: COR.cinza }],
+    id: "slaVencido",
+    titulo: "SLA vencido",
+    series: [{ id: "slaVencido", rotulo: "SLA vencido", cor: COR.cinza }],
   },
   {
     id: "tempoAceite",
@@ -108,12 +108,6 @@ export function EvolucaoChamados({
   const play = entradaFixa && !reduce
   const formatoDe = (id: string): FormatoKpi =>
     kpis.find((k) => k.id === id)?.formato ?? "inteiro"
-  const temReconstruido = pontos.some((p) => !p.propria)
-  const tiposNaTela = [
-    ...CARTOES.flatMap((c) =>
-      selosDoCartao(c, pontos, kpis.find((k) => k.id === c.series[0].id)?.reconstruivel ?? true)
-    ),
-  ]
 
   return (
     <TooltipProvider>
@@ -131,7 +125,6 @@ export function EvolucaoChamados({
           <p className="text-lg text-muted-foreground">
             Um ponto por competência.
           </p>
-          <LegendaSimbolos tipos={tiposNaTela} extras={temReconstruido ? [TRACEJADO] : []} />
         </header>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 min-[1700px]:grid-cols-4">
@@ -141,9 +134,6 @@ export function EvolucaoChamados({
               cartao={c}
               pontos={pontos}
               formato={formatoDe(c.series[0].id)}
-              reconstruivel={
-                kpis.find((k) => k.id === c.series[0].id)?.reconstruivel ?? true
-              }
               play={play}
             />
           ))}
@@ -154,28 +144,26 @@ export function EvolucaoChamados({
             {dimensoes.operador.temColuna && (
               <CartaoDimensao
                 id="operador"
-                titulo="Backlog por operador"
+                titulo="Não finalizados por operador"
                 dim={dimensoes.operador}
                 max={MAX_OPERADORES}
                 aviso={(d) =>
                   d.total > MAX_OPERADORES
-                    ? `${MAX_OPERADORES} maiores operadores no backlog de ${mesRanking(d)}. Carga de trabalho: operador é o responsável na data da exportação; nos meses reconstruídos vale o operador atual.`
-                    : "Carga de trabalho: operador é o responsável na data da exportação; nos meses reconstruídos vale o operador atual."
+                    ? `${MAX_OPERADORES} maiores operadores nos não finalizados de ${mesRanking(d)}. Carga de trabalho: operador é o responsável na data da foto.`
+                    : "Carga de trabalho: operador é o responsável na data da foto."
                 }
-                selosFixos={["exportacao"]}
                 play={play}
               />
             )}
             {dimensoes.cliente.temColuna && (
               <CartaoDimensao
                 id="cliente"
-                titulo="Backlog por cliente"
+                titulo="Não finalizados por cliente"
                 dim={dimensoes.cliente}
                 max={MAX_CLIENTES}
                 aviso={(d) =>
-                  `${MAX_CLIENTES} maiores clientes no backlog de ${mesRanking(d)}`
+                  `${MAX_CLIENTES} maiores clientes nos não finalizados de ${mesRanking(d)}`
                 }
-                selosFixos={[]}
                 play={play}
               />
             )}
@@ -186,49 +174,17 @@ export function EvolucaoChamados({
   )
 }
 
-/** Selos de um gráfico: indicador que só vale na carga própria e/ou pontos reconstruídos com valor. */
-function selosDoCartao(
-  cartao: Cartao,
-  pontos: PontoEvolucao[],
-  reconstruivel: boolean
-): SeloTipo[] {
-  return [
-    ...(!reconstruivel ? (["calculado"] as const) : []),
-    ...(pontos.some(
-      (p) => !p.propria && cartao.series.some((s) => p.valores[s.id] !== null)
-    )
-      ? (["reconstruido"] as const)
-      : []),
-  ]
-}
-
-const TRACEJADO: ItemLegenda = {
-  chave: "tracejado",
-  glifo: (
-    <svg width="44" height="14" viewBox="0 0 44 14">
-      <line x1="0" y1="7" x2="30" y2="7" stroke="#475565" strokeWidth="3" strokeDasharray="6 5" />
-      <circle cx="36" cy="7" r="5" fill="var(--card)" stroke="#475565" strokeWidth="2.5" />
-    </svg>
-  ),
-  nome: "Tracejado e ponto vazado",
-  texto: "reconstruído pelas datas da planilha mais antiga; indicadores que dependem da carga do mês ficam sem valor",
-}
-
 function CartaoEvolucao({
   cartao,
   pontos,
   formato,
-  reconstruivel,
   play,
 }: {
   cartao: Cartao
   pontos: PontoEvolucao[]
   formato: FormatoKpi
-  /** false: o indicador só existe nos meses com carga própria. */
-  reconstruivel: boolean
   play: boolean
 }) {
-  const selos = selosDoCartao(cartao, pontos, reconstruivel)
   const linhas = useMemo(
     () => linhasDeSerie(pontos, cartao.series.map((s) => s.id)),
     [pontos, cartao]
@@ -237,7 +193,7 @@ function CartaoEvolucao({
   const tabela = {
     colunas: ["Mês", ...cartao.series.map((s) => s.rotulo)],
     linhas: pontos.map((p) => [
-      p.propria ? p.rotulo : `${p.rotulo} (reconstruído)`,
+      p.rotulo,
       ...cartao.series.map((s) => formatarKpi(p.valores[s.id] ?? null, formato)),
     ]),
   }
@@ -265,7 +221,6 @@ function CartaoEvolucao({
         </span>
       }
       tabela={tabela}
-      selos={selos}
     >
       <LinhaMini linhas={linhas} series={cartao.series} formato={formato} animar={play} />
     </GraficoCartao>
@@ -293,7 +248,6 @@ function CartaoDimensao({
   dim,
   max,
   aviso,
-  selosFixos,
   play,
 }: {
   id: string
@@ -301,7 +255,6 @@ function CartaoDimensao({
   dim: SeriesDimensao
   max: number
   aviso: (d: SeriesDimensao) => string
-  selosFixos: SeloTipo[]
   play: boolean
 }) {
   const series: SerieLinha[] = dim.series
@@ -313,17 +266,10 @@ function CartaoDimensao({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [dim]
   )
-  const reconstruido = pontos.some(
-    (p) => !p.propria && series.some((s) => p.valores[s.id] !== null)
-  )
-  const selos: SeloTipo[] = [
-    ...selosFixos,
-    ...(reconstruido ? (["reconstruido"] as const) : []),
-  ]
   const tabela = {
     colunas: ["Mês", ...series.map((s) => s.rotulo)],
     linhas: pontos.map((p) => [
-      p.propria ? p.rotulo : `${p.rotulo} (reconstruído)`,
+      p.rotulo,
       ...series.map((s) => formatarKpi(p.valores[s.id] ?? null, "inteiro")),
     ]),
   }
@@ -333,10 +279,9 @@ function CartaoDimensao({
       titulo={titulo}
       subtitulo={<span>{aviso(dim)}</span>}
       tabela={tabela}
-      selos={selos}
     >
       {series.length === 0 ? (
-        <p className="text-lg text-muted-foreground">Sem chamados no backlog.</p>
+        <p className="text-lg text-muted-foreground">Sem chamados não finalizados.</p>
       ) : (
         <LinhaMini linhas={linhas} series={series} formato="inteiro" animar={play} />
       )}

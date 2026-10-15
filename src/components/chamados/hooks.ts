@@ -6,7 +6,6 @@ import {
   calcularMetricas,
   escolherAba,
   gerarLeituras,
-  reconstruirAnteriores,
   type EntradaCompetencia,
 } from "@/chamados"
 import type { Sheet } from "@/core"
@@ -72,7 +71,7 @@ export function useCargasDoTipo(
 
 export type Anterior = { entrada: EntradaCompetencia; propria: boolean }
 
-/** Mês anterior: a carga própria (versão mais recente) se existir; senão reconstruído pelas datas. `undefined` enquanto carrega. */
+/** Mês anterior: a carga própria (versão mais recente) se existir; sem carga do mês anterior, `null` (sem Δ; nada é reconstruído). `undefined` enquanto carrega. */
 export function useAnterior(
   carga: Carga,
   historico: CargaMeta[],
@@ -81,13 +80,15 @@ export function useAnterior(
 ): Anterior | null | undefined {
   const chave = `${carga.id}|${historico.map((m) => m.id).join(",")}`
   // Anterior próprio já no cache: o 1º render já o tem (sem tick assíncrono).
-  const imediato = useMemo<Anterior | undefined>(() => {
+  const imediato = useMemo<Anterior | null | undefined>(() => {
     const meta = metaAnterior(historico, carga.competencia)
-    const anterior = meta ? espiarCarga(obterCarga, meta.id) : undefined
+    // Sem carga do mês anterior: "sem anterior" já no 1º render (sem esqueleto).
+    if (!meta) return null
+    const anterior = espiarCarga(obterCarga, meta.id)
     const aba = anterior ? escolherAba(anterior.workbook) : null
-    if (!meta || !aba) return undefined
+    if (!aba) return undefined
     return {
-      entrada: { sheet: aba, competencia: meta.competencia, cargaPropria: true },
+      entrada: { sheet: aba, competencia: meta.competencia },
       propria: true,
     }
     // chave resume carga/historico.
@@ -99,7 +100,7 @@ export function useAnterior(
   } | null>(null)
 
   useEffect(() => {
-    if (imediato) return
+    if (imediato !== undefined) return
     let cancelado = false
     ;(async () => {
       let valor: Anterior | null = null
@@ -109,21 +110,12 @@ export function useAnterior(
         const aba = anterior ? escolherAba(anterior.workbook) : null
         if (meta && aba)
           valor = {
-            entrada: {
-              sheet: aba,
-              competencia: meta.competencia,
-              cargaPropria: true,
-            },
+            entrada: { sheet: aba, competencia: meta.competencia },
             propria: true,
           }
       } catch {
         valor = null
       }
-      if (!valor && sheet)
-        valor = {
-          entrada: reconstruirAnteriores(sheet, carga.competencia, 1)[0],
-          propria: false,
-        }
       if (!cancelado) setPronto({ chave, valor })
     })()
     return () => {
@@ -133,7 +125,7 @@ export function useAnterior(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave, obterCarga, sheet, imediato])
 
-  if (imediato) return imediato
+  if (imediato !== undefined) return imediato
   return pronto?.chave === chave ? pronto.valor : undefined
 }
 
@@ -177,7 +169,6 @@ export function useMesDeChamados(
         ? {
             sheet: sheetFiltrada,
             competencia: carga.competencia,
-            cargaPropria: true,
             colunasSemFiltro: sheet ? colunasAusentes(sheet, filtros) : [],
           }
         : null,

@@ -9,8 +9,7 @@ import { ListaLeituras } from "./ListaLeituras"
 import { ChipsFiltrosChamados } from "./filtros"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
-import { recorteTexto, selosDaLeitura, type SeloTipo } from "./logica"
-import { LegendaSimbolos } from "./selos"
+import { recorteTexto } from "./logica"
 
 /** Visão "Leituras": cartões grandes; o clique abre um modal de detalhe, sem navegar nem rolar. */
 export function LeiturasChamados({
@@ -53,9 +52,6 @@ export function LeiturasChamados({
     )
 
   const play = entradaFixa && !reduce
-  const anteriorPropria = anterior?.propria ?? false
-
-  const tiposNaTela: SeloTipo[] = leituras.flatMap((l) => selosDaLeitura(l, anteriorPropria))
 
   return (
     <TooltipProvider>
@@ -71,12 +67,10 @@ export function LeiturasChamados({
           Leituras automáticas do mês, com regras de limite fixo: não projetam o
           futuro. Clique numa para ver a regra, os números e a evidência.
         </p>
-        <LegendaSimbolos tipos={tiposNaTela} />
         {leituras.length > 0 ? (
           <ListaLeituras
             leituras={leituras}
             metricas={metricas}
-            anteriorPropria={anteriorPropria}
             grande
           />
         ) : (

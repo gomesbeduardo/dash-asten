@@ -156,7 +156,7 @@ describe("nova carga", () => {
       within(dialog).getByRole("button", { name: "Confirmar carga" })
     )
 
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     expect(
       screen.getByRole("heading", { level: 1, name: /^Chamados · / })
     ).toBeInTheDocument()
@@ -170,7 +170,7 @@ describe("nova carga", () => {
     await user.keyboard("e")
     await tituloVisivel("Evolução")
     await user.keyboard("p")
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
   })
 
   it("segunda carga do mesmo mês avisa a versão e cria a v2", async () => {
@@ -356,7 +356,7 @@ describe("abertura e navegação", () => {
       Dados: CHAMADOS,
     })
     await montarAberto(repo)
-    await screen.findByRole("article", { name: "Backlog aberto" })
+    await screen.findByRole("article", { name: "Não finalizados" })
     const sel = screen.getByRole("button", { name: "Competência" })
     expect(sel).toHaveTextContent("Agosto de 2026")
     expect(sel).toHaveTextContent("v2")

@@ -12,14 +12,12 @@ import {
 import { ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 import { animacao, COR } from "./graficos"
-import { SeloSimbolo } from "./selos"
 import { formatarKpi } from "./logica"
 
 export type PontoKpi = {
   competencia: string
   rotulo: string
   valor: number | null
-  propria: boolean
   nota: string | null
 }
 
@@ -41,7 +39,6 @@ const EIXO = { fontSize: "1.1250rem", fill: "#475565" }
 export function ModalKpi({
   aberto,
   titulo,
-  calculado,
   formato,
   pontos,
   delta,
@@ -51,7 +48,6 @@ export function ModalKpi({
 }: {
   aberto: boolean
   titulo: string
-  calculado: boolean
   formato: FormatoKpi
   pontos: PontoKpi[]
   delta: DeltaKpi
@@ -75,7 +71,6 @@ export function ModalKpi({
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-4xl leading-tight text-primary">
-              {calculado && <SeloSimbolo tipo="calculado" />}
               <span>{titulo}</span>
             </DialogTitle>
             <DialogDescription className="text-lg">
@@ -136,11 +131,7 @@ export function ModalKpi({
                         width={p.width}
                         height={p.height}
                         rx={4}
-                        fill={d?.propria ? cor : "var(--card)"}
-                        fillOpacity={d?.propria ? 1 : 0.9}
-                        stroke={cor}
-                        strokeWidth={d?.propria ? 0 : 3}
-                        strokeDasharray={d?.propria ? undefined : "6 4"}
+                        fill={cor}
                       />
                     )
                   }}
@@ -179,7 +170,6 @@ export function ModalKpi({
                       )}
                     >
                       <span className="flex items-center gap-2 text-xl">
-                        {!p.propria && <SeloSimbolo tipo="reconstruido" />}
                         <span className={cn(atual && "font-semibold")}>
                           {p.rotulo}
                         </span>
