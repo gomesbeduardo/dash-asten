@@ -52,7 +52,7 @@ const aug: L[] = [
   ["2026-08-11", "Cli B", "Em Análise", "2026-09-25", null],
 ]
 
-function xlsx(linhas: L[]) {
+function xlsx(linhas: L[], comOperador = false) {
   const rows = linhas.map(([ab, cli, sit, sla, sol], i) => [
     ab ? d(ab) : null,
     i + 1,
@@ -65,18 +65,21 @@ function xlsx(linhas: L[]) {
     sol ? d(sol) : null,
     null,
     0,
+    ...(comOperador ? [i % 2 ? "Bia" : "Ana"] : []),
   ])
-  return makeXlsx({ Dados: [CAB, ...rows] })
+  return makeXlsx({
+    Dados: [comOperador ? [...CAB, "Operador"] : CAB, ...rows],
+  })
 }
 
-async function cenario(comAgosto: boolean) {
+async function cenario(comAgosto: boolean, comOperador = false) {
   const repo: RepositorioDeCargas = criarRepositorioMemoria()
   const salvar = (competencia: string, linhas: L[]) =>
     repo.salvar({
       tipo: "chamados",
       competencia,
       arquivo: `ch-${competencia}.xlsx`,
-      workbook: readWorkbook(xlsx(linhas), `ch-${competencia}.xlsx`),
+      workbook: readWorkbook(xlsx(linhas, comOperador), `ch-${competencia}.xlsx`),
     })
   if (comAgosto) await salvar("2026-08", aug)
   const meta = await salvar("2026-09", base)
@@ -659,6 +662,32 @@ describe("EvolucaoChamados", () => {
       within(sla).getByRole("button", { name: "Calculado" }),
       within(sla).getByRole("heading", { name: "% no SLA" })
     )
+  })
+})
+
+describe("EvolucaoChamados por dimensão", () => {
+  it("mostra backlog por operador e por cliente, com toggles, selos e tracejado nos reconstruídos", async () => {
+    const user = userEvent.setup()
+    render(<EvolucaoChamados {...await cenario(false, true)} />)
+    const op = await screen.findByRole("region", { name: "Backlog por operador" })
+    expect(within(op).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(op).getByRole("button", { name: "Bia" })).toBeInTheDocument()
+    expect(within(op).getByRole("button", { name: "Situação na exportação" })).toBeInTheDocument()
+    expect(within(op).getByRole("button", { name: "Reconstruído pelas datas" })).toBeInTheDocument()
+    await user.click(within(op).getByRole("button", { name: "Ana" }))
+    expect(within(op).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "false")
+    await user.click(within(op).getByRole("button", { name: /Ver dados/ }))
+    expect(within(op).getByRole("row", { name: /ago\/26 \(reconstruído\)/ })).toBeInTheDocument()
+    const cli = screen.getByRole("region", { name: "Backlog por cliente" })
+    expect(cli).toHaveTextContent("5 maiores clientes no backlog de set/26")
+    expect(within(cli).getByRole("button", { name: "Cli A" })).toBeInTheDocument()
+  })
+
+  it("some quando nenhuma carga da janela tem a coluna", async () => {
+    render(<EvolucaoChamados {...await cenario(true)} />)
+    await screen.findByRole("region", { name: "Backlog aberto" })
+    expect(screen.queryByRole("region", { name: "Backlog por operador" })).toBeNull()
+    expect(screen.getByRole("region", { name: "Backlog por cliente" })).toBeInTheDocument()
   })
 })
 
