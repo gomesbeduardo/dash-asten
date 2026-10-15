@@ -12,7 +12,7 @@ import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BarrasFaixas, BarrasRanking, COR } from "./graficos"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
-import { recorteTexto, temOutros, type SeloTipo } from "./logica"
+import { limitarItens, recorteTexto, temOutros, type SeloTipo } from "./logica"
 import { LegendaSimbolos, Selo } from "./selos"
 
 const DESTAQUES = ["backlog", "sla", "atraso", "saidas"]
@@ -121,13 +121,32 @@ export function PainelChamados({
     ...(temOutros(itens) ? (["outros"] as const) : []),
   ]
 
-  const rankings: { id: Distribuicao["id"]; sub: string }[] = [
+  const rankings: {
+    id: Distribuicao["id"]
+    sub: string
+    max?: number
+    exportacao?: boolean
+  }[] = [
     { id: "atividade", sub: "chamados abertos no fim do mês, por atividade" },
     {
       id: "areaSuperior",
       sub: "chamados abertos no fim do mês, por área superior",
     },
+    {
+      id: "area",
+      sub: "chamados abertos no fim do mês, por área (módulo)",
+      max: 8,
+    },
+    {
+      id: "operador",
+      sub: "carga de trabalho: chamados abertos no fim do mês, por responsável atual",
+      exportacao: true,
+    },
   ]
+  const itensDe = (r: (typeof rankings)[number]) => {
+    const d = dist(r.id)
+    return d && r.max ? limitarItens(d.itens, r.max) : d?.itens
+  }
   const cliente = dist("cliente")
   const situacaoAtual = dist("situacao")
   // símbolos que aparecem nesta tela, para a legenda
@@ -137,9 +156,13 @@ export function PainelChamados({
       : []),
     "derivado",
     ...(situacaoAtual ? (["exportacao"] as const) : []),
-    ...([cliente, ...rankings.map((r) => dist(r.id))].some(
-      (d) => d && temOutros(d.itens)
-    )
+    ...(rankings.some((r) => dist(r.id) && r.exportacao)
+      ? (["exportacao"] as const)
+      : []),
+    ...([
+      cliente?.itens,
+      ...rankings.map(itensDe),
+    ].some((itens) => itens && temOutros(itens))
       ? (["outros"] as const)
       : []),
   ]
@@ -190,7 +213,7 @@ export function PainelChamados({
               />
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
             {demais.map((k) => (
               <KpiCartao
                 key={k.id}
@@ -240,16 +263,20 @@ export function PainelChamados({
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {rankings.map((r) => {
             const d = dist(r.id)
-            return d ? (
+            const itens = itensDe(r)
+            return d && itens ? (
               <GraficoCartao
                 key={r.id}
                 id={r.id}
                 titulo={d.titulo}
                 subtitulo={r.sub}
                 tabela={tabelaDe(d.itens)}
-                selos={selosDe(d.itens)}
+                selos={selosDe(
+                  itens,
+                  ...(r.exportacao ? (["exportacao"] as const) : [])
+                )}
               >
-                <BarrasRanking itens={d.itens} animar={play} />
+                <BarrasRanking itens={itens} animar={play} />
               </GraficoCartao>
             ) : null
           })}

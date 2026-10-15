@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest"
+import type { Sheet } from "@/core"
 import type { CargaMeta } from "@/cargas"
 import type { Leitura, MetricasChamados } from "@/chamados"
 import { calcularMetricas } from "@/chamados"
-import { montarSheet, ROTULOS_PADRAO, sheetChamados } from "@/chamados/test-util"
+import { linha, montarSheet, ROTULOS_PADRAO, sheetChamados } from "@/chamados/test-util"
 import {
   CAMPOS_FILTRO,
   colunasAusentes,
@@ -29,6 +30,7 @@ import {
   metaAnterior,
   opcoesDeCompetencia,
   pontosDaEvolucao,
+  seriesPorDimensao,
   primeiraCompetencia,
   ultimasVersoes,
 } from "./logica"
@@ -317,7 +319,7 @@ describe("pontosDaEvolucao", () => {
       expect(pontos[0].competencia).toBe("2026-04")
     })
     it("sem cargas: vazio", () => {
-      expect(pontosDaEvolucao([], 6)).toEqual({ pontos: [], kpis: [], avisosFiltro: [] })
+      expect(pontosDaEvolucao([], 6)).toMatchObject({ pontos: [], kpis: [], avisosFiltro: [] })
     })
   })
 })
@@ -684,5 +686,81 @@ describe("filtro ativo em carga sem a coluna", () => {
     expect(avisosFiltro).toEqual([
       "Sem a coluna Autarquia nesta carga: filtro não se aplica",
     ])
+  })
+})
+
+describe("seriesPorDimensao (backlog por valor da coluna)", () => {
+  const COM_OP = [...ROTULOS_PADRAO, "Operador"]
+  const sheetOp = (linhas: { abertura: string; solucao?: string; op: string | null; cliente?: string }[]) =>
+    montarSheet(
+      COM_OP,
+      linhas.map((l, i) => [
+        ...linha({ abertura: l.abertura, solucao: l.solucao, cliente: l.cliente }, i + 1),
+        l.op,
+      ])
+    )
+  const ent = (competencia: string, sheet: Sheet, extra = {}) => ({
+    sheet,
+    competencia,
+    cargaPropria: true,
+    ...extra,
+  })
+  const sh = sheetOp([
+    { abertura: "2026-08-02", op: "Ana" },
+    { abertura: "2026-08-03", op: "Ana" },
+    { abertura: "2026-08-04", op: "Bia", solucao: "2026-08-20" },
+    { abertura: "2026-09-02", op: "Bia" },
+    { abertura: "2026-09-05", op: "Bia" },
+    { abertura: "2026-09-03", op: null },
+    { abertura: "2026-09-04", op: "Cris" },
+  ])
+
+  it("conta o backlog (aberto no fim) por operador em cada competência", () => {
+    const r = seriesPorDimensao(
+      [ent("2026-08", sh, { cargaPropria: false }), ent("2026-09", sh)],
+      "operador",
+      8
+    )
+    expect(r.temColuna).toBe(true)
+    const val = (rot: string) =>
+      r.pontos.map((p) => p.valores[r.series.find((s) => s.rotulo === rot)!.id])
+    expect(val("Ana")).toEqual([2, 2])
+    expect(val("Bia")).toEqual([0, 2])
+    expect(val("(sem informação)")).toEqual([0, 1])
+    expect(r.pontos.map((p) => p.propria)).toEqual([false, true])
+  })
+
+  it("limita às N linhas de maior backlog na competência mais recente", () => {
+    const r = seriesPorDimensao([ent("2026-09", sh)], "operador", 2)
+    expect(r.series.map((s) => s.rotulo)).toEqual(["Ana", "Bia"])
+    expect(r.total).toBe(4)
+  })
+
+  it("carga sem a coluna fica null (linha quebra), não zero", () => {
+    const semOp = sheetChamados([{ abertura: "2026-08-02" }])
+    const r = seriesPorDimensao(
+      [ent("2026-08", semOp, { cargaPropria: false }), ent("2026-09", sh)],
+      "operador",
+      8
+    )
+    const ana = r.series.find((s) => s.rotulo === "Ana")!.id
+    expect(r.pontos.map((p) => p.valores[ana])).toEqual([null, 2])
+  })
+
+  it("nenhuma carga com a coluna: temColuna false", () => {
+    const semOp = sheetChamados([{ abertura: "2026-08-02" }])
+    const r = seriesPorDimensao([ent("2026-09", semOp)], "operador", 8)
+    expect(r.temColuna).toBe(false)
+    expect(r.series).toEqual([])
+  })
+
+  it("filtro sem coluna na carga: valores null", () => {
+    const r = seriesPorDimensao(
+      [ent("2026-08", sh, { colunasSemFiltro: ["Área"] }), ent("2026-09", sh)],
+      "operador",
+      8
+    )
+    const ana = r.series.find((s) => s.rotulo === "Ana")!.id
+    expect(r.pontos.map((p) => p.valores[ana])).toEqual([null, 2])
   })
 })

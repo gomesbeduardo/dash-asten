@@ -122,6 +122,8 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
       reabertos: false,
       sla: false,
       atraso: false,
+      tempoAceite: true,
+      slaRenegociado: false,
     })
   })
 
@@ -192,7 +194,7 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
   })
 
   it("todo KPI tem definição", () => {
-    expect(m.kpis.length).toBe(10)
+    expect(m.kpis.length).toBe(12)
     for (const k of m.kpis) expect(k.definicao.length).toBeGreaterThan(5)
   })
 
@@ -239,7 +241,13 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
       ...SET,
       cargaPropria: false,
     })
-    for (const id of ["aguardandoAceite", "reabertos", "sla", "atraso"]) {
+    for (const id of [
+      "aguardandoAceite",
+      "reabertos",
+      "sla",
+      "atraso",
+      "slaRenegociado",
+    ]) {
       const k = r.kpis.find((x) => x.id === id)!
       expect(k.valor).toBeNull()
       expect(k.detalhe).toBe("exige a carga daquele mês")
@@ -331,5 +339,116 @@ describe("filtro sem a coluna na carga (D61)", () => {
     expect(m.linhasPosteriores).toBeNull()
     expect(m.linhasSemAbertura).toBeNull()
     expect(m.kpis.every((k) => k.valor === null)).toBe(true)
+  })
+})
+
+describe("distribuições por operador e por área", () => {
+  const ROT = ["Data de abertura", "Data de Solução", "Área", "Operador"]
+  const d = (s: string) => new Date(`${s}T00:00:00Z`)
+  const sheet = montarSheet(ROT, [
+    [d("2026-09-01"), null, "Financeiro", "Ana"],
+    [d("2026-09-02"), null, "Financeiro", "Ana"],
+    [d("2026-09-03"), null, "Fiscal", "Bia"],
+    [d("2026-09-04"), null, null, null],
+  ])
+  const m = calcularMetricas({ sheet, ...SET })
+  const dist = (id: string) => m.distribuicoes.find((x) => x.id === id)
+
+  it("backlog por operador, não reconstruível, vazios em (sem informação)", () => {
+    const op = dist("operador")!
+    expect(op.titulo).toBe("Backlog por operador (na exportação)")
+    expect(op.reconstruivel).toBe(false)
+    expect(op.itens).toEqual([
+      { rotulo: "Ana", valor: 2 },
+      { rotulo: "(sem informação)", valor: 1 },
+      { rotulo: "Bia", valor: 1 },
+    ])
+  })
+
+  it("backlog por área é reconstruível", () => {
+    const a = dist("area")!
+    expect(a.titulo).toBe("Backlog por área")
+    expect(a.reconstruivel).toBe(true)
+    expect(a.itens).toContainEqual({ rotulo: "Financeiro", valor: 2 })
+    expect(a.itens).toContainEqual({ rotulo: "(sem informação)", valor: 1 })
+  })
+
+  it("sem a coluna não há distribuição", () => {
+    const s = calcularMetricas({
+      sheet: montarSheet(["Data de abertura", "Data de Solução"], [[d("2026-09-01"), null]]),
+      ...SET,
+    })
+    expect(s.distribuicoes.find((x) => x.id === "operador")).toBeUndefined()
+    expect(s.distribuicoes.find((x) => x.id === "area")).toBeUndefined()
+  })
+})
+
+describe("KPIs tempoAceite e slaRenegociado", () => {
+  const val = (linhas: LinhaChamado[], id: string) =>
+    valor(calcularMetricas({ sheet: sheetChamados(linhas), ...SET }), id)
+
+  it("tempoAceite: média de aceite - solução dos aceitos no mês; ignora fora do mês, sem solução e negativo", () => {
+    const linhas: LinhaChamado[] = [
+      { abertura: "2026-08-01", solucao: "2026-09-01", aceite: "2026-09-05" }, // 4
+      { abertura: "2026-08-01", solucao: "2026-09-10", aceite: "2026-09-12" }, // 2
+      { abertura: "2026-08-01", solucao: "2026-08-01", aceite: "2026-10-05" }, // fora do mês
+      { abertura: "2026-08-01", solucao: "2026-07-01", aceite: "2026-08-20" }, // antes do mês
+      { abertura: "2026-08-01", aceite: "2026-09-15" }, // sem solução
+      { abertura: "2026-08-01", solucao: "2026-09-20", aceite: "2026-09-18" }, // negativo
+    ]
+    expect(val(linhas, "tempoAceite")).toBe(3)
+  })
+
+  it("tempoAceite sem aceites válidos ou sem coluna é null", () => {
+    expect(val([{ abertura: "2026-09-01" }], "tempoAceite")).toBeNull()
+    const s = montarSheet(
+      ["Data Abertura", "Situação", "Data de Solução"],
+      [[new Date("2026-09-01T00:00:00Z"), "Em Análise", null]]
+    )
+    const r = calcularMetricas({ sheet: s, ...SET })
+    expect(valor(r, "tempoAceite")).toBeNull()
+    const k = r.kpis.find((x) => x.id === "tempoAceite")!
+    expect(k.formato).toBe("dias")
+    expect(k.melhorQuando).toBe("menor")
+    expect(k.reconstruivel).toBe(true)
+    expect(k.definicao.length).toBeGreaterThan(5)
+  })
+
+  it("slaRenegociado conta só o backlog com SLA renegociado e não é reconstruível", () => {
+    const linhas: LinhaChamado[] = [
+      { abertura: "2026-08-01", slaReneg: "2026-10-01" }, // backlog, conta
+      { abertura: "2026-08-01", sla: "2026-09-01" }, // backlog sem reneg
+      {
+        abertura: "2026-08-01",
+        solucao: "2026-09-10",
+        slaReneg: "2026-09-30",
+      }, // resolvido
+    ]
+    const r = calcularMetricas({ sheet: sheetChamados(linhas), ...SET })
+    const k = r.kpis.find((x) => x.id === "slaRenegociado")!
+    expect(k.valor).toBe(1)
+    expect(k.formato).toBe("inteiro")
+    expect(k.melhorQuando).toBe("neutro")
+    expect(k.reconstruivel).toBe(false)
+  })
+
+  it("slaRenegociado sem a coluna é null", () => {
+    const s = montarSheet(
+      ["Data Abertura", "Situação", "Data de Solução"],
+      [[new Date("2026-09-01T00:00:00Z"), "Em Análise", null]]
+    )
+    expect(
+      valor(calcularMetricas({ sheet: s, ...SET }), "slaRenegociado")
+    ).toBeNull()
+  })
+
+  it("filtro sem coluna anula os dois", () => {
+    const r = calcularMetricas({
+      sheet: sheetChamados([{ abertura: "2026-09-01" }]),
+      ...SET,
+      colunasSemFiltro: ["Cliente"],
+    })
+    expect(valor(r, "tempoAceite")).toBeNull()
+    expect(valor(r, "slaRenegociado")).toBeNull()
   })
 })
