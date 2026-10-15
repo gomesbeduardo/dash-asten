@@ -304,13 +304,14 @@ export type LinhaSerie = {
 
 /**
  * Prepara os dados para linhas com trecho sólido (cargas próprias, `<id>_p`) e
- * tracejado (reconstruído, `<id>_r`). O primeiro ponto próprio entra nos dois para ligá-los.
+ * tracejado (reconstruído, `<id>_r`). Segmento que toca um reconstruído é
+ * tracejado: a série `_r` tem valor nos reconstruídos e nos próprios vizinhos
+ * deles (que também ficam em `_p`). Sem dado (null) quebra a linha.
  */
 export function linhasDeSerie(
   pontos: PontoEvolucao[],
   ids: string[]
 ): LinhaSerie[] {
-  const primeiraPropria = pontos.findIndex((p) => p.propria)
   return pontos.map((p, i) => {
     const linha: LinhaSerie = {
       competencia: p.competencia,
@@ -319,8 +320,11 @@ export function linhasDeSerie(
     }
     for (const id of ids) {
       const v = p.valores[id] ?? null
+      const vizinhoReconstruido = [pontos[i - 1], pontos[i + 1]].some(
+        (n) => n && !n.propria && (n.valores[id] ?? null) !== null
+      )
       linha[`${id}_p`] = p.propria ? v : null
-      linha[`${id}_r`] = !p.propria || i === primeiraPropria ? v : null
+      linha[`${id}_r`] = !p.propria || vizinhoReconstruido ? v : null
     }
     return linha
   })

@@ -323,14 +323,76 @@ describe("pontosDaEvolucao", () => {
 })
 
 describe("linhasDeSerie", () => {
+  const pt = (c: string, propria: boolean, v: number | null) => ({
+    competencia: `2026-${c}`,
+    rotulo: c,
+    propria,
+    valores: { x: v },
+  })
+  const r = (pontos: ReturnType<typeof pt>[]) =>
+    linhasDeSerie(pontos, ["x"]).map((l) => [l.x_p, l.x_r])
+
   it("separa o trecho próprio do reconstruído, ligando os dois", () => {
-    const pontos = [
-      { competencia: "2026-08", rotulo: "ago/26", propria: false, valores: { x: 3 } },
-      { competencia: "2026-09", rotulo: "set/26", propria: true, valores: { x: 5 } },
-    ]
-    expect(linhasDeSerie(pontos, ["x"])).toEqual([
-      { competencia: "2026-08", rotulo: "ago/26", propria: false, x_p: null, x_r: 3 },
-      { competencia: "2026-09", rotulo: "set/26", propria: true, x_p: 5, x_r: 5 },
+    expect(r([pt("08", false, 3), pt("09", true, 5)])).toEqual([
+      [null, 3],
+      [5, 5],
+    ])
+  })
+  it("reconstruído no meio: tracejado liga os dois vizinhos próprios", () => {
+    expect(
+      r([
+        pt("07", true, 1),
+        pt("08", true, 2),
+        pt("09", false, 3),
+        pt("10", true, 4),
+      ])
+    ).toEqual([
+      [1, null],
+      [2, 2],
+      [null, 3],
+      [4, 4],
+    ])
+  })
+  it("reconstruído no fim: liga ao próprio anterior", () => {
+    expect(
+      r([pt("07", true, 1), pt("08", true, 2), pt("09", false, 3)])
+    ).toEqual([
+      [1, null],
+      [2, 2],
+      [null, 3],
+    ])
+  })
+  it("vários reconstruídos seguidos: tudo tracejado, próprios só nas pontas", () => {
+    expect(
+      r([
+        pt("07", true, 1),
+        pt("08", false, 2),
+        pt("09", false, 3),
+        pt("10", true, 4),
+      ])
+    ).toEqual([
+      [1, 1],
+      [null, 2],
+      [null, 3],
+      [4, 4],
+    ])
+  })
+  it("sem dado no reconstruído: não liga por cima", () => {
+    expect(
+      r([pt("07", true, 1), pt("08", false, null), pt("09", true, 4)])
+    ).toEqual([
+      [1, null],
+      [null, null],
+      [4, null],
+    ])
+  })
+  it("sem dado num próprio: quebra a linha cheia", () => {
+    expect(
+      r([pt("07", true, 1), pt("08", true, null), pt("09", true, 3)])
+    ).toEqual([
+      [1, null],
+      [null, null],
+      [3, null],
     ])
   })
 })

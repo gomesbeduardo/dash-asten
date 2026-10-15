@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { ArrowDownIcon, ArrowUpIcon, EqualIcon, PlusIcon } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 
@@ -27,6 +27,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao } from "./cartoes"
 import { BarrasComparar } from "./graficos"
 import { ListaLeituras } from "./ListaLeituras"
+import { ModalKpi } from "./ModalKpi"
 import {
   AvisoFiltroSemColuna,
   ChipsFiltrosChamados,
@@ -264,6 +265,15 @@ function ComparacaoVisao({
     ...(temOutros(itens) ? (["outros"] as const) : []),
   ]
   const fmt = (v: number | null, f: FormatoKpi) => formatarKpi(v, f)
+  const [kpiAberto, setKpiAberto] = useState<string | null>(null)
+  const ultimoKpi = useRef<string | null>(null)
+  const kpiModal = cmp.kpis.find((x) => x.id === kpiAberto)
+  const deltaDe = (k: (typeof cmp.kpis)[number]) =>
+    descreverDelta(
+      { delta: k.delta, formato: k.formato, melhorQuando: k.melhorQuando },
+      "",
+      deltaReconstruido
+    )
   const maxItens = n > 3 ? 6 : MAX_ITENS
   const dists = cmp.distribuicoes.filter((d) => d.id !== "situacao")
   const series = ordenadas.map((o, i) => ({
@@ -369,8 +379,40 @@ function ComparacaoVisao({
           <LegendaSimbolos tipos={tiposNaTela} />
         </header>
 
+        <ModalKpi
+          aberto={!!kpiModal}
+          titulo={kpiModal?.rotulo ?? ""}
+          calculado={
+            metricas[n - 1].kpis.find((x) => x.id === kpiModal?.id)
+              ?.reconstruivel === false
+          }
+          formato={kpiModal?.formato ?? "inteiro"}
+          pontos={(kpiModal?.valores ?? []).map((v, i) => ({
+            competencia: ordenadas[i].competencia,
+            rotulo: rotulos[i],
+            valor: v,
+            propria: ordenadas[i].propria,
+            nota:
+              v === null
+                ? (metricas[i].kpis.find((x) => x.id === kpiModal?.id)
+                    ?.detalhe ?? "sem dado")
+                : null,
+          }))}
+          delta={kpiModal ? deltaDe(kpiModal) : null}
+          animar={play}
+          onFechar={() => setKpiAberto(null)}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+            document
+              .querySelector<HTMLElement>(
+                `[data-kpi-cartao="${ultimoKpi.current}"]`
+              )
+              ?.focus()
+          }}
+        />
+
         <section aria-label="Indicadores lado a lado" className="min-w-0">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {cmp.kpis.map((k) => {
               const d = descreverDelta(
                 {
@@ -388,15 +430,25 @@ function ComparacaoVisao({
                 <article
                   key={k.id}
                   aria-label={k.rotulo}
-                  className="flex min-w-0 flex-col gap-3 rounded-lg border border-t-4 border-t-brand bg-card p-5 shadow-(--shadow-card)"
+                  className="relative flex min-w-0 flex-col gap-4 rounded-lg bg-card p-6 shadow-(--shadow-card) transition-shadow has-[button:hover]:shadow-(--shadow-card-hover)"
                 >
-                  <h3 className="flex items-start gap-2 font-sans text-lg leading-tight font-medium text-muted-foreground">
+                  <button
+                    type="button"
+                    data-kpi-cartao={k.id}
+                    aria-label={`Ver gráfico de ${k.rotulo}`}
+                    className="absolute inset-0 z-10 cursor-pointer rounded-lg focus-visible:ring-4 focus-visible:ring-ring/60 focus-visible:outline-none"
+                    onClick={() => {
+                      ultimoKpi.current = k.id
+                      setKpiAberto(k.id)
+                    }}
+                  />
+                  <h3 className="flex items-start gap-2 font-sans text-xl leading-tight font-medium text-muted-foreground">
                     {reconstruivel === false && (
                       <SeloSimbolo tipo="calculado" />
                     )}
                     <span>{k.rotulo}</span>
                   </h3>
-                  <ul className="flex flex-wrap items-end gap-x-4 gap-y-3">
+                  <ul className="flex flex-wrap items-end gap-x-6 gap-y-3">
                     {k.valores.map((v, i) => {
                       const ultimo = i === n - 1
                       const nota =
@@ -407,7 +459,10 @@ function ComparacaoVisao({
                       return (
                         <li
                           key={ordenadas[i].competencia}
-                          className="flex min-w-0 flex-col"
+                          className={cn(
+                            "flex min-w-0 flex-col",
+                            ultimo && "order-first basis-full"
+                          )}
                         >
                           <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             {!ordenadas[i].propria && (
@@ -419,8 +474,8 @@ function ComparacaoVisao({
                             className={cn(
                               "num flex items-center gap-1.5 font-display text-primary",
                               ultimo
-                                ? "text-4xl font-bold underline decoration-2 underline-offset-4"
-                                : "text-2xl font-semibold"
+                                ? "text-6xl leading-none font-bold"
+                                : "text-3xl leading-none font-semibold opacity-80"
                             )}
                           >
                             <SetaVs
@@ -440,7 +495,7 @@ function ComparacaoVisao({
                   </ul>
                   <p
                     className={cn(
-                      "num mt-auto border-t pt-3 text-lg font-medium",
+                      "num mt-auto border-t pt-3 text-xl font-medium",
                       d ? TOM[d.tom] : "text-muted-foreground"
                     )}
                   >
