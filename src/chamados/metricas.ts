@@ -111,7 +111,12 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
       detalhe: "filtro sem a coluna nesta carga",
     })),
     distribuicoes: m.distribuicoes.map((d) => ({ ...d, itens: [] })),
-    envelhecimento: m.envelhecimento.map((f) => ({ ...f, valor: 0 })),
+    envelhecimento: [],
+    porSituacaoNaCompetencia: [],
+    linhasConsideradas: null,
+    linhasPosteriores: null,
+    linhasSemAbertura: null,
+    colunasSemFiltro: sem,
     baseAguardandoAceite: null,
     avisos: [...m.avisos, avisoColunasSemFiltro(sem)],
   }

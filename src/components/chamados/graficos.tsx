@@ -66,9 +66,11 @@ function Dica({ active, label, payload, formatar }: TipProps) {
         <p key={String(p.dataKey)} className="flex justify-between gap-4">
           <span className="text-muted-foreground">{p.name}</span>
           <span className="num font-display font-semibold">
-            {formatar
-              ? formatar(Number(p.value))
-              : inteiro.format(Number(p.value))}
+            {p.value == null
+              ? "—"
+              : formatar
+                ? formatar(Number(p.value))
+                : inteiro.format(Number(p.value))}
           </span>
         </p>
       ))}
@@ -281,11 +283,17 @@ export function BarrasComparar({
         onAlternar={alternar}
       />
       <ChartContainer
-        config={Cfg(...coloridas.map((s): [string, string, string] => [s.id, s.rotulo, s.cor]))}
+        config={Cfg(
+          ...coloridas.map((s): [string, string, string] => [
+            s.id,
+            s.rotulo,
+            s.cor,
+          ])
+        )}
         className="aspect-auto w-full"
         style={{ height: altura }}
         role="img"
-        aria-label={`${series.map((s) => s.rotulo).join(" contra ")}: ${itens.map((i) => `${i.rotulo} ${i.valores.join(", ")}`).join("; ")}`}
+        aria-label={`${series.map((s) => s.rotulo).join(" contra ")}: ${itens.map((i) => `${i.rotulo} ${i.valores.map((v) => v ?? "—").join(", ")}`).join("; ")}`}
       >
         <BarChart
           // remonta ao mudar as séries: o Recharts guarda a ordem em que as barras entraram
@@ -341,7 +349,9 @@ export function BarrasComparar({
                   position="right"
                   className="num fill-foreground"
                   style={{ fontSize: 15, fontWeight: 600 }}
-                  formatter={(v) => inteiro.format(Number(v))}
+                  formatter={(v) =>
+                    v == null ? "—" : inteiro.format(Number(v))
+                  }
                 />
               </Bar>
             ))}

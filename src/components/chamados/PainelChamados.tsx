@@ -104,6 +104,12 @@ export function PainelChamados({
     0
   )
   const mes = formatarCompetencia(carga.competencia, "longo")
+  const semDados = semColuna.length > 0
+  const vazio = (
+    <p className="py-10 text-center text-lg text-muted-foreground">
+      Sem dados com este filtro nesta carga
+    </p>
+  )
   const selosDe = (itens: { rotulo: string }[], ...mais: SeloTipo[]) => [
     ...mais,
     ...(temOutros(itens) ? (["outros"] as const) : []),
@@ -217,7 +223,11 @@ export function PainelChamados({
             subtitulo="dias desde a abertura até o fim do mês"
             tabela={tabelaDe(metricas.envelhecimento)}
           >
-            <BarrasFaixas itens={metricas.envelhecimento} animar={play} />
+            {semDados ? (
+              vazio
+            ) : (
+              <BarrasFaixas itens={metricas.envelhecimento} animar={play} />
+            )}
           </GraficoCartao>
         </div>
 
@@ -244,20 +254,26 @@ export function PainelChamados({
             id="situacaoCompetencia"
             titulo="Situação na competência"
             subtitulo={
-              totalLinhas === sheet.rows.length
-                ? `${n(totalLinhas)} chamados na planilha, nenhum excluído`
-                : `${n(totalLinhas)} chamados no recorte, de ${n(sheet.rows.length)} na planilha; nenhum excluído`
+              semDados
+                ? "sem dados com este filtro nesta carga"
+                : totalLinhas === sheet.rows.length
+                  ? `${n(totalLinhas)} chamados na planilha, nenhum excluído`
+                  : `${n(totalLinhas)} chamados no recorte, de ${n(sheet.rows.length)} na planilha; nenhum excluído`
             }
             nota="Todas as linhas da planilha aparecem aqui, classificadas pelas datas. Os abertos após a competência pertencem ao mês seguinte e ficam só como referência."
             tabela={tabelaDe(metricas.porSituacaoNaCompetencia, true)}
             selos={["derivado"]}
             className="xl:col-span-2"
           >
-            <BarrasRanking
-              itens={metricas.porSituacaoNaCompetencia}
-              corDoItem={(i) => COR_SITUACAO[i.rotulo] ?? COR.principal}
-              animar={play}
-            />
+            {semDados ? (
+              vazio
+            ) : (
+              <BarrasRanking
+                itens={metricas.porSituacaoNaCompetencia}
+                corDoItem={(i) => COR_SITUACAO[i.rotulo] ?? COR.principal}
+                animar={play}
+              />
+            )}
           </GraficoCartao>
           {situacaoAtual && (
             <GraficoCartao
