@@ -277,7 +277,7 @@ describe("PainelChamados", () => {
     const area = await screen.findByRole("region", { name: "Por área" })
     expect(within(area).getByRole("button", { name: "Agrupado em Outros" })).toBeInTheDocument()
     expect(within(area).getByRole("img").getAttribute("aria-label")).toMatch(
-      /Finalizados no mês contra Não finalizados:.*Outros 0, 4/
+      /Outros: Finalizados no mês 0, Não finalizados 4/
     )
     expect(within(area).getByRole("img").getAttribute("aria-label")).not.toMatch(/Módulo 9/)
     const op = screen.getByRole("region", { name: "Por operador" })

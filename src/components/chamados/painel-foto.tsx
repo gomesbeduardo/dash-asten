@@ -16,7 +16,8 @@ import { AnimatedNumber } from "@/components/app/motion/AnimatedNumber"
 import { entryItemPagina } from "@/components/app/motion/variants"
 import { Toggle } from "@/components/ui/toggle"
 import { GraficoCartao } from "./cartoes"
-import { BarrasComparar, COR } from "./graficos"
+import { COR } from "./graficos"
+import { BarrasRefinadas, type LinhaRefinada } from "./barras-refinadas"
 import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
 import { deltaDeContagem, SeloDelta, SeloNova } from "./selo-delta"
@@ -233,6 +234,10 @@ export function FaixaSituacao({
   )
 }
 
+/** Cores das barras de "No mês" e da evolução: tokens de série em index.css. */
+export const SERIE_FIN = "var(--serie-finalizados)"
+export const SERIE_NAO = "var(--serie-nao-finalizados)"
+
 const SERIES_MES = [
   { id: "finalizados", rotulo: "Finalizados no mês", cor: VERDE },
   { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
@@ -367,6 +372,26 @@ export function GraficoMes({
     : comBase
       ? `${mesRef} ao lado de ${rotuloBase}`
       : formatarCompetencia(competencia, "longo")
+  // posições em `valores`: sem base [fin, nao]; com base [finBase, finAtual, (naoBase), naoAtual]
+  const refinadas: LinhaRefinada[] = itens.map((i) => {
+    const v = i.valores
+    if (!comBase)
+      return {
+        rotulo: i.rotulo,
+        valores: [{ valor: v[0] ?? 0 }, { valor: v[1] ?? 0 }],
+      }
+    const semFotoBase = base.semFoto !== undefined
+    return {
+      rotulo: i.rotulo,
+      valores: [
+        { valor: v[1] ?? 0, base: v[0] ?? 0 },
+        {
+          valor: v[v.length - 1] ?? 0,
+          base: semFotoBase ? null : (v[2] ?? 0),
+        },
+      ],
+    }
+  })
   const notas = [
     comBase && base.semFoto
       ? `${base.semFoto}: de ${rotuloBase} só os finalizados no mês, pelas datas.`
@@ -426,7 +451,19 @@ export function GraficoMes({
         </>
       }
     >
-      <BarrasComparar itens={itens} series={series} animar={animar} tv />
+      <BarrasRefinadas
+        linhas={refinadas}
+        series={[
+          {
+            id: "fin",
+            rotulo: doPeriodo ? "Finalizados no período" : "Finalizados no mês",
+            cor: SERIE_FIN,
+          },
+          { id: "nao", rotulo: "Não finalizados", cor: SERIE_NAO },
+        ]}
+        rotuloBase={comBase ? rotuloBase : undefined}
+        animar={animar}
+      />
     </GraficoCartao>
   )
 }
@@ -453,10 +490,10 @@ export function AtrasoMes({
   const mapaBase = new Map(base?.atrasoFaixas.map((f) => [f.rotulo, f.valor]))
   const series = comBase
     ? [
-        { id: "base", rotulo: base.rotulo, cor: claro(AZUL) },
-        { id: "atual", rotulo: mesRef, cor: AZUL },
+        { id: "base", rotulo: base.rotulo, cor: claro(SERIE_NAO) },
+        { id: "atual", rotulo: mesRef, cor: SERIE_NAO },
       ]
-    : [{ id: "atual", rotulo: "Chamados", cor: AZUL }]
+    : [{ id: "atual", rotulo: "Chamados", cor: SERIE_NAO }]
   const itens: ItemSerie[] = faixas.map((f) => ({
     rotulo: f.rotulo,
     valores: comBase ? [mapaBase.get(f.rotulo) ?? 0, f.valor] : [f.valor],
@@ -486,7 +523,19 @@ export function AtrasoMes({
           Sem dados com este filtro nesta carga
         </p>
       ) : (
-        <BarrasComparar itens={itens} series={series} animar={animar} tv />
+        <BarrasRefinadas
+          linhas={itens.map((i) => ({
+            rotulo: i.rotulo,
+            valores: comBase
+              ? [{ valor: i.valores[1] ?? 0, base: i.valores[0] ?? 0 }]
+              : [{ valor: i.valores[0] ?? 0 }],
+          }))}
+          series={[
+            { id: "atual", rotulo: "Não finalizados", cor: SERIE_NAO },
+          ]}
+          rotuloBase={comBase ? base.rotulo : undefined}
+          animar={animar}
+        />
       )}
     </GraficoCartao>
   )

@@ -177,24 +177,22 @@ describe("Painel: gráficos com período (D64)", () => {
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const grafico = () =>
       within(card).getByRole("img").getAttribute("aria-label")!
-    expect(grafico()).toMatch(/Finalizados no mês contra Não finalizados/)
-    expect(grafico()).toMatch(/Cliente Ômega 0, 1/)
-    expect(grafico()).toMatch(/Cliente Delta 1, 1/)
+    expect(grafico()).toMatch(/Cliente Ômega: Finalizados no mês 0, Não finalizados 1/)
+    expect(grafico()).toMatch(/Cliente Delta: Finalizados no mês 1, Não finalizados 1/)
 
     await user.click(
       within(card).getByRole("button", { name: "Comparar período" })
     )
     await user.selectOptions(within(card).getByLabelText("Período"), "6")
-    expect(grafico()).toMatch(/Finalizados no período contra Não finalizados/)
-    expect(grafico()).toMatch(/Cliente Ômega 2, 1/)
-    expect(grafico()).toMatch(/Cliente Delta 2, 1/)
+    expect(grafico()).toMatch(/Cliente Ômega: Finalizados no período 2, Não finalizados 1/)
+    expect(grafico()).toMatch(/Cliente Delta: Finalizados no período 2, Não finalizados 1/)
     expect(card).toHaveTextContent(/últimos 6 meses/)
 
     // desligar volta ao mês
     await user.click(
       within(card).getByRole("button", { name: "Comparar período" })
     )
-    expect(grafico()).toMatch(/Cliente Ômega 0, 1/)
+    expect(grafico()).toMatch(/Cliente Ômega: Finalizados no mês 0, Não finalizados 1/)
   })
 })
 

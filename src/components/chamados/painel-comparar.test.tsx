@@ -156,12 +156,14 @@ describe("Painel: comparar com (D65)", () => {
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const grafico = () =>
       within(card).getByRole("img").getAttribute("aria-label")!
+    // valor de out/26 com o de mai/26 (mês comparado) entre parênteses
     expect(grafico()).toMatch(
-      /^Finalizados mai\/26 contra Finalizados out\/26 contra Não finalizados mai\/26 contra Não finalizados out\/26/
+      /Cliente Ômega: Finalizados no mês 0 \(mai\/26: 1\), Não finalizados 1 \(mai\/26: 1\)/
     )
-    // [finalizados mai, finalizados out, não finalizados mai, não finalizados out]
-    expect(grafico()).toMatch(/Cliente Ômega 1, 0, 1, 1/)
-    expect(grafico()).toMatch(/Cliente Delta 1, 1, 0, 1/)
+    expect(grafico()).toMatch(
+      /Cliente Delta: Finalizados no mês 1 \(mai\/26: 1\), Não finalizados 1 \(mai\/26: 0\)/
+    )
+    expect(within(card).getAllByText(/^mai \d+$/).length).toBeGreaterThan(0)
     expect(card).not.toHaveTextContent("sem posição")
   })
 
@@ -175,9 +177,8 @@ describe("Painel: comparar com (D65)", () => {
     )
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const rotulo = within(card).getByRole("img").getAttribute("aria-label")!
-    expect(rotulo).toMatch(/Finalizados jun\/26/)
-    expect(rotulo).not.toMatch(/Não finalizados jun\/26/)
-    expect(rotulo).toMatch(/Cliente Ômega 1, 0, 1/)
+    // só os finalizados vêm com o mês comparado; os não finalizados ficam sem ele (sem posição)
+    expect(rotulo).toMatch(/Cliente Ômega: Finalizados no mês 0 \(jun\/26: 1\), Não finalizados 1(;|$)/)
     expect(card).toHaveTextContent("sem posição de jun/26")
     // cruzamentos dependem da Situação: só o Mes Ref., com a nota
     const cruz = screen.getByRole("region", { name: "Cliente × Situação" })
