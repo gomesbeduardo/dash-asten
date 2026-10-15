@@ -68,6 +68,16 @@ const CARTOES: Cartao[] = [
     titulo: "Abertos após a competência",
     series: [{ id: "abertosApos", rotulo: "Abertos após", cor: COR.cinza }],
   },
+  {
+    id: "tempoAceite",
+    titulo: "Tempo até o aceite",
+    series: [{ id: "tempoAceite", rotulo: "Tempo até o aceite", cor: COR.laranja }],
+  },
+  {
+    id: "slaRenegociado",
+    titulo: "SLA renegociado",
+    series: [{ id: "slaRenegociado", rotulo: "SLA renegociado", cor: COR.verde }],
+  },
 ]
 
 export function EvolucaoChamados({
