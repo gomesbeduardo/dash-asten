@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useState, type ReactNode } from "react"
 
 import { criarRepositorioApi, ErroDeCarga, type CargaMeta, type RepositorioDeCargas } from "@/cargas"
+import { EsqueletoDaTelaDeEnvio } from "@/components/app/ImportScreen"
 import { LoginScreen, type ResultadoLogin } from "@/components/login/LoginScreen"
 import { ListaInicialContext, SessaoContext } from "./SessaoContext"
 import { estadoInicial, EVENTO_SESSAO_EXPIRADA, reduzir } from "./sessao"
@@ -100,7 +101,8 @@ function Porteiro({
     []
   )
 
-  if (estado.fase === "verificando") return <Aguardando>Verificando acesso…</Aguardando>
+  if (estado.fase === "verificando")
+    return <EsqueletoDaTelaDeEnvio>Verificando acesso…</EsqueletoDaTelaDeEnvio>
   if (estado.fase === "erro-rede")
     return (
       <Aguardando>
