@@ -87,12 +87,11 @@ describe("DELETE /api/cargas/:id (D66: excluir = arquivar)", () => {
   const ID = "tz4a98xxat96iws9zmbrgj3a"
   const del = (headers?: Record<string, string>) => DELETE(req(`/api/rota?r=cargas/${ID}`, { method: "DELETE", headers }))
 
-  it("sem ADMIN_TOKEN configurado, exclusão definitiva fica desativada (403), mesmo com login desligado", async () => {
+  it("sem ADMIN_TOKEN configurado a exclusão fica liberada (fase de testes): passa da checagem e chega à validação do id", async () => {
     vi.stubEnv("LOGIN_DESATIVADO", "1")
     try {
-      const r = await del()
-      expect(r.status).toBe(403)
-      expect((await r.json()).erro).toMatch(/arquivar/i)
+      const r = await DELETE(req("/api/rota?r=cargas/nao-e-id", { method: "DELETE" }))
+      expect(r.status).toBe(404)
     } finally {
       vi.unstubAllEnvs()
     }
