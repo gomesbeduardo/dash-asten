@@ -369,113 +369,206 @@ function ComparacaoVisao({
           <LegendaSimbolos tipos={tiposNaTela} />
         </header>
 
-        <section
-          aria-label="Indicadores lado a lado"
-          className="overflow-x-auto"
-        >
-          <table className="w-full text-left text-xl">
-            <caption className="sr-only">
-              Indicadores de {rotulos.join(", ")}
-            </caption>
-            <thead>
-              <tr className="border-b-2 border-primary/30 text-primary">
-                <th scope="col" className="px-3 py-3 font-display">
-                  Indicador
-                </th>
-                {ordenadas.map((o, i) => (
-                  <th
-                    key={o.competencia}
-                    scope="col"
-                    className="px-3 py-3 text-right font-display"
-                  >
-                    <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
-                      {!o.propria && <SeloSimbolo tipo="reconstruido" />}
-                      <span>{rotulos[i]}</span>
-                    </span>
-                  </th>
-                ))}
-                <th scope="col" className="px-3 py-3 text-right font-display">
-                  Δ
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {cmp.kpis.map((k) => {
-                const d = descreverDelta(
-                  {
-                    delta: k.delta,
-                    formato: k.formato,
-                    melhorQuando: k.melhorQuando,
-                  },
-                  "",
-                  deltaReconstruido
-                )
-                const reconstruivel = metricas[n - 1].kpis.find(
-                  (x) => x.id === k.id
-                )?.reconstruivel
-                return (
-                  <tr key={k.id} className="border-b bg-card">
-                    <th scope="row" className="px-3 py-3 font-medium">
-                      {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
-                      <span className="flex items-start gap-2">
-                        <span className="flex size-6 shrink-0 items-center justify-center">
-                          {reconstruivel === false && (
-                            <SeloSimbolo tipo="calculado" />
-                          )}
-                        </span>
-                        <span>{k.rotulo}</span>
-                      </span>
-                    </th>
+        <section aria-label="Indicadores lado a lado" className="min-w-0">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+            {cmp.kpis.map((k) => {
+              const d = descreverDelta(
+                {
+                  delta: k.delta,
+                  formato: k.formato,
+                  melhorQuando: k.melhorQuando,
+                },
+                "",
+                deltaReconstruido
+              )
+              const reconstruivel = metricas[n - 1].kpis.find(
+                (x) => x.id === k.id
+              )?.reconstruivel
+              return (
+                <article
+                  key={k.id}
+                  aria-label={k.rotulo}
+                  className="flex min-w-0 flex-col gap-3 rounded-lg border border-t-4 border-t-brand bg-card p-5 shadow-(--shadow-card)"
+                >
+                  <h3 className="flex items-start gap-2 font-sans text-lg leading-tight font-medium text-muted-foreground">
+                    {reconstruivel === false && (
+                      <SeloSimbolo tipo="calculado" />
+                    )}
+                    <span>{k.rotulo}</span>
+                  </h3>
+                  <ul className="flex flex-wrap items-end gap-x-4 gap-y-3">
                     {k.valores.map((v, i) => {
+                      const ultimo = i === n - 1
                       const nota =
                         v === null
                           ? (metricas[i].kpis.find((x) => x.id === k.id)
                               ?.detalhe ?? "sem dado")
                           : null
                       return (
-                        <td
+                        <li
                           key={ordenadas[i].competencia}
-                          className="num px-3 py-3 text-right font-display font-semibold whitespace-nowrap text-primary"
+                          className="flex min-w-0 flex-col"
                         >
-                          <div className="flex items-center justify-end gap-1.5">
+                          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            {!ordenadas[i].propria && (
+                              <SeloSimbolo tipo="reconstruido" />
+                            )}
+                            <span>{rotulos[i]}</span>
+                          </span>
+                          <span
+                            className={cn(
+                              "num flex items-center gap-1.5 font-display text-primary",
+                              ultimo
+                                ? "text-4xl font-bold underline decoration-2 underline-offset-4"
+                                : "text-2xl font-semibold"
+                            )}
+                          >
                             <SetaVs
                               sentido={k.setas[i]}
                               rotuloAnterior={rotulos[i - 1] ?? ""}
                             />
                             <span>{fmt(v, k.formato)}</span>
-                          </div>
+                          </span>
                           {nota && (
-                            <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
+                            <span className="max-w-40 font-sans text-sm text-muted-foreground">
                               {nota}
                             </span>
                           )}
-                        </td>
+                        </li>
                       )
                     })}
-                    <td
-                      className={cn(
-                        "num px-3 py-3 text-right font-medium whitespace-nowrap",
-                        d ? TOM[d.tom] : "text-muted-foreground"
-                      )}
+                  </ul>
+                  <p
+                    className={cn(
+                      "num mt-auto border-t pt-3 text-lg font-medium",
+                      d ? TOM[d.tom] : "text-muted-foreground"
+                    )}
+                  >
+                    <span className="mr-2 text-sm font-normal text-muted-foreground">
+                      Δ
+                    </span>
+                    {d ? (
+                      <>
+                        {d.texto.replace(/ vs\s*/, " ").trim()}
+                        {d.rotuloTom && (
+                          <span className="ml-2 text-base font-normal">
+                            {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </p>
+                </article>
+              )
+            })}
+          </div>
+          <div className="sr-only">
+            <table className="w-full text-left text-xl">
+              <caption className="sr-only">
+                Indicadores de {rotulos.join(", ")}
+              </caption>
+              <thead>
+                <tr className="border-b-2 border-primary/30 text-primary">
+                  <th scope="col" className="px-3 py-3 font-display">
+                    Indicador
+                  </th>
+                  {ordenadas.map((o, i) => (
+                    <th
+                      key={o.competencia}
+                      scope="col"
+                      className="px-3 py-3 text-right font-display"
                     >
-                      {d ? (
-                        <>
-                          {d.texto.replace(/ vs\s*/, " ").trim()}
-                          {d.rotuloTom && (
-                            <span className="ml-2 text-base font-normal">
-                              {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
+                        {!o.propria && <SeloSimbolo tipo="reconstruido" />}
+                        <span>{rotulos[i]}</span>
+                      </span>
+                    </th>
+                  ))}
+                  <th scope="col" className="px-3 py-3 text-right font-display">
+                    Δ
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {cmp.kpis.map((k) => {
+                  const d = descreverDelta(
+                    {
+                      delta: k.delta,
+                      formato: k.formato,
+                      melhorQuando: k.melhorQuando,
+                    },
+                    "",
+                    deltaReconstruido
+                  )
+                  const reconstruivel = metricas[n - 1].kpis.find(
+                    (x) => x.id === k.id
+                  )?.reconstruivel
+                  return (
+                    <tr key={k.id} className="border-b bg-card">
+                      <th scope="row" className="px-3 py-3 font-medium">
+                        {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
+                        <span className="flex items-start gap-2">
+                          <span className="flex size-6 shrink-0 items-center justify-center">
+                            {reconstruivel === false && (
+                              <SeloSimbolo tipo="calculado" />
+                            )}
+                          </span>
+                          <span>{k.rotulo}</span>
+                        </span>
+                      </th>
+                      {k.valores.map((v, i) => {
+                        const nota =
+                          v === null
+                            ? (metricas[i].kpis.find((x) => x.id === k.id)
+                                ?.detalhe ?? "sem dado")
+                            : null
+                        return (
+                          <td
+                            key={ordenadas[i].competencia}
+                            className="num px-3 py-3 text-right font-display font-semibold whitespace-nowrap text-primary"
+                          >
+                            <div className="flex items-center justify-end gap-1.5">
+                              <SetaVs
+                                sentido={k.setas[i]}
+                                rotuloAnterior={rotulos[i - 1] ?? ""}
+                              />
+                              <span>{fmt(v, k.formato)}</span>
+                            </div>
+                            {nota && (
+                              <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
+                                {nota}
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })}
+                      <td
+                        className={cn(
+                          "num px-3 py-3 text-right font-medium whitespace-nowrap",
+                          d ? TOM[d.tom] : "text-muted-foreground"
+                        )}
+                      >
+                        {d ? (
+                          <>
+                            {d.texto.replace(/ vs\s*/, " ").trim()}
+                            {d.rotuloTom && (
+                              <span className="ml-2 text-base font-normal">
+                                {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         {n >= 2 && (

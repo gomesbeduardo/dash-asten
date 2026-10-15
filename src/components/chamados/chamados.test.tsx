@@ -366,6 +366,32 @@ describe("CompararChamados", () => {
     ).toBeInTheDocument()
   })
 
+  it("mostra um card por indicador com os valores de cada competência e o Δ com o tom", async () => {
+    const user = userEvent.setup()
+    render(
+      <CompararChamados
+        {...await cenarioN(["2026-07", "2026-08", "2026-09"])}
+      />
+    )
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar competência" })
+    )
+    const secao = screen.getByRole("region", {
+      name: "Indicadores lado a lado",
+    })
+    const cards = within(secao).getAllByRole("article")
+    expect(cards).toHaveLength(10)
+    const backlog = within(secao).getByRole("article", {
+      name: /Backlog aberto/,
+    })
+    for (const r of ["jul/26", "ago/26", "set/26"])
+      expect(within(backlog).getByText(r)).toBeInTheDocument()
+    expect(backlog).toHaveTextContent(/jul\/26\s*4.*ago\/26\s*6.*set\/26\s*7/s)
+    expect(within(backlog).getByText(/\+3/)).toBeInTheDocument()
+    expect(within(backlog).getByText(/pior/)).toBeInTheDocument()
+  })
+
   it("adiciona a próxima mais antiga, em ordem cronológica, com Δ = última − primeira e setas vs anterior", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
