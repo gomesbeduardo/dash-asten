@@ -113,3 +113,31 @@ describe("NovaCargaDialog: confirmação pendente", () => {
     expect(await screen.findByRole("button", { name: "Confirmar carga" })).toBeEnabled()
   })
 })
+
+describe("NovaCargaDialog: Mes Ref. (D63)", () => {
+  const comMesRef = (...meses: string[]) =>
+    readWorkbook(makeXlsx({ Dados: [["Área", "Mes Ref."], ...meses.map((m) => ["TI", m])] }), "qualquer.xlsx")
+
+  it("sugere pela coluna, mostra a origem e continua editável", async () => {
+    const onConfirm = vi.fn()
+    render(<NovaCargaDialog workbook={comMesRef("out/26", "out/26")} metas={[]} onConfirm={onConfirm} onCancel={() => {}} />)
+    expect(screen.getByText("da planilha (Mes Ref.)")).toBeInTheDocument()
+    expect(screen.getByRole("combobox", { name: "Mês" })).toHaveTextContent("Outubro")
+    const ano = screen.getByLabelText("Ano")
+    expect(ano).toHaveValue("2026")
+    await userEvent.clear(ano)
+    await userEvent.type(ano, "2025")
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar carga" }))
+    expect(onConfirm).toHaveBeenCalledWith({ tipo: "outro", competencia: "2025-10" })
+  })
+
+  it("mais de um mês: mostra o aviso junto da competência", () => {
+    render(<NovaCargaDialog workbook={comMesRef("out/26", "out/26", "set/26")} metas={[]} onConfirm={() => {}} onCancel={() => {}} />)
+    expect(screen.getByText(/A coluna Mes Ref\. tem 2 meses diferentes; usamos Outubro de 2026\. Confira\./)).toBeInTheDocument()
+  })
+
+  it("um mês só: sem aviso", () => {
+    render(<NovaCargaDialog workbook={comMesRef("out/26")} metas={[]} onConfirm={() => {}} onCancel={() => {}} />)
+    expect(screen.queryByText(/meses diferentes/)).toBeNull()
+  })
+})

@@ -112,7 +112,7 @@ export function KpiCartao({
           fromZero={entrada}
           className={cn(
             "num font-display leading-none font-semibold text-primary",
-            destaque ? "text-[72px]" : "text-[44px]"
+            destaque ? "text-[4.5rem]" : "text-[2.75rem]"
           )}
         />
         {kpi.formato === "dias" && kpi.valor !== null && (

@@ -14,7 +14,7 @@ import { standard } from "./motion/tokens"
 
 /** Alinhada pelo topo (respiro fixo): a lista cresce só para baixo, sem pular a tela. */
 export const CLASSE_TELA_DE_ENVIO =
-  "mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-10 px-6 pb-12 pt-16"
+  "mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-10 px-6 pb-12 pt-16 3xl:max-w-5xl"
 
 /** Entra com fade atrasado (não pisca quando os dados vêm do cache); sem animação com movimento reduzido. */
 function FadeComAtraso({

@@ -6,6 +6,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --breakpoint-3xl: 2200px;
+  --breakpoint-4xl: 3000px;
+}
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-display: 'Oxanium Variable', 'Geist Variable', sans-serif;
@@ -125,7 +130,8 @@
 }
 
 html {
-  font-size: 16px;
+  /* D67: escala fluida; 1920 ≈ 16,5px, 3840 ≈ 24px, teto 30px. */
+  font-size: clamp(16px, 0.39vw + 9px, 30px);
   color-scheme: light;
 }
 body {

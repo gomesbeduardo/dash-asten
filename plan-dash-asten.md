@@ -104,6 +104,31 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Refinamento (depois da validação):** o leitor descarta linhas de título acima do cabeçalho ("Competência: setembro" ali não é visto); palavras soltas como "set"/"out" no nome contam como mês; legenda da Evolução ainda cita "planilha mais antiga" para buraco no meio; semear o cache com a carga recém-enviada; com a gaveta de filtros aberta a barra cobre o topo dos chips; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; JS de ~800 kB (carregar gráficos e leitor sob demanda); aviso do npm sobre scripts do Prisma; ligar o deploy automático pelo GitHub; contas individuais; hard delete; regras D31/D34/D35 com o Líder; próximo tipo de conjunto.
 
+## Fase 2F — Modelo "foto" (D63–D67) ← agora
+
+Decisões no doc "Pós-reunião MVP — decisões e verificações" e no PRD. Leituras: a pergunta saiu do doc sem resposta; a fatia G assume reescrita mínima (confirmar com o responsável antes de G). Teste à mão: `docs/exemplos/LEIA-ME-testes.md`, seção "Teste do modelo foto" (abr v1/v2, mai, out). Ordem por dependência; fatias da mesma onda vão em paralelo, cada uma numa worktree com PR para a `staging`.
+
+**Onda 0 — antes de tudo**
+- [ ] Mergear a `ui/transicoes` (outra sessão; mexe em Apresentacao e nos 4 painéis com poucas linhas) para a reestruturação partir dela.
+- [ ] Zerar o banco de staging/produção quando o teste do ponto 8 for rodar (via API, só com o responsável).
+
+**Onda 1 — em paralelo**
+- [ ] **A. Motor da foto** (`src/chamados/`): campo `mesRef` no mapeamento; KPIs da D64 (cards por Situação, não finalizados, atraso por ciclo com faixas 1 · 2–3 · 4–6 · 7+, SLA vencido, finalizados no mês com Situação Finalizado); nota "N abertos depois do Mes Ref." (fora dos números do mês, sem excluir linha); distribuições com duas séries (finalizados no mês × não finalizados, e "no período"); fim de `backlog`, `aberto-no-fim`, `reconstruivel`/`cargaPropria` e de `reconstruirAnteriores` (ajustar `app/precarga.ts`, que o usa); filtro "Situação na competência" vira filtro pela Situação literal; selos "reconstruído"/"calculado" saem (nada é reconstruído) e entra o selo "corrigido" (usado na onda 2). Testes reescritos com a tabela do LEIA-ME (abr v1, abr v2, mai, out) como caso de aceite.
+- [ ] **B. Competência pelo Mes Ref.** (`src/cargas/inferirCompetencia.ts`, NovaCarga/Lote): nova origem "mesref" antes da aba; aviso quando faltar ou vier com mais de um mês; continua editável. Sem a coluna, a inferência atual (aba, arquivo, títulos, datas) segue como reserva — os e2e não têm Mes Ref.
+- [ ] **C. Responsividade base** (`Apresentacao.tsx`, `index.css`, `cartoes.tsx`): tira o teto de 1760 px, tipografia fluida (clamp por largura), grades com breakpoints largos (2xl e acima); capturas nas 5 resoluções.
+
+**Onda 2 — depende de A**
+- [ ] **D. Correção entre fotos e mês sem foto** (`src/chamados/fotos.ts` novo): consolida as fotos por Código conforme a D65, devolve o valor corrigido e o original por KPI; mês sem foto só com entradas e finalizados pelas datas da foto mais atual. Só fotos com Mes Ref. posterior corrigem; versões do mesmo mês nunca. Caso de aceite: maio corrigido pela foto de outubro, e abr v1 × v2 sem correção entre si (LEIA-ME).
+- [ ] **E1. Painel — conteúdo** (depende de A; pode andar junto com D): cards por Situação no topo, KPIs novos, gráficos de duas barras com o toggle de período, textos sem "backlog", Δ ainda contra o mês anterior.
+- [ ] **E2. Painel — "comparar com"** (depende de D): seletor (meses com e sem foto, versões), marca "corrigido" na foto aberta e no período comparado.
+
+**Onda 3 — depende de D**
+- [ ] **F. Comparar e Histórico**: seletor por coluna com versões, colunas de meses sem foto ("—" onde não há dado), marca de corrigido nos cards e no modal; atalho "comparar versões" no Histórico.
+- [ ] **G. Evolução e Leituras**: séries por foto com a regra do mês sem foto; Leituras reescritas sem backlog (atraso por ciclo, concentração de não finalizados, sem SLA).
+- [ ] **H. Fechamento**: e2e atualizados, gerador do teste versionado em `docs/exemplos/`, responsividade conferida de novo com as telas novas, PR `staging`→`main` para o responsável.
+
+**Fora deste ciclo:** hard delete (D66 manteve só arquivar); contas individuais e login (avaliar biblioteca pronta como Better Auth, não autenticação própria).
+
 ## Fase 3 — Planilha real e contrato de dados
 
 1. Receber a planilha real ou uma cópia anonimizada de estrutura idêntica. Inspecionar sem copiar dados sensíveis para logs, commits ou fixtures.

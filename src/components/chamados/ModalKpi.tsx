@@ -36,7 +36,7 @@ const TOM = {
   neutro: "text-muted-foreground",
 } as const
 
-const EIXO = { fontSize: 18, fill: "#475565" }
+const EIXO = { fontSize: "1.1250rem", fill: "#475565" }
 
 export function ModalKpi({
   aberto,
@@ -152,7 +152,11 @@ export function ModalKpi({
                     formatter={(v: unknown) =>
                       v === null || v === undefined ? "—" : fmt(Number(v))
                     }
-                    style={{ fontSize: 18, fontWeight: 700, fill: "#043f63" }}
+                    style={{
+                      fontSize: "1.1250rem",
+                      fontWeight: 700,
+                      fill: "#043f63",
+                    }}
                   />
                 </Bar>
               </BarChart>

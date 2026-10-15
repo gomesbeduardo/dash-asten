@@ -29,7 +29,7 @@ const PALETTE = [
   "var(--chart-5)",
   "#b45f06",
 ]
-const AXIS = { fontSize: 14, fill: "#475565" }
+const AXIS = { fontSize: ".8750rem", fill: "#475565" }
 
 export function seriesColor(
   s: ChartSeries,

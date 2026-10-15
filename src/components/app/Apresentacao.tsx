@@ -282,7 +282,7 @@ export function Apresentacao(p: ApresentacaoProps) {
                 opacity: 0,
                 transition: { duration: reduce ? 0 : saida, ease: standard },
               }}
-              className="fixed inset-x-10 top-36 z-20 mx-auto flex max-w-[1760px] items-center justify-between gap-4 border-l-4 border-destructive bg-card py-3 pl-4 text-lg shadow-(--shadow-card)"
+              className="fixed inset-x-[clamp(1.5rem,3vw,6rem)] top-36 z-20 mx-auto flex max-w-[200rem] items-center justify-between gap-4 border-l-4 border-destructive bg-card py-3 pl-4 text-lg shadow-(--shadow-card)"
             >
               <span>
                 <span className="font-medium text-destructive">{p.erro}</span> A
@@ -302,7 +302,7 @@ export function Apresentacao(p: ApresentacaoProps) {
               ? { paddingTop: `calc(${alturaBarra}px + 1rem)` }
               : undefined
           }
-          className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16"
+          className="mx-auto flex w-full max-w-[200rem] flex-col gap-6 px-[clamp(1.5rem,3vw,6rem)] pt-[max(2rem,env(safe-area-inset-top))] pb-16"
         >
           <Conteudo
             carga={cargaVista}
