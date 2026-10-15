@@ -14,6 +14,13 @@ import {
 import { motion, useReducedMotion } from "motion/react"
 import { AnimatedNumber } from "@/components/app/motion/AnimatedNumber"
 import { entryItemPagina } from "@/components/app/motion/variants"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Toggle } from "@/components/ui/toggle"
 import { GraficoCartao } from "./cartoes"
 import { COR } from "./graficos"
@@ -78,7 +85,7 @@ const AZUL = "var(--chart-1)"
 /** Cores das situações que não são "Finalizado" (verde), na ordem de frequência. */
 const CORES_SITUACAO = [
   AZUL,
-  COR.laranja,
+  COR.castanho,
   "var(--chart-4)",
   "#00778b",
   "var(--chart-2)",
@@ -435,18 +442,21 @@ export function GraficoMes({
             </TooltipContent>
           </Tooltip>
           {ligado && (
-            <select
-              aria-label="Período"
-              value={meses}
-              onChange={(e) => setMeses(Number(e.target.value))}
-              className="h-11 rounded-lg border border-input bg-card px-3 text-base text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+            <Select
+              value={String(meses)}
+              onValueChange={(v) => setMeses(Number(v))}
             >
-              {PERIODOS.map((m) => (
-                <option key={m} value={m}>
-                  Últimos {m} meses
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Período" className="w-auto min-w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIODOS.map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    Últimos {m} meses
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </>
       }
@@ -530,9 +540,7 @@ export function AtrasoMes({
               ? [{ valor: i.valores[1] ?? 0, base: i.valores[0] ?? 0 }]
               : [{ valor: i.valores[0] ?? 0 }],
           }))}
-          series={[
-            { id: "atual", rotulo: "Não finalizados", cor: SERIE_NAO },
-          ]}
+          series={[{ id: "atual", rotulo: "Não finalizados", cor: SERIE_NAO }]}
           rotuloBase={comBase ? base.rotulo : undefined}
           animar={animar}
         />

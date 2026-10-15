@@ -6,6 +6,7 @@
 import { motion, useReducedMotion } from "motion/react"
 
 import { chartGrow } from "@/components/app/motion/tokens"
+import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 
 export type SerieRefinada = { id: string; rotulo: string; cor: string }
@@ -62,7 +63,7 @@ function Barra({
         <motion.span
           data-contorno=""
           aria-hidden
-          className="absolute top-0 left-0 rounded-full border-[1.5px] border-dashed border-muted-foreground/60"
+          className="absolute top-0 left-0 rounded-r-full border-[1.5px] border-dashed border-muted-foreground/60"
           style={{ width: pct(base), height: ALTURA, minWidth: ALTURA }}
           initial={anima ? { opacity: 0 } : false}
           animate={{ opacity: 1 }}
@@ -73,13 +74,13 @@ function Barra({
         <motion.span
           data-barra=""
           aria-hidden
-          className="absolute top-0 left-0 origin-left rounded-full"
+          className="absolute top-0 left-0 origin-left rounded-r-full"
           style={{
             width: pct(valor),
             height: ALTURA,
             minWidth: ALTURA,
-            background: `linear-gradient(90deg, color-mix(in srgb, ${cor} 88%, white), ${cor})`,
-            boxShadow: "0 3px 7px -1px rgb(11 34 54 / 0.18)",
+            background: gradienteBarra(cor),
+            boxShadow: SOMBRA_BARRA,
           }}
           initial={anima ? { scaleX: 0 } : false}
           animate={{ scaleX: 1 }}
@@ -163,7 +164,7 @@ export function BarrasRefinadas({
           <span className="flex items-center gap-2 px-2.5 text-base text-muted-foreground">
             <span
               aria-hidden
-              className="inline-block h-3 w-6 rounded-full border-[1.5px] border-dashed border-muted-foreground/60"
+              className="inline-block h-3 w-6 rounded-r-full border-[1.5px] border-dashed border-muted-foreground/60"
             />
             {rotuloBase}
           </span>

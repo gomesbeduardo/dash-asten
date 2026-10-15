@@ -78,4 +78,19 @@ describe("BarrasRefinadas", () => {
       "Cliente Alfa: Finalizados no mês 12 (mai/26: 15), Não finalizados 30 (mai/26: 22); Cliente Beta: Finalizados no mês 4 (mai/26: 0), Não finalizados 9 (mai/26: 9)"
     )
   })
+
+  it("a base (lado do eixo) é reta e só a ponta é arredondada, na barra e no contorno", () => {
+    const { container } = render(
+      <BarrasRefinadas
+        linhas={linhas}
+        series={series}
+        rotuloBase="mai/26"
+        animar={false}
+      />
+    )
+    for (const el of container.querySelectorAll("[data-barra], [data-contorno]")) {
+      expect(el.className).toMatch(/rounded-r-full/)
+      expect(el.className).not.toMatch(/(^|\s)rounded-full/)
+    }
+  })
 })

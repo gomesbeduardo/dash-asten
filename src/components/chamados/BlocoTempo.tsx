@@ -53,7 +53,7 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     fonte: {
       tipo: "kpis",
       series: [
-        { id: "entradas", rotulo: "Entradas", cor: COR.laranja },
+        { id: "entradas", rotulo: "Entradas", cor: COR.castanho },
         { id: "finalizados", rotulo: "Finalizados", cor: SERIE_FIN },
       ],
     },
@@ -102,7 +102,7 @@ const JANELAS = [6, 12] as const
 /** Paleta categórica (até 8 linhas), distinguível entre si e sobre o fundo claro do cartão. */
 const PALETA = [
   "#1f5fa8",
-  "#b45f06",
+  "var(--chart-6)",
   "#2e7d32",
   "#7b3fa0",
   "#c2185b",

@@ -17,6 +17,8 @@ import { useEffect, useId, useState } from "react"
 import type { ItemDistribuicao, FormatoKpi } from "@/chamados"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { chartGrow } from "@/components/app/motion/tokens"
+import { raioBarra, SOMBRA_BARRA_SVG, TRACEJADO_GRADE } from "./barra-estilo"
+import { DefsGradiente, urlGradiente } from "./barra-svg"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 import { formatarKpi, type ItemSerie, type LinhaSerie } from "./logica"
 
@@ -26,12 +28,13 @@ export const COR = {
   roxo: "var(--chart-4)",
   cinza: "var(--chart-5)",
   laranja: "#b45f06",
+  castanho: "var(--chart-6)",
   atraso: "var(--late)",
 } as const
 
-const EIXO = { fontSize: "1.0000rem", fill: "#475565" }
-const EIXO_TV = { fontSize: "1.1250rem", fill: "#475565" }
-const GRADE = "#e8edf1"
+const EIXO = { fontSize: "1.0000rem", fill: "var(--muted-foreground)" }
+const EIXO_TV = { fontSize: "1.1250rem", fill: "var(--muted-foreground)" }
+const GRADE = "color-mix(in srgb, var(--border) 45%, transparent)"
 const inteiro = new Intl.NumberFormat("pt-BR")
 
 function curto(v: unknown, max = 26) {
@@ -154,7 +157,7 @@ export function BarrasRanking({
   return (
     <ChartContainer
       config={Cfg(["valor", nome, COR.principal])}
-      className="aspect-auto w-full"
+      className={`aspect-auto w-full ${SOMBRA_BARRA_SVG}`}
       style={{ height: altura }}
       role="img"
       aria-label={`${nome}: ${itens.map((i) => `${i.rotulo} ${i.valor}`).join("; ")}`}
@@ -164,7 +167,14 @@ export function BarrasRanking({
         layout="vertical"
         margin={{ top: 4, right: 64, left: 8, bottom: 4 }}
       >
-        <CartesianGrid horizontal={false} stroke={GRADE} />
+        <DefsGradiente
+          cores={itens.map((i) => corDoItem?.(i) ?? COR.principal)}
+        />
+        <CartesianGrid
+          horizontal={false}
+          stroke={GRADE}
+          strokeDasharray={TRACEJADO_GRADE}
+        />
         <XAxis type="number" hide />
         <YAxis
           type="category"
@@ -175,17 +185,23 @@ export function BarrasRanking({
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip content={<Dica />} cursor={{ fill: "#f0f3f6" }} />
+        <Tooltip
+          content={<Dica />}
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 55%, transparent)" }}
+        />
         <Bar
           dataKey="valor"
           name={nome}
-          radius={[0, 4, 4, 0]}
+          radius={raioBarra(24)}
           barSize={24}
           fill={COR.principal}
           {...animacao(animar)}
         >
           {itens.map((i) => (
-            <Cell key={i.rotulo} fill={corDoItem?.(i) ?? COR.principal} />
+            <Cell
+              key={i.rotulo}
+              fill={urlGradiente(corDoItem?.(i) ?? COR.principal)}
+            />
           ))}
           <LabelList
             dataKey="valor"
@@ -212,7 +228,7 @@ export function BarrasFaixas({
   return (
     <ChartContainer
       config={Cfg(["valor", "Chamados", COR.principal])}
-      className="aspect-auto w-full"
+      className={`aspect-auto w-full ${SOMBRA_BARRA_SVG}`}
       style={{ height: "clamp(20rem, 40vh, 44rem)" }}
       role="img"
       aria-label={`Em atraso por meses desde a abertura: ${itens.map((i) => `${i.rotulo} ${i.valor}`).join("; ")}`}
@@ -221,21 +237,35 @@ export function BarrasFaixas({
         data={itens}
         margin={{ top: 40, right: 12, left: 12, bottom: 8 }}
       >
-        <CartesianGrid vertical={false} stroke={GRADE} />
+        <DefsGradiente
+          cores={[COR.atraso, COR.principal]}
+          orientacao="vertical"
+        />
+        <CartesianGrid
+          vertical={false}
+          stroke={GRADE}
+          strokeDasharray={TRACEJADO_GRADE}
+        />
         <XAxis dataKey="rotulo" tick={EIXO} tickMargin={8} tickLine={false} />
         <YAxis hide />
-        <Tooltip content={<Dica />} cursor={{ fill: "#f0f3f6" }} />
+        <Tooltip
+          content={<Dica />}
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 55%, transparent)" }}
+        />
         <Bar
           dataKey="valor"
           name="Chamados"
-          radius={[4, 4, 0, 0]}
+          radius={raioBarra(40, "vertical")}
           maxBarSize={72}
           {...animacao(animar)}
         >
           {itens.map((i) => (
             <Cell
               key={i.rotulo}
-              fill={critica(i) ? COR.atraso : COR.principal}
+              fill={urlGradiente(
+                critica(i) ? COR.atraso : COR.principal,
+                "vertical"
+              )}
             />
           ))}
           <LabelList
@@ -261,7 +291,7 @@ export function BarrasFaixas({
                     style={{
                       fontSize: "1.1250rem",
                       fontWeight: 700,
-                      fill: "#14202b",
+                      fill: "var(--foreground)",
                     }}
                   >
                     {inteiro.format(Number(value))}
@@ -274,7 +304,7 @@ export function BarrasFaixas({
                       style={{
                         fontSize: ".8750rem",
                         fontWeight: 600,
-                        fill: "#b42318",
+                        fill: "var(--late)",
                       }}
                     >
                       crítico
@@ -338,12 +368,14 @@ export function BarrasComparar({
   }))
   // TV: a altura é no mínimo ~30% da viewport; se sobra espaço, a barra engrossa (1,3 a 2,6 rem).
   const barraMin = tv ? Math.round((n >= 4 ? 0.95 : 1.3) * rem) : 18
-  const folga = tv ? Math.round(1.1 * rem) : 16
+  // espaço "Médio": 0,5 rem entre barras do grupo e 1,5 rem entre categorias
+  const entreBarras = Math.round(0.5 * rem)
+  const folga = Math.round(1.5 * rem)
   const minimo = tv ? Math.round(vh * 0.3) : 220
   const altura = Math.max(
     minimo,
     Math.max(itens.length, itensParaAltura ?? 0) *
-      (n * (barraMin + 3) + folga) +
+      (n * (barraMin + entreBarras) + folga) +
       24
   )
   const barra = tv
@@ -352,7 +384,8 @@ export function BarrasComparar({
           2.6 * rem,
           Math.max(
             barraMin,
-            ((altura - 24) / Math.max(1, itens.length) - folga) / n - 3
+            ((altura - 24) / Math.max(1, itens.length) - folga) / n -
+              entreBarras
           )
         )
       )
@@ -382,7 +415,7 @@ export function BarrasComparar({
               s.cor,
             ])
           )}
-          className="absolute inset-0 aspect-auto h-full w-full"
+          className={`absolute inset-0 aspect-auto h-full w-full ${SOMBRA_BARRA_SVG}`}
           role="img"
           aria-label={`${series.map((s) => s.rotulo).join(" contra ")}: ${itens.map((i) => `${i.rotulo} ${i.valores.map((v) => v ?? "—").join(", ")}`).join("; ")}`}
         >
@@ -392,9 +425,15 @@ export function BarrasComparar({
             data={dados}
             layout="vertical"
             margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
-            barGap={3}
+            barGap={entreBarras}
+            barCategoryGap={folga}
           >
-            <CartesianGrid horizontal={false} stroke={GRADE} />
+            <DefsGradiente cores={coloridas.map((s) => s.cor)} />
+            <CartesianGrid
+              horizontal={false}
+              stroke={GRADE}
+              strokeDasharray={TRACEJADO_GRADE}
+            />
             <XAxis type="number" hide />
             <YAxis
               type="category"
@@ -405,7 +444,12 @@ export function BarrasComparar({
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip content={<Dica />} cursor={{ fill: "#f0f3f6" }} />
+            <Tooltip
+              content={<Dica />}
+              cursor={{
+                fill: "color-mix(in srgb, var(--muted) 55%, transparent)",
+              }}
+            />
             {coloridas
               .filter((s) => !ocultas.includes(s.id))
               .map((s) => (
@@ -413,10 +457,8 @@ export function BarrasComparar({
                   key={s.id}
                   dataKey={s.id}
                   name={s.rotulo}
-                  fill={s.cor}
-                  stroke={s.cor}
-                  strokeWidth={2}
-                  radius={[0, 4, 4, 0]}
+                  fill={urlGradiente(s.cor)}
+                  radius={raioBarra(barra)}
                   barSize={barra}
                   {...animacao(animar)}
                 >

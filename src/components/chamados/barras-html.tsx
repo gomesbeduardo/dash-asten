@@ -1,5 +1,6 @@
 /** Barras de cruzamento (empilhadas ou simples) em HTML/CSS: acompanham a tipografia fluida e o Mes Ref. ao lado do mês escolhido. */
 import { cn } from "@/lib/utils"
+import { GRADE_HTML, gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 
 export type Segmento = {
   id: string
@@ -52,11 +53,14 @@ function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
   // 20% de folga na trilha para o texto da ponta
   const pct = maximo > 0 ? (total / (maximo * 1.2)) * 100 : 0
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div
+      className="flex min-w-0 items-center gap-2"
+      style={{ background: GRADE_HTML }}
+    >
       {celula.segmentos.length > 0 && total > 0 ? (
         <div
-          className="flex h-[1.4rem] min-w-0.5 gap-px overflow-hidden rounded-sm"
-          style={{ width: `${pct}%` }}
+          className="flex h-[1.4rem] min-w-0.5 overflow-hidden rounded-r-full"
+          style={{ width: `${pct}%`, boxShadow: SOMBRA_BARRA }}
         >
           {celula.segmentos
             .filter((s) => s.valor > 0)
@@ -67,7 +71,11 @@ function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
                 style={{
                   flexGrow: s.valor,
                   flexBasis: 0,
-                  backgroundColor: s.cor,
+                  // pilha: segmentos de cor lisa e encostados; barra de um segmento só leva o gradiente
+                  background:
+                    celula.segmentos.filter((x) => x.valor > 0).length > 1
+                      ? s.cor
+                      : gradienteBarra(s.cor),
                 }}
               />
             ))}
@@ -114,17 +122,14 @@ export function BarrasHtml({
         </div>
       )}
       {grupos.map((g) => (
-        <div
-          key={g.rotulo}
-          className="flex flex-1 items-center gap-3 border-b border-border/70 py-2 last:border-b-0"
-        >
+        <div key={g.rotulo} className="flex flex-1 items-center gap-3 py-3">
           <span
             className="w-[clamp(7rem,26%,12rem)] shrink-0 truncate text-lg font-medium text-foreground"
             title={g.rotulo}
           >
             {g.rotulo}
           </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-1" aria-hidden>
+          <div className="flex min-w-0 flex-1 flex-col gap-2" aria-hidden>
             {g.linhas.map((l) => (
               <div
                 key={l.mes}

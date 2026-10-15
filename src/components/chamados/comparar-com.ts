@@ -32,7 +32,15 @@ export const valorVersao = (v: number) => `versao:${v}`
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-export type OpcaoSeletor = { valor: string; rotulo: string }
+/** Grupos do seletor "Comparar com": a escolha padrão fica solta no topo; o resto vem agrupado. */
+export type GrupoOpcao = "padrao" | "posicao" | "semPosicao" | "versao"
+export type OpcaoSeletor = {
+  valor: string
+  rotulo: string
+  grupo: GrupoOpcao
+  /** Texto secundário do item (ex.: "sem posição"). */
+  secundario?: string
+}
 
 export type PainelComparado = {
   metricas: MetricasCorrigidas
@@ -233,21 +241,25 @@ export function usePainelComparado({
         rotulo: anteriorImediato
           ? `Mês anterior (${formatarCompetencia(anteriorImediato.competencia)})`
           : "Mês anterior",
+        grupo: "padrao",
       },
       ...opcoesM.meses
         // o mês anterior com foto já é o padrão
         .filter(
           (o) => !(o.temFoto && o.competencia === anteriorImediato?.competencia)
         )
-        .map((o) => ({
+        .map((o): OpcaoSeletor => ({
           valor: valorMes(o.competencia),
           rotulo: o.temFoto
             ? formatarCompetencia(o.competencia)
-            : `${rotuloCompetencia(o.competencia)} (sem posição)`,
+            : rotuloCompetencia(o.competencia),
+          grupo: o.temFoto ? "posicao" : "semPosicao",
+          secundario: o.temFoto ? undefined : "sem posição",
         })),
-      ...opcoesM.outrasVersoes.map((v) => ({
+      ...opcoesM.outrasVersoes.map((v): OpcaoSeletor => ({
         valor: valorVersao(v),
         rotulo: `${cap(formatarCompetencia(carga.competencia, "longo"))} v${v}`,
+        grupo: "versao",
       })),
     ]
 

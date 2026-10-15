@@ -6,6 +6,17 @@ import { ArrowRightIcon } from "lucide-react"
 import { formatarCompetencia, inferirCompetencia } from "@/cargas"
 import { formatValue } from "@/components/app/motion/format"
 import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { KpiCartao, TituloBloco } from "./cartoes"
@@ -34,6 +45,13 @@ const entradaRapida = {
   hidden: {},
   show: { transition: { staggerChildren: 0.03 } },
 }
+/** Ordem e títulos dos grupos do "Comparar com"; o padrão fica solto no topo. */
+const GRUPOS_COMPARAR = [
+  { grupo: "padrao", titulo: null },
+  { grupo: "posicao", titulo: "Meses com posição" },
+  { grupo: "semPosicao", titulo: "Meses sem posição" },
+  { grupo: "versao", titulo: "Outras versões deste mês" },
+] as const
 const DESTAQUES = ["naoFinalizados", "sla", "atraso", "finalizados"]
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
@@ -229,22 +247,48 @@ export function PainelChamados({
 
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-base text-muted-foreground">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="flex items-center gap-2 font-medium text-foreground">
-              Comparar com
-              <select
-                value={escolha}
-                onChange={(e) =>
-                  setEscolha({ carga: carga.id, valor: e.target.value })
-                }
-                className="h-11 rounded-lg border border-input bg-card px-3 text-base font-normal text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+            <div className="flex items-center gap-3">
+              <Label
+                htmlFor="comparar-com"
+                className="text-base font-medium text-foreground"
               >
-                {opcoes.map((o) => (
-                  <option key={o.valor} value={o.valor}>
-                    {o.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Comparar com
+              </Label>
+              <Select
+                value={escolha}
+                onValueChange={(valor) =>
+                  setEscolha({ carga: carga.id, valor })
+                }
+              >
+                <SelectTrigger id="comparar-com" className="w-auto min-w-56">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRUPOS_COMPARAR.map(({ grupo, titulo }) => {
+                    const itens = opcoes.filter((o) => o.grupo === grupo)
+                    if (itens.length === 0) return null
+                    const lista = itens.map((o) => (
+                      <SelectItem key={o.valor} value={o.valor}>
+                        {o.rotulo}{" "}
+                        {o.secundario && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            {o.secundario}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))
+                    return titulo ? (
+                      <SelectGroup key={grupo}>
+                        <SelectLabel>{titulo}</SelectLabel>
+                        {lista}
+                      </SelectGroup>
+                    ) : (
+                      <SelectGroup key={grupo}>{lista}</SelectGroup>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
             <p>
               {!base
                 ? "Sem variação: sem carga do mês anterior. Os cartões mostram só o valor do mês."
@@ -258,16 +302,17 @@ export function PainelChamados({
             </p>
           </div>
           {irPara && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => irPara("leituras")}
-              className="flex items-center gap-1.5 text-base font-medium text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+              className="h-auto gap-1.5 p-0 text-base font-medium underline"
             >
               {leituras.length === 1
                 ? "1 leitura do mês"
                 : `${leituras.length} leituras do mês`}
               <ArrowRightIcon className="size-4" aria-hidden />
-            </button>
+            </Button>
           )}
         </div>
 

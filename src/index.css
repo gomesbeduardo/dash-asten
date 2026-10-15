@@ -27,8 +27,10 @@
     --color-brand-ink: var(--brand-ink);
     --color-brand-soft: var(--brand-soft);
     --color-late: var(--late);
+    --color-positive: var(--positive);
     --color-serie-finalizados: var(--serie-finalizados);
     --color-serie-nao-finalizados: var(--serie-nao-finalizados);
+    --color-chart-6: var(--chart-6);
     --color-chart-5: var(--chart-5);
     --color-chart-4: var(--chart-4);
     --color-chart-3: var(--chart-3);
@@ -95,9 +97,13 @@
     --chart-4: #7a5ea8; /* pausado */
     --chart-5: #7b8794; /* não iniciado */
     --late: #b42318;
+    /* 6ª ficha de série: castanho (Situação intermediária e Entradas); 7,69:1 contra --card, distinto do laranja e do azul petróleo, também para daltônicos. */
+    --chart-6: #6e3f2a;
+    /* Texto de variação favorável (verde com contraste AA sobre o cartão). */
+    --positive: #00694b;
     /* Séries "No mês" e "Ao longo do tempo": finalizados × não finalizados (laranja = --brand; sem tema escuro no projeto). */
     --serie-finalizados: #0b5c8a;
-    --serie-nao-finalizados: #ef8127;
+    --serie-nao-finalizados: #d4650c; /* laranja da marca escurecido: 3,27:1 contra --card */
     --radius: 0.5rem;
     /* Tokens de movimento (D26), espelhados em src/components/app/motion/tokens.ts */
     --motion-fast: 150ms;

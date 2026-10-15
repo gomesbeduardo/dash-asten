@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils"
 import type { DeltaUI } from "./logica"
 
 const TOM = {
-  bom: "bg-[color-mix(in_srgb,#00805d_13%,white)] text-[#00694b]",
-  ruim: "bg-[color-mix(in_srgb,var(--late)_11%,white)] text-late",
+  bom: "bg-[color-mix(in_srgb,var(--chart-3)_13%,var(--card))] text-positive",
+  ruim: "bg-[color-mix(in_srgb,var(--late)_11%,var(--card))] text-late",
   neutro: "bg-muted text-muted-foreground",
 } as const
 

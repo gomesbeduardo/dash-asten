@@ -183,7 +183,8 @@ describe("Painel: gráficos com período (D64)", () => {
     await user.click(
       within(card).getByRole("button", { name: "Comparar período" })
     )
-    await user.selectOptions(within(card).getByLabelText("Período"), "6")
+    await user.click(within(card).getByRole("combobox", { name: "Período" }))
+    await user.click(await screen.findByRole("option", { name: "Últimos 6 meses" }))
     expect(grafico()).toMatch(/Cliente Ômega: Finalizados no período 2, Não finalizados 1/)
     expect(grafico()).toMatch(/Cliente Delta: Finalizados no período 2, Não finalizados 1/)
     expect(card).toHaveTextContent(/últimos 6 meses/)

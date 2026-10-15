@@ -85,14 +85,20 @@ beforeEach(() => {
   Element.prototype.scrollIntoView ??= () => {}
 })
 
+/** Abre o "Comparar com" e escolhe a opção pelo nome, como uma pessoa faria. */
+async function escolher(user: ReturnType<typeof userEvent.setup>, nome: string) {
+  await user.click(screen.getByRole("combobox", { name: "Comparar com" }))
+  await user.click(await screen.findByRole("option", { name: nome }))
+}
+
 const kpi = (nome: string) => screen.findByRole("article", { name: nome })
 
 describe("Painel: comparar com (D65)", () => {
   it("(a) out contra mai/26: Δ contra maio corrigido pela posição de out", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
-    await screen.findByLabelText("Comparar com")
-    await user.selectOptions(screen.getByLabelText("Comparar com"), "mai/26")
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "mai/26")
     const f = await kpi("Finalizados no mês")
     expect(within(f).getByLabelText("1")).toBeInTheDocument()
     expect(within(f).getByRole("group", { name: "−1 em relação a mai/26, pior" })).toHaveTextContent("mai/26")
@@ -102,11 +108,8 @@ describe("Painel: comparar com (D65)", () => {
   it("(b) out contra jun/26 (sem posição): Δ só em entradas e finalizados", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
-    await screen.findByLabelText("Comparar com")
-    await user.selectOptions(
-      screen.getByLabelText("Comparar com"),
-      "jun/26 (sem posição)"
-    )
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "jun/26 sem posição")
     expect(within(await kpi("Entradas no mês")).getByRole("group", { name: /^\+2 em relação a jun\/26/ })).toBeInTheDocument()
     expect(within(await kpi("Finalizados no mês")).getByRole("group", { name: /em relação a jun\/26/ })).toBeInTheDocument()
     const atraso = await kpi("Em atraso")
@@ -132,11 +135,8 @@ describe("Painel: comparar com (D65)", () => {
   it("(d) abr v2 contra 'Abril de 2026 v1': Δ crus, sem correção entre versões", async () => {
     const user = userEvent.setup()
     await abrir("2026-04", 2)
-    await screen.findByLabelText("Comparar com")
-    await user.selectOptions(
-      screen.getByLabelText("Comparar com"),
-      "Abril de 2026 v1"
-    )
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "Abril de 2026 v1")
     const fin = await screen.findByRole("listitem", {
       name: "Situação: Finalizado",
     })
@@ -151,8 +151,8 @@ describe("Painel: comparar com (D65)", () => {
   it("(e) o seletor vale para os gráficos: out × mai, as barras das duas fotos por cliente", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
-    await screen.findByLabelText("Comparar com")
-    await user.selectOptions(screen.getByLabelText("Comparar com"), "mai/26")
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "mai/26")
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const grafico = () =>
       within(card).getByRole("img").getAttribute("aria-label")!
@@ -170,11 +170,8 @@ describe("Painel: comparar com (D65)", () => {
   it("(f) mês sem posição: o gráfico mostra só o Mes Ref., com a nota e os finalizados vindos das datas", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
-    await screen.findByLabelText("Comparar com")
-    await user.selectOptions(
-      screen.getByLabelText("Comparar com"),
-      "jun/26 (sem posição)"
-    )
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "jun/26 sem posição")
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const rotulo = within(card).getByRole("img").getAttribute("aria-label")!
     // só os finalizados vêm com o mês comparado; os não finalizados ficam sem ele (sem posição)
@@ -188,8 +185,8 @@ describe("Painel: comparar com (D65)", () => {
   it("(g) cruzamentos: Cliente × Situação mostra o Mes Ref. e o mês escolhido", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
-    await screen.findByLabelText("Comparar com")
-    await user.selectOptions(screen.getByLabelText("Comparar com"), "mai/26")
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "mai/26")
     for (const nome of [
       "Cliente × Situação",
       "Operador × Atraso",
