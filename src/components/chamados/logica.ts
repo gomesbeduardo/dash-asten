@@ -105,7 +105,7 @@ export type OpcaoCompetencia = {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** Competências escolhíveis em Comparar: as que têm carga (foto), da mais recente à mais antiga. Mês sem foto não é reconstruído. */
+/** Competências escolhíveis em Comparar: as que têm carga (foto), da mais recente à mais antiga. Mês sem posição não é reconstruído. */
 export function opcoesDeCompetencia(
   historico: CargaMeta[]
 ): OpcaoCompetencia[] {
@@ -125,9 +125,9 @@ export type PontoEvolucao = {
   competencia: Competencia
   rotulo: string
   valores: Record<string, number | null>
-  /** Mês sem foto (D65): só entradas e finalizados (das datas) têm valor; o resto é null. */
+  /** Mês sem posição (D65): só entradas e finalizados (das datas) têm valor; o resto é null. */
   semFoto?: boolean
-  /** "sem foto de jun/26", para o tooltip e a tabela. */
+  /** "sem posição de jun/26", para o tooltip e a tabela. */
   dica?: string
   /** Valor da foto como está, para cada id cujo valor mudou pela correção das fotos posteriores. */
   originais?: Record<string, number | null>
@@ -153,14 +153,14 @@ const pontoSemFoto = (
   rotulo: formatarCompetencia(competencia),
   valores,
   semFoto: true,
-  dica: `sem foto de ${rotuloCompetencia(competencia)}`,
+  dica: `sem posição de ${rotuloCompetencia(competencia)}`,
 })
 
 /**
  * Evolução (D65): `maxPontos` meses de calendário terminando em `fim` (padrão: a foto mais
- * recente), sem buracos. Mês com foto = versão atual do mês, corrigida pelas fotos de Mes Ref.
- * posterior (com `originais` quando o valor mudou). Mês sem foto = só entradas e finalizados,
- * tirados das datas da foto mais atual; o resto é null (a linha quebra, nunca vira zero).
+ * recente), sem buracos. Mês com foto = versão atual do mês, corrigida pelas posições de Mes Ref.
+ * posterior (com `originais` quando o valor mudou). Mês sem posição = só entradas e finalizados,
+ * tirados das datas da posição mais atual; o resto é null (a linha quebra, nunca vira zero).
  */
 export function pontosDaEvolucao(
   proprias: { meta: CargaMeta; sheet: Sheet }[],
@@ -198,13 +198,13 @@ export function pontosDaEvolucao(
   if (comps.length === 0 || n === 0) return vazio
   const ultima = comps[comps.length - 1]
   const topo = fim ?? ultima
-  const janela = Array.from({ length: n }, (_, i) => somarMeses(topo, i - n + 1))
-  const brutas = comps.map(
-    (c): EntradaCompetencia => ({
-      competencia: c,
-      sheet: maisRecentes.get(c)!.sheet,
-    })
+  const janela = Array.from({ length: n }, (_, i) =>
+    somarMeses(topo, i - n + 1)
   )
+  const brutas = comps.map((c): EntradaCompetencia => ({
+    competencia: c,
+    sheet: maisRecentes.get(c)!.sheet,
+  }))
   const filtrada = (e: EntradaCompetencia): EntradaCompetencia => ({
     competencia: e.competencia,
     colunasSemFiltro: colunasAusentes(e.sheet, filtros),
@@ -223,8 +223,8 @@ export function pontosDaEvolucao(
     entrada: maisRecentes.has(c) ? filtrada(brutas[comps.indexOf(c)]) : null,
   }))
   const comFoto = itens.filter((i) => i.entrada)
-  const corrigidas = comFoto.map((i) =>
-    corrigirFoto(i.entrada!, posterioresDe(i.c)).entrada
+  const corrigidas = comFoto.map(
+    (i) => corrigirFoto(i.entrada!, posterioresDe(i.c)).entrada
   )
 
   const situacaoPorMes = new Map<
@@ -246,7 +246,9 @@ export function pontosDaEvolucao(
       (entrada.colunasSemFiltro ?? []).length > 0 ? null : m.situacoes
     )
     const originais = Object.fromEntries(
-      m.kpis.filter((k) => "original" in k).map((k) => [k.id, k.original ?? null])
+      m.kpis
+        .filter((k) => "original" in k)
+        .map((k) => [k.id, k.original ?? null])
     )
     return {
       competencia: c,
@@ -257,16 +259,20 @@ export function pontosDaEvolucao(
     }
   })
 
-  // Chamados por Situação: uma linha por rótulo visto nas fotos da janela, maiores primeiro.
+  // Chamados por Situação: uma linha por rótulo visto nas posições da janela, maiores primeiro.
   const total = new Map<string, number>()
   for (const lista of situacaoPorMes.values())
-    for (const s of lista ?? []) total.set(s.rotulo, (total.get(s.rotulo) ?? 0) + s.valor)
+    for (const s of lista ?? [])
+      total.set(s.rotulo, (total.get(s.rotulo) ?? 0) + s.valor)
   const seriesSit = [...total.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([rotulo], i) => ({ id: `s${i}`, rotulo }))
   const pontosSit: PontoEvolucao[] = itens.map(({ c }) => {
     if (!situacaoPorMes.has(c))
-      return pontoSemFoto(c, Object.fromEntries(seriesSit.map((s) => [s.id, null])))
+      return pontoSemFoto(
+        c,
+        Object.fromEntries(seriesSit.map((s) => [s.id, null]))
+      )
     const lista = situacaoPorMes.get(c)
     const valores: Record<string, number | null> = {}
     const originais: Record<string, number | null> = {}
@@ -283,20 +289,25 @@ export function pontosDaEvolucao(
     }
   })
 
-  // Operador/cliente: não finalizados por foto (corrigida); mês sem foto fica sem ponto.
+  // Operador/cliente: não finalizados por foto (corrigida); mês sem posição fica sem ponto.
   const dimensao = (campo: CampoChamado, max: number): SeriesDimensao => {
     const d = seriesPorDimensao(corrigidas, campo, max)
     const pontosDim = itens.map(({ c }) => {
       const p = d.pontos.find((x) => x.competencia === c)
-      return p ?? pontoSemFoto(c, Object.fromEntries(d.series.map((s) => [s.id, null])))
+      return (
+        p ??
+        pontoSemFoto(c, Object.fromEntries(d.series.map((s) => [s.id, null])))
+      )
     })
     return { ...d, pontos: pontosDim }
   }
 
   const semColuna = [
     ...new Set(
-      [...comFoto.map((i) => i.entrada!), ...(pontos.some((p) => p.semFoto) ? [maisAtual] : [])]
-        .flatMap((e) => e.colunasSemFiltro ?? [])
+      [
+        ...comFoto.map((i) => i.entrada!),
+        ...(pontos.some((p) => p.semFoto) ? [maisAtual] : []),
+      ].flatMap((e) => e.colunasSemFiltro ?? [])
     ),
   ]
   return {
@@ -473,12 +484,12 @@ export type KpiN = {
 export type ComparacaoN = {
   competencias: Competencia[]
   kpis: KpiN[]
-  /** Valores = não finalizados de cada foto. */
+  /** Valores = não finalizados de cada posição. */
   distribuicoes: { id: string; titulo: string; itens: ItemSerie[] }[]
   atrasoFaixas: ItemSerie[]
 }
 
-/** O que `compararN` lê de uma coluna: uma foto (`MetricasChamados`), corrigida ou o mês sem foto (D65). */
+/** O que `compararN` lê de uma coluna: uma foto (`MetricasChamados`), corrigida ou o mês sem posição (D65). */
 export type MetricasComparavel = Pick<
   MetricasChamados,
   "competencia" | "kpis" | "atrasoFaixas"
@@ -489,7 +500,7 @@ export type MetricasComparavel = Pick<
     itens: { rotulo: string; naoFinalizados: number | null }[]
   }[]
   colunasSemFiltro?: string[]
-  /** Mês sem foto: distribuições e faixas ficam sem dado (nunca zero). */
+  /** Mês sem posição: distribuições e faixas ficam sem dado (nunca zero). */
   semFoto?: boolean
 }
 
@@ -566,9 +577,17 @@ export function compararN(metricas: MetricasComparavel[]): ComparacaoN {
   }
 }
 
+/** Texto do motor na linguagem da tela: o responsável chama a foto do mês de "posição". */
+export const textoDaTela = (t: string) =>
+  t
+    .replace(/\bFotos\b/g, "Posições")
+    .replace(/\bFoto\b/g, "Posição")
+    .replace(/\bfotos\b/g, "posições")
+    .replace(/\bfoto\b/g, "posição")
+
 /** Por que o delta é "—": o detalhe do motor ou a falta de base no mês anterior. */
 export function motivoSemDelta(kpi: Pick<KpiChamados, "detalhe">): string {
-  return kpi.detalhe ?? "sem base no mês anterior"
+  return textoDaTela(kpi.detalhe ?? "sem base no mês anterior")
 }
 
 // ---------------------------------------------------------------- filtros

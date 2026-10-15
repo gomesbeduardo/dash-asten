@@ -113,9 +113,7 @@ const Conteudo = memo(function Conteudo(p: ConteudoProps) {
       ? visoes.Leituras!
       : p.visao === "comparar"
         ? visoes.Comparar!
-        : p.visao === "evolucao"
-          ? visoes.Evolucao!
-          : visoes.Painel
+        : visoes.Painel
   return (
     <Envoltorio carga={p.carga}>
       <motion.div
@@ -146,7 +144,9 @@ const Conteudo = memo(function Conteudo(p: ConteudoProps) {
 export function Apresentacao(p: ApresentacaoProps) {
   const { carga, metas } = p
   const reduce = useReducedMotion()
-  const [visaoPedida, setVisaoPedida] = useState<Visao>(() => lerUltimaAbertura().visao ?? "painel")
+  const [visaoPedida, setVisaoPedida] = useState<Visao>(
+    () => lerUltimaAbertura().visao ?? "painel"
+  )
   const [historicoOpen, setHistoricoOpen] = useState(false)
   const [limparOpen, setLimparOpen] = useState(false)
   const [seletorOpen, setSeletorOpen] = useState(false)
@@ -163,7 +163,6 @@ export function Apresentacao(p: ApresentacaoProps) {
   const disponiveis = useMemo<Visao[]>(
     () => [
       "painel",
-      ...(visoes.Evolucao ? (["evolucao"] as const) : []),
       ...(visoes.Comparar ? (["comparar"] as const) : []),
       ...(visoes.Leituras ? (["leituras"] as const) : []),
     ],
@@ -173,7 +172,8 @@ export function Apresentacao(p: ApresentacaoProps) {
   const alvo = useMemo(() => ({ carga, visao }), [carga, visao])
   const { carga: cargaVista, visao: visaoVista } = useDeferredValue(alvo)
 
-  const overlay = historicoOpen || limparOpen || seletorOpen || envioOpen || painelHold
+  const overlay =
+    historicoOpen || limparOpen || seletorOpen || envioOpen || painelHold
   const barRef = useRef<HTMLElement>(null)
   const bar = useBarVisibility({ hold: overlay, barRef })
 
@@ -277,7 +277,10 @@ export function Apresentacao(p: ApresentacaoProps) {
               animate={{
                 opacity: 1,
                 y: 0,
-                transition: { duration: reduce ? 0 : duration.fast, ease: standard },
+                transition: {
+                  duration: reduce ? 0 : duration.fast,
+                  ease: standard,
+                },
               }}
               exit={{
                 opacity: 0,

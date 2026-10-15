@@ -20,7 +20,7 @@ export type PontoKpi = {
   rotulo: string
   valor: number | null
   nota: string | null
-  /** Valor corrigido por foto posterior (D65): quem corrigiu e o valor original, já formatado. */
+  /** Valor corrigido por posição posterior (D65): quem corrigiu e o valor original, já formatado. */
   marca?: { por: string[]; original: string } | null
 }
 

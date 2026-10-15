@@ -16,7 +16,7 @@ import {
 
 import type { KpiChamados, Leitura, Severidade } from "@/chamados"
 import { AnimatedNumber } from "@/components/app/motion/AnimatedNumber"
-import { entryItem } from "@/components/app/motion/variants"
+import { entryItem, entryItemPagina } from "@/components/app/motion/variants"
 import {
   Tooltip,
   TooltipContent,
@@ -24,7 +24,13 @@ import {
 } from "@/components/ui/tooltip"
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
-import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
+import {
+  descreverDelta,
+  idAlvo,
+  motivoSemDelta,
+  textoDaTela,
+  type SeloTipo,
+} from "./logica"
 import { Selos } from "./selos"
 
 const TOM = {
@@ -39,12 +45,17 @@ export function KpiCartao({
   rotuloAnterior,
   entrada,
   extra,
+  marca,
+  className,
 }: {
   kpi: KpiChamados
   destaque?: boolean
   rotuloAnterior: string
   entrada: boolean
   extra?: string
+  /** Marca de valor corrigido (D65), abaixo do Δ. */
+  marca?: ReactNode
+  className?: string
 }) {
   const reduce = useReducedMotion()
   const delta = descreverDelta(kpi, rotuloAnterior)
@@ -63,11 +74,12 @@ export function KpiCartao({
   return (
     <motion.article
       id={idAlvo(kpi.id)}
-      variants={reduce ? undefined : entryItem}
+      variants={reduce ? undefined : entryItemPagina}
       aria-label={kpi.rotulo}
       className={cn(
         "flex min-w-0 flex-col gap-2 rounded-lg bg-card shadow-(--shadow-card)",
-        destaque ? "p-6" : "p-5"
+        destaque ? "p-6" : "p-5",
+        className
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -90,7 +102,7 @@ export function KpiCartao({
             </button>
           </TooltipTrigger>
           <TooltipContent className="max-w-md text-base">
-            {kpi.definicao}
+            {textoDaTela(kpi.definicao)}
           </TooltipContent>
         </Tooltip>
       </div>
@@ -134,6 +146,7 @@ export function KpiCartao({
         </p>
       )}
       {extra && <p className="text-base text-muted-foreground">{extra}</p>}
+      {marca}
     </motion.article>
   )
 }
@@ -316,10 +329,10 @@ export function GraficoCartao({
   return (
     <motion.section
       id={idAlvo(id)}
-      variants={reduce ? undefined : entryItem}
+      variants={reduce ? undefined : entryItemPagina}
       aria-label={titulo}
       className={cn(
-        "flex min-w-0 flex-col gap-3 rounded-lg bg-card p-5 shadow-(--shadow-card)",
+        "flex h-full min-w-0 flex-col gap-3 rounded-lg bg-card p-5 shadow-(--shadow-card)",
         className
       )}
     >
@@ -358,7 +371,11 @@ export function GraficoCartao({
         <div className="flex flex-wrap items-center gap-3">{acoes}</div>
       )}
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
-      <div hidden={verTabela}>{children}</div>
+      <div
+        className={cn("flex min-h-0 flex-1 flex-col", verTabela && "hidden")}
+      >
+        {children}
+      </div>
       {nota && <p className="text-base text-muted-foreground">{nota}</p>}
     </motion.section>
   )

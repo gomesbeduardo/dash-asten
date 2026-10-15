@@ -104,7 +104,7 @@ describe("Comparar com fotos (D65/D66)", () => {
     const card = within(secao).getByRole("article", {
       name: /^Finalizados no mês/,
     })
-    expect(card).toHaveTextContent("corrigido pela foto de out/26")
+    expect(card).toHaveTextContent("corrigido pela posição de out/26")
     expect(card).toHaveTextContent("era 1")
     expect(celulas(/^Finalizados no mês/).slice(0, 2)[0]).toContain("2")
     // indicador que não mudou fica sem marca
@@ -118,28 +118,28 @@ describe("Comparar com fotos (D65/D66)", () => {
     ).toBeInTheDocument()
   })
 
-  it("(c) coluna de mês sem foto: entradas e finalizados pelas datas, o resto '—' com a nota", async () => {
+  it("(c) coluna de mês sem posição: entradas e finalizados pelas datas, o resto '—' com a nota", async () => {
     render(ui(await cenario([MAI, OUT])))
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
-    await escolher(0, /Junho de 2026 \(sem foto\)/)
+    await escolher(0, /Junho de 2026 \(sem posição\)/)
     expect(cabecalhos()).toEqual(["Indicador", "jun/26", "out/26", "Δ"])
     expect(celulas(/^Entradas/)[0]).toBe("0")
     expect(celulas(/^Finalizados no mês/)[0]).toBe("1")
     const nao = celulas(/^Não finalizados/)[0]
     expect(nao).toContain("—")
-    expect(nao).toContain("sem foto de jun/26")
-    // cards por Situação também ficam "—" na coluna sem foto
+    expect(nao).toContain("sem posição de jun/26")
+    // cards por Situação também ficam "—" na coluna sem posição
     expect(celulas(/^Em Análise/)[0]).toContain("—")
   })
 
-  it("lista os meses sem foto marcados e desdobra as versões do mês", async () => {
+  it("lista os meses sem posição marcados e desdobra as versões do mês", async () => {
     render(ui(await cenario([ABR1, ABR2, MAI, OUT])))
     const user = userEvent.setup()
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await user.click(seletores()[0])
     expect(
       await screen.findByRole("option", {
-        name: /Setembro de 2026 \(sem foto\)/,
+        name: /Setembro de 2026 \(sem posição\)/,
       })
     ).toBeInTheDocument()
     expect(

@@ -15,25 +15,25 @@ function Forma({ forma }: { forma: FormaCarregando }) {
     case "painel":
       return (
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4">
-            <Skeleton className="h-6 w-80" />
-            <div className="grid grid-cols-2 gap-5 xl:grid-cols-4">
-              {blocos(4, "h-40")}
+          <Skeleton className="h-6 w-80" />
+          <Skeleton className="h-11 w-96" />
+          {bloco(0, "h-56")}
+          <div className="grid grid-cols-2 gap-5 min-[2200px]:grid-cols-[repeat(24,minmax(0,1fr))] md:max-[2199px]:grid-cols-4">
+            {blocos(4, "h-40 min-[2200px]:col-span-6")}
+            {blocos(8, "h-28 min-[2200px]:col-span-3")}
+          </div>
+          <div className="flex flex-col gap-5">
+            <Skeleton className="h-12 w-64" />
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+              {bloco(0, "h-96 xl:col-span-2")}
+              {bloco(1, "h-96")}
             </div>
-            <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
-              {blocos(8, "h-28")}
+            <div className="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-4 xl:max-[2199px]:grid-cols-2">
+              {blocos(4, "h-96")}
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            {bloco(0, "h-96 xl:col-span-2")}
-            {bloco(1, "h-96")}
-          </div>
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            {blocos(4, "h-96")}
-          </div>
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            {bloco(0, "h-96 xl:col-span-2")}
-            {bloco(1, "h-96")}
+            <div className="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-4 xl:max-[2199px]:grid-cols-2">
+              {blocos(4, "h-96")}
+            </div>
           </div>
         </div>
       )

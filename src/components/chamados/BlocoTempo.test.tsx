@@ -14,7 +14,7 @@ import { BlocoTempo } from "./BlocoTempo"
 import { GRAFICOS_TEMPO } from "./BlocoTempo"
 import { FiltrosChamadosProvider } from "./filtros"
 
-/** Fotos de teste (abr v1/v2, mai, out) como cargas: abr–out, com jun a set sem foto. */
+/** Fotos de teste (abr v1/v2, mai, out) como cargas: abr–out, com jun a set sem posição. */
 async function cenarioFotos() {
   const repo: RepositorioDeCargas = criarRepositorioMemoria()
   const salvar = (competencia: string, linhas: typeof v1, mesRef: string) =>
@@ -97,7 +97,7 @@ describe("BlocoTempo (Ao longo do tempo)", () => {
     expect(document.body.textContent).not.toMatch(/backlog|reconstru/i)
   })
 
-  it("mês corrigido leva a marca 'era 1' e mês sem foto traz a dica", async () => {
+  it("mês corrigido leva a marca 'era 1' e mês sem posição traz a dica", async () => {
     const user = userEvent.setup()
     await renderBloco()
     const fluxo = await screen.findByRole("region", {
@@ -111,7 +111,7 @@ describe("BlocoTempo (Ao longo do tempo)", () => {
     await user.click(within(sla).getByRole("button", { name: /Ver dados/ }))
     expect(
       within(sla).getByRole("row", { name: /^jun\/26 / })
-    ).toHaveTextContent("sem foto de jun/26")
+    ).toHaveTextContent("sem posição de jun/26")
   })
 
   it("operador e cliente: linhas dos não finalizados", async () => {

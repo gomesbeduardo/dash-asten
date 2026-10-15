@@ -6,7 +6,6 @@ import { PainelChamados } from "@/components/chamados/PainelChamados"
 import { FiltrosChamadosProvider } from "@/components/chamados/filtros"
 import { LeiturasChamados } from "@/components/chamados/LeiturasChamados"
 import { CompararChamados } from "@/components/chamados/CompararChamados"
-import { EvolucaoChamados } from "@/components/chamados/EvolucaoChamados"
 
 export type VisaoTipoProps = {
   carga: Carga
@@ -30,7 +29,6 @@ export type VisoesDoTipo = {
   Painel: ComponentType<VisaoTipoProps>
   Leituras?: ComponentType<VisaoTipoProps>
   Comparar?: ComponentType<VisaoTipoProps>
-  Evolucao?: ComponentType<VisaoTipoProps>
 }
 
 const visoes: Record<string, VisoesDoTipo> = {
@@ -39,7 +37,6 @@ const visoes: Record<string, VisoesDoTipo> = {
     Painel: PainelChamados,
     Leituras: LeiturasChamados,
     Comparar: CompararChamados,
-    Evolucao: EvolucaoChamados,
   },
 }
 

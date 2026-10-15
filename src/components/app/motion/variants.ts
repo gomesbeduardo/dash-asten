@@ -16,3 +16,13 @@ export const entryItem: Variants = {
     transition: { duration: duration.slow, ease: standard },
   },
 }
+
+/** Entrada das páginas longas (Painel): parte de opacidade parcial e sobe pouco, para o 1º bloco nunca parecer vazio. */
+export const entryItemPagina: Variants = {
+  hidden: { opacity: 0.45, y: 6 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: duration.base, ease: standard },
+  },
+}

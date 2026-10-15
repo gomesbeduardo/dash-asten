@@ -22,11 +22,11 @@ export const SELOS: Record<
   },
   corrigido: {
     curta:
-      "valor ajustado por uma foto de mês posterior; o original aparece como “era N”",
+      "valor ajustado por uma posição de mês posterior; o original aparece como “era N”",
     texto: "Corrigido",
     Icon: HistoryIcon,
     explicacao:
-      "Uma foto de mês posterior mostra que chamados desta foto já estavam finalizados no fim do mês. O valor foi corrigido; a planilha não foi alterada e o valor original aparece como “era N”.",
+      "Uma posição de mês posterior mostra que chamados desta posição já estavam finalizados no fim do mês. O valor foi corrigido; a planilha não foi alterada e o valor original aparece como “era N”.",
   },
 }
 
@@ -161,7 +161,7 @@ export function LegendaSimbolos({
 const ORDEM: SeloTipo[] = ["outros", "corrigido"]
 
 /**
- * Marca de valor corrigido (D65), discreta e sempre visível: ícone + "corrigido pela foto de out/26 · era 1".
+ * Marca de valor corrigido (D65), discreta e sempre visível: ícone + "corrigido pela posição de out/26 · era 1".
  * Estática (sem botão), para caber dentro de cartões clicáveis; a explicação está na legenda da visão.
  */
 export function MarcaCorrigido({
@@ -186,7 +186,7 @@ export function MarcaCorrigido({
     >
       <Icon className="size-3.5 shrink-0" aria-hidden />
       <span>
-        corrigido pela foto de {por.join(" e ")} · era {original}
+        corrigido pela posição de {por.join(" e ")} · era {original}
       </span>
     </span>
   )

@@ -134,7 +134,7 @@ function classeUltimo(n: number): string {
     .join(" ")
 }
 
-/** Célula da tabela de dados: valor, "— (sem foto de …)" ou valor com "(corrigido; era …)". */
+/** Célula da tabela de dados: valor, "— (sem posição de …)" ou valor com "(corrigido; era …)". */
 function celula(p: PontoEvolucao, id: string, formato: FormatoKpi): string {
   const v = p.valores[id] ?? null
   if (v === null && p.semFoto && p.dica) return `— (${p.dica})`
@@ -211,10 +211,11 @@ function montar(dados: Dados): Grafico[] {
         formato: "inteiro",
         subtitulo: (
           <span>
-            Uma linha por Situação em cada foto; mês sem foto fica sem ponto.
+            Uma linha por Situação em cada posição; mês sem posição fica sem
+            ponto.
           </span>
         ),
-        vazio: "Sem chamados nas fotos da janela.",
+        vazio: "Sem chamados nas posições da janela.",
       })
     } else {
       const dim = dimensoes[f.dim]
@@ -222,7 +223,7 @@ function montar(dados: Dados): Grafico[] {
       const max = f.dim === "operador" ? MAX_OPERADORES : MAX_CLIENTES
       const aviso =
         f.dim === "operador"
-          ? `${dim.total > max ? `${max} maiores operadores nos não finalizados de ${mesRanking(dim)}. ` : ""}Carga de trabalho: operador é o responsável na data da foto.`
+          ? `${dim.total > max ? `${max} maiores operadores nos não finalizados de ${mesRanking(dim)}. ` : ""}Carga de trabalho: operador é o responsável na data da posição.`
           : `${max} maiores clientes nos não finalizados de ${mesRanking(dim)}`
       out.push({
         g,
@@ -285,7 +286,7 @@ function CartaoTempo({
   )
 }
 
-/** Bloco "Ao longo do tempo": gráficos de linha compactos, um ponto por mês (foto), meses sem foto marcados e corrigidos sinalizados. */
+/** Bloco "Ao longo do tempo": gráficos de linha compactos, um ponto por mês (foto), meses sem posição marcados e corrigidos sinalizados. */
 export function BlocoTempo({
   carga,
   historico,
@@ -351,8 +352,8 @@ export function BlocoTempo({
         <AvisoFiltroSemColuna avisos={dados.avisosFiltro} />
         <p className="text-lg text-muted-foreground">
           Um ponto por mês até {formatarCompetencia(carga.competencia)}. Mês sem
-          foto traz só entradas e finalizados (das datas). Ponto vazado =
-          corrigido por foto posterior.
+          posição traz só entradas e finalizados (das datas). Ponto vazado =
+          corrigido por posição posterior.
         </p>
         <div className={GRADE}>
           {itens.map((item, i) => (

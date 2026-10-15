@@ -68,7 +68,7 @@ function criar(path: string, linhas: L[]) {
 const kpi = (page: Page, nome: string) =>
   page.getByRole("article", { name: nome, exact: true })
 
-test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async ({
+test("Chamados: KPIs, leituras em modal, filtros, Comparar e Ao longo do tempo", async ({
   page,
 }, testInfo) => {
   const ago = testInfo.outputPath("chamados-agosto-2026.xlsx")
@@ -104,7 +104,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(page.getByText(/reconstru/i)).toHaveCount(0)
   await expect(page.getByRole("table")).toHaveCount(0)
   const situacao = page.getByRole("region", { name: "Chamados por situação" })
-  await expect(situacao).toContainText("na foto de setembro de 2026")
+  await expect(situacao).toContainText("na posição de setembro de 2026")
   await expect(page.getByLabel("Avisos")).toContainText("1 aberto depois do Mes Ref.")
 
   // Leituras: visão própria; o clique abre um modal e a página não rola
@@ -145,13 +145,13 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await page.getByRole("button", { name: "Limpar filtros" }).first().click()
   const linha = page.getByRole("row", { name: /Não finalizados/ })
   await expect(linha).toContainText("+1")
-  // 2 é o mínimo; meses sem foto também podem entrar (marcados "(sem foto)", D66)
+  // 2 é o mínimo; meses sem posição também podem entrar (marcados "(sem posição)", D66)
   await expect(page.getByRole("button", { name: "Remover competência 1" })).toBeDisabled()
   await expect(page.getByRole("button", { name: "Adicionar competência" })).toBeEnabled()
   // a mesma competência não pode ser escolhida duas vezes
   await page.getByRole("combobox", { name: "Competência 1" }).click()
   await expect(page.getByRole("option", { name: /Setembro de 2026/ })).toHaveAttribute("aria-disabled", "true")
-  await expect(page.getByRole("option", { name: "Julho de 2026 (sem foto)" })).toBeVisible()
+  await expect(page.getByRole("option", { name: "Julho de 2026 (sem posição)" })).toBeVisible()
   await page.keyboard.press("Escape")
   // a leitura do Comparar abre o mesmo modal de detalhe; Esc devolve o foco ao cartão
   await expect(page.getByRole("heading", { level: 2, name: "Leituras de set/26 contra ago/26" })).toBeVisible()
@@ -164,15 +164,16 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(modalCmp).toBeHidden()
   await expect(cartao).toBeFocused()
 
-  // Evolução: janela de meses sem buracos; mês sem foto fica sem ponto e com a dica
-  // O seletor segue focado (como o select nativo): tira o foco para o atalho valer.
+  // A aba Evolução não existe mais: ela virou o bloco "Ao longo do tempo" do Painel (decisão 27)
+  await expect(page.getByRole("tab", { name: "Evolução" })).toHaveCount(0)
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-  await page.keyboard.press("e")
-  await expect(page.getByRole("heading", { level: 1, name: "Evolução" })).toBeVisible()
+  await page.keyboard.press("p")
+  await expect(page.getByRole("region", { name: "Ao longo do tempo" })).toBeVisible()
+  // janela de meses sem buracos; mês sem posição fica sem ponto e com a dica
   const card = page.getByRole("region", { name: "% no SLA", exact: true })
   await expect(card.getByRole("button", { name: "Reconstruído pelas datas" })).toHaveCount(0)
   await card.getByRole("button", { name: /Ver dados/ }).click()
   await expect(card.getByRole("row", { name: /^ago\/26 / })).toBeVisible()
   await expect(card.getByRole("row", { name: /^set\/26 / })).toBeVisible()
-  await expect(card.getByRole("row", { name: /^jul\/26 / })).toContainText("sem foto de jul/26")
+  await expect(card.getByRole("row", { name: /^jul\/26 / })).toContainText("sem posição de jul/26")
 })

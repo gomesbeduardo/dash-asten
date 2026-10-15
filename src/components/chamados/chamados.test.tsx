@@ -12,10 +12,14 @@ import { registrarTiposDoApp } from "@/app/bootstrap"
 import { makeXlsx } from "@/test/makeWorkbook"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { CompararChamados } from "./CompararChamados"
-import { EvolucaoChamados } from "./EvolucaoChamados"
+import { BlocoTempo } from "./BlocoTempo"
 import { LeiturasChamados } from "./LeiturasChamados"
 import { PainelChamados } from "./PainelChamados"
 import { FiltrosChamadosProvider } from "./filtros"
+
+
+/** O bloco "Ao longo do tempo" (antes a aba Evolução), renderizado sozinho. */
+const EvolucaoChamados = BlocoTempo
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`)
 const CAB = [
@@ -295,20 +299,24 @@ describe("PainelChamados", () => {
       entrada: false,
     })
     const { unmount } = render(<PainelChamados {...await props(await salvar("setembro.xlsx"))} />)
-    expect(await screen.findByText(/ano não consta na planilha/)).toBeInTheDocument()
+    // espera o painel (o esqueleto troca o cabeçalho ao carregar as fotos)
+    await screen.findByRole("article", { name: "Não finalizados" })
+    expect(screen.getByText(/ano não consta na planilha/)).toBeInTheDocument()
     unmount()
     render(<PainelChamados {...await props(await salvar("setembro-2025.xlsx"))} />)
     await screen.findByText(/setembro-2025\.xlsx/)
     expect(screen.queryByText(/ano não consta na planilha/)).toBeNull()
   })
 
-  it("os cards por situação mostram cada situação como vem e o total da foto; os abertos depois ficam em notas", async () => {
+  it("a faixa por situação mostra cada situação como vem e o total da foto; os abertos depois ficam em notas", async () => {
     render(<PainelChamados {...await cenario(true)} />)
     const topo = await screen.findByRole("region", {
       name: "Chamados por situação",
     })
     const valor = (nome: string) =>
-      within(within(topo).getByRole("article", { name: nome }))
+      within(
+        within(topo).getByRole(nome.startsWith("Situação") ? "listitem" : "article", { name: nome })
+      )
     expect(valor("Total de chamados").getByLabelText("9")).toBeInTheDocument()
     expect(valor("Situação: Em Análise").getByLabelText("6")).toBeInTheDocument()
     expect(valor("Situação: Aguardando aceite").getByLabelText("1")).toBeInTheDocument()
@@ -570,15 +578,15 @@ describe("CompararChamados", () => {
     await waitFor(() => expect(cartao).toHaveFocus())
   })
 
-  it("com uma só carga a única foto é a própria; os outros meses aparecem marcados '(sem foto)' e nada é reconstruído", async () => {
+  it("com uma só carga a única foto é a própria; os outros meses aparecem marcados '(sem posição)' e nada é reconstruído", async () => {
     render(<CompararChamados {...await cenario(false)} />)
     const user = userEvent.setup()
     const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await user.click(um)
     const opcoes = await screen.findAllByRole("option")
-    expect(opcoes.filter((o) => !/\(sem foto\)/.test(o.textContent ?? ""))).toHaveLength(1)
+    expect(opcoes.filter((o) => !/\(sem posição\)/.test(o.textContent ?? ""))).toHaveLength(1)
     expect(screen.getByRole("option", { name: "Setembro de 2026" })).toBeInTheDocument()
-    expect(screen.getByRole("option", { name: "Agosto de 2026 (sem foto)" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "Agosto de 2026 (sem posição)" })).toBeInTheDocument()
     await user.keyboard("{Escape}")
     expect(screen.queryByText(/reconstru|backlog/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
@@ -597,7 +605,7 @@ describe("EvolucaoChamados", () => {
     )
     expect(within(sla).getByRole("row", { name: /^set\/26 / })).toBeInTheDocument()
     // jul/26 não tem foto: entra na janela, sem valor e com a dica
-    expect(within(sla).getByRole("row", { name: /^jul\/26 / })).toHaveTextContent("sem foto de jul/26")
+    expect(within(sla).getByRole("row", { name: /^jul\/26 / })).toHaveTextContent("sem posição de jul/26")
     expect(screen.queryByText(/reconstru/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
     expect(within(sla).getByRole("row", { name: /^ago\/26 / })).toHaveTextContent("—") // agosto não tem finalizados com SLA
@@ -682,7 +690,7 @@ describe("filtros de Chamados", () => {
     expect(
       within(within(topo).getByRole("article", { name: "Total de chamados" })).getByLabelText("3")
     ).toBeInTheDocument()
-    expect(topo).toHaveTextContent("na foto de setembro de 2026")
+    expect(topo).toHaveTextContent("na posição de setembro de 2026")
 
     await user.click(within(chips).getByRole("button", { name: "Remover filtro Cliente" }))
     await waitFor(() =>
@@ -707,8 +715,8 @@ describe("filtros de Chamados", () => {
     await waitFor(() => expect(linha).toHaveTextContent(/2\s*2\s*0/))
 
     rerender(<Visao props={props} qual="evolucao" />)
+    // sozinho, o bloco não desenha os chips (ficam no cabeçalho do Painel), mas lê o mesmo filtro
     const card = await screen.findByRole("region", { name: "Não finalizados por situação" })
-    expect(screen.getByRole("list", { name: "Filtros ativos" })).toBeInTheDocument()
     await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
     // Cli B em set/26: 1 Em Análise + 1 Aguardando aceite
     expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("set/2611")
@@ -856,7 +864,6 @@ describe("estado de carregamento", () => {
 
   it.each([
     ["Comparar", CompararChamados, "Comparar competências"],
-    ["Evolução", EvolucaoChamados, "Evolução"],
   ])("%s mostra título e 'Carregando competências…' com aria-busy", async (_n, Visao, titulo) => {
     const props = await pendente()
     render(
@@ -865,6 +872,19 @@ describe("estado de carregamento", () => {
       </FiltrosChamadosProvider>
     )
     expect(screen.getByRole("heading", { level: 1, name: titulo })).toBeInTheDocument()
+    const status = screen.getByRole("status")
+    expect(status).toHaveTextContent("Carregando competências…")
+    expect(status).toHaveAttribute("aria-busy", "true")
+  })
+
+  it("Ao longo do tempo mostra o título e 'Carregando competências…' com aria-busy", async () => {
+    const props = await pendente()
+    render(
+      <FiltrosChamadosProvider carga={props.carga}>
+        <BlocoTempo {...props} />
+      </FiltrosChamadosProvider>
+    )
+    expect(screen.getByRole("heading", { level: 2, name: "Ao longo do tempo" })).toBeInTheDocument()
     const status = screen.getByRole("status")
     expect(status).toHaveTextContent("Carregando competências…")
     expect(status).toHaveAttribute("aria-busy", "true")
