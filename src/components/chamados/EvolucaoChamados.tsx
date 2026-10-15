@@ -7,7 +7,11 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import type { FormatoKpi } from "@/chamados"
 import { GraficoCartao } from "./cartoes"
 import { COR, LinhaMini, type SerieLinha } from "./graficos"
-import { ChipsFiltrosChamados, useFiltrosChamados } from "./filtros"
+import {
+  AvisoFiltroSemColuna,
+  ChipsFiltrosChamados,
+  useFiltrosChamados,
+} from "./filtros"
 import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
 import { LegendaSimbolos, type ItemLegenda } from "./selos"
@@ -84,7 +88,7 @@ export function EvolucaoChamados({
         <Carregando />
       </div>
     )
-  const { pontos, kpis } = dados
+  const { pontos, kpis, avisosFiltro } = dados
   const play = entrada && !reduce
   const formatoDe = (id: string): FormatoKpi =>
     kpis.find((k) => k.id === id)?.formato ?? "inteiro"
@@ -106,6 +110,7 @@ export function EvolucaoChamados({
         <header className="flex flex-col gap-2">
           {titulo}
           <ChipsFiltrosChamados />
+          <AvisoFiltroSemColuna avisos={avisosFiltro} />
           <p className="text-lg text-muted-foreground">
             Um ponto por competência.
           </p>

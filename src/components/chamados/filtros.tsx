@@ -153,6 +153,20 @@ export function FiltrosChamadosProvider({
   )
 }
 
+/** Aviso curto quando um filtro ativo não tem a coluna numa carga: os números ficam "—", não zero. */
+export function AvisoFiltroSemColuna({ avisos }: { avisos: string[] }) {
+  if (avisos.length === 0) return null
+  return (
+    <ul aria-label="Filtros sem coluna" className="flex flex-col gap-1">
+      {avisos.map((a) => (
+        <li key={a} className="text-base font-medium text-muted-foreground">
+          {a}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** Filtros ativos, visíveis mesmo com a barra escondida; removíveis um a um. */
 export function ChipsFiltrosChamados() {
   const { filtros, definir, limpar } = useFiltrosChamados()

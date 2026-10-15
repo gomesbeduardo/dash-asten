@@ -19,6 +19,7 @@ import {
   type MetricasChamados,
   type ItemDistribuicao,
   type SituacaoNaCompetencia,
+  avisoColunasSemFiltro,
 } from "@/chamados"
 import type { CellValue, Sheet } from "@/core"
 
@@ -222,6 +223,8 @@ export function pontosDaEvolucao(
     /** false: depende da carga do mês (colunas da data da exportação). */
     reconstruivel: boolean
   }[]
+  /** Filtros ativos sem coluna em alguma carga da janela: os pontos dela ficam vazios. */
+  avisosFiltro: string[]
 } {
   const maisRecentes = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>()
   for (const p of proprias) {
@@ -231,7 +234,8 @@ export function pontosDaEvolucao(
   }
   const n = Math.max(maxPontos, 0)
   const comps = [...maisRecentes.keys()].sort((a, b) => a.localeCompare(b))
-  if (comps.length === 0 || n === 0) return { pontos: [], kpis: [] }
+  if (comps.length === 0 || n === 0)
+    return { pontos: [], kpis: [], avisosFiltro: [] }
   // As `n` competências de calendário terminando na carga própria mais recente, sem buracos.
   const janela = janelaDe(comps[comps.length - 1], n).reverse()
   const primeira = primeiraCompetencia(maisRecentes.get(comps[0])!.sheet)
@@ -257,9 +261,10 @@ export function pontosDaEvolucao(
   const todas = [...reconstruidas, ...entradas]
     .sort((a, b) => a.competencia.localeCompare(b.competencia))
     .map((e) => ({
-    ...e,
-    sheet: filtrarSheet(e.sheet, filtros, e.competencia),
-  }))
+      ...e,
+      colunasSemFiltro: colunasAusentes(e.sheet, filtros),
+      sheet: filtrarSheet(e.sheet, filtros, e.competencia),
+    }))
   const ev = evolucao(todas)
   const propria = new Map(todas.map((e) => [e.competencia, e.cargaPropria !== false]))
   const pontos = ev.competencias.map((competencia, i) => ({
@@ -268,8 +273,10 @@ export function pontosDaEvolucao(
     propria: propria.get(competencia) ?? false,
     valores: Object.fromEntries(ev.series.map((s) => [s.id, s.valores[i]])),
   }))
+  const semColuna = [...new Set(todas.flatMap((e) => e.colunasSemFiltro))]
   return {
     pontos,
+    avisosFiltro: semColuna.length ? [avisoColunasSemFiltro(semColuna)] : [],
     kpis: ev.series.map(({ id, rotulo, formato }) => ({
       id,
       rotulo,
@@ -440,18 +447,22 @@ export function motivoSemDelta(
 
 export type CampoFiltro =
   | "cliente"
+  | "autarquia"
   | "areaSuperior"
   | "area"
   | "atividade"
+  | "tipo"
   | "severidade"
   | "operador"
   | "situacaoNaCompetencia"
 
 export const CAMPOS_FILTRO: { campo: CampoFiltro; rotulo: string }[] = [
   { campo: "cliente", rotulo: "Cliente" },
+  { campo: "autarquia", rotulo: "Autarquia" },
   { campo: "areaSuperior", rotulo: "Área Superior" },
   { campo: "area", rotulo: "Área" },
   { campo: "atividade", rotulo: "Atividade" },
+  { campo: "tipo", rotulo: "Tipo" },
   { campo: "severidade", rotulo: "Severidade" },
   { campo: "operador", rotulo: "Operador" },
   { campo: "situacaoNaCompetencia", rotulo: "Situação na competência" },
@@ -471,6 +482,20 @@ function textoDe(v: CellValue | undefined): string {
 
 const ativos = (f: FiltrosChamados) =>
   CAMPOS_FILTRO.filter(({ campo }) => (f[campo]?.length ?? 0) > 0)
+
+/** Rótulos dos filtros ativos cuja coluna não existe na planilha (a carga não consegue aplicá-los). */
+export function colunasAusentes(
+  sheet: Sheet,
+  filtros: FiltrosChamados
+): string[] {
+  const { mapa } = mapearColunas(sheet)
+  return ativos(filtros)
+    .filter(
+      ({ campo }) =>
+        campo !== "situacaoNaCompetencia" && !mapa[campo as CampoChamado]
+    )
+    .map(({ rotulo }) => rotulo)
+}
 
 /** Mesma planilha, só com as linhas do recorte. Nenhuma coluna muda; sem filtro devolve a própria planilha. */
 export function filtrarSheet(

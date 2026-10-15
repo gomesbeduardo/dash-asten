@@ -593,6 +593,65 @@ describe("filtros de Chamados", () => {
     expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("2")
   })
 
+  it("filtro de Autarquia: a carga antiga (sem a coluna) mostra '—' e aviso, não zero", async () => {
+    const user = userEvent.setup()
+    const repo: RepositorioDeCargas = criarRepositorioMemoria()
+    const comAutarquia = (linhas: L[]) =>
+      makeXlsx({
+        Dados: [
+          [...CAB, "Autarquia"],
+          ...linhas.map(([ab, cli, sit, sla, sol], i) => [
+            ab ? d(ab) : null,
+            i + 1,
+            cli,
+            "Área 1",
+            "Suporte",
+            sit,
+            sla ? d(sla) : null,
+            null,
+            sol ? d(sol) : null,
+            null,
+            0,
+            "SPPrev",
+          ]),
+        ],
+      })
+    await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-08",
+      arquivo: "ago.xlsx",
+      workbook: readWorkbook(xlsx(aug), "ago.xlsx"),
+    })
+    const meta = await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-09",
+      arquivo: "set.xlsx",
+      workbook: readWorkbook(comAutarquia(base), "set.xlsx"),
+    })
+    const props: VisaoTipoProps = {
+      carga: (await repo.obter(meta.id)) as Carga,
+      historico: await repo.listar(),
+      obterCarga: (id) => repo.obter(id),
+      entrada: false,
+    }
+    render(<Visao props={props} qual="comparar" />)
+    await screen.findByRole("row", { name: /Backlog aberto/ })
+    await user.keyboard("f")
+    const painel = await screen.findByRole("dialog", { name: "Filtros" })
+    await user.click(within(painel).getByRole("combobox", { name: "Autarquia" }))
+    await user.click(await screen.findByRole("option", { name: "SPPrev" }))
+    await user.keyboard("{Escape}")
+    await user.keyboard("{Escape}")
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Filtros" })).toBeNull()
+    )
+    const linha = await screen.findByRole("row", { name: /Backlog aberto/ })
+    await waitFor(() => expect(linha).toHaveTextContent("—"))
+    expect(linha).toHaveTextContent("7")
+    expect(
+      screen.getByText("Sem a coluna Autarquia nesta carga: filtro não se aplica")
+    ).toBeInTheDocument()
+  })
 })
 
 describe("estado de carregamento", () => {

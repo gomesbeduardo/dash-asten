@@ -2,12 +2,12 @@ import { motion, useReducedMotion } from "motion/react"
 import { ArrowRightIcon } from "lucide-react"
 
 import { formatarCompetencia } from "@/cargas"
-import type { Distribuicao } from "@/chamados"
+import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
 import { entryContainer } from "@/components/app/motion/variants"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, KpiCartao } from "./cartoes"
-import { ChipsFiltrosChamados } from "./filtros"
+import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BarrasFaixas, BarrasRanking, COR } from "./graficos"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
@@ -26,7 +26,10 @@ const COR_SITUACAO: Record<string, string> = {
   "Sem data de abertura": COR.laranja,
 }
 
-const tabelaDe = (itens: { rotulo: string; valor: number }[], total = false) => ({
+const tabelaDe = (
+  itens: { rotulo: string; valor: number }[],
+  total = false
+) => ({
   colunas: ["Categoria", "Chamados"],
   linhas: [
     ...itens.map((i) => [i.rotulo, n(i.valor)]),
@@ -43,11 +46,8 @@ export function PainelChamados({
   irPara,
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
-  const { sheet, filtros, metricas, leituras, anterior } = useMesDeChamados(
-    carga,
-    historico,
-    obterCarga
-  )
+  const { sheet, filtros, metricas, leituras, anterior, semColuna } =
+    useMesDeChamados(carga, historico, obterCarga)
 
   const recorte = recorteTexto(filtros)
   const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
@@ -60,6 +60,9 @@ export function PainelChamados({
         {carga.arquivo}
       </p>
       <ChipsFiltrosChamados />
+      <AvisoFiltroSemColuna
+        avisos={semColuna.length ? [avisoColunasSemFiltro(semColuna)] : []}
+      />
     </header>
   )
 
@@ -82,6 +85,10 @@ export function PainelChamados({
     )
 
   const play = entrada && !reduce
+  // o aviso de filtro sem coluna já aparece junto dos chips
+  const avisosRodape = metricas.avisos.filter(
+    (a) => !a.startsWith("Sem a coluna") && !a.startsWith("Sem as colunas")
+  )
   const rotuloAnterior = anterior
     ? formatarCompetencia(anterior.entrada.competencia)
     : "mês anterior"
@@ -113,10 +120,14 @@ export function PainelChamados({
   const situacaoAtual = dist("situacao")
   // símbolos que aparecem nesta tela, para a legenda
   const tiposNaTela: SeloTipo[] = [
-    ...(metricas.kpis.some((k) => !k.reconstruivel) ? (["calculado"] as const) : []),
+    ...(metricas.kpis.some((k) => !k.reconstruivel)
+      ? (["calculado"] as const)
+      : []),
     "derivado",
     ...(situacaoAtual ? (["exportacao"] as const) : []),
-    ...([cliente, ...rankings.map((r) => dist(r.id))].some((d) => d && temOutros(d.itens))
+    ...([cliente, ...rankings.map((r) => dist(r.id))].some(
+      (d) => d && temOutros(d.itens)
+    )
       ? (["outros"] as const)
       : []),
   ]
@@ -262,10 +273,13 @@ export function PainelChamados({
           )}
         </div>
 
-        {metricas.avisos.length > 0 && (
-          <footer aria-label="Avisos" className="text-base text-muted-foreground">
+        {avisosRodape.length > 0 && (
+          <footer
+            aria-label="Avisos"
+            className="text-base text-muted-foreground"
+          >
             <ul className="flex flex-col gap-1">
-              {metricas.avisos.map((a) => (
+              {avisosRodape.map((a) => (
                 <li key={a}>{a}</li>
               ))}
             </ul>

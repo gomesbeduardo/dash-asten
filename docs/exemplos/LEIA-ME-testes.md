@@ -65,3 +65,18 @@ Por que dois arquivos: o app limita a 4 leituras e ordena por gravidade (crític
 ## Regerar
 
 `node gerar-testes.mjs` (script no scratchpad da sessão) reescreve os arquivos de forma idêntica (semente fixa).
+
+## Estrutura nova da planilha (14/10, D61)
+
+`chamados-estrutura-nova-set-2026.xlsx` (ignorado pelo Git; regerar com `node docs/exemplos/gerar-estrutura-nova.mjs`): aba "chamados ciclo Setembro - RH", 40 linhas fictícias, cabeçalho novo completo (Mes Ref., Data Abertura, Hora Abertura, Código, Tipo, Severidade, Resumo, Área Superior, Área, Cliente, Autarquia, Operador, Situação, Data de Solução, SLA Previsto, SLA Renegociado, Data de Aceite, Data Ultima Reabertura, Situação Ultima Reabertura, Qtd Reabertura, Observação), **sem** Atividade. Severidade toda vazia; Tipo e Autarquia preenchidos só em parte (vazio = "(sem informação)" nos filtros). Contém 3 reabertos pendentes (Data Ultima Reabertura > Data de Solução, Situação "Em Análise"), 2 reabertos já Finalizados e 2 "Aguardando Aceite de Solução" com solução e sem aceite.
+
+Números esperados (contados no gerador direto das datas, não pelo código do app; o backlog segue as datas, D34):
+
+| Competência | Backlog | Entradas | Saídas | Em atraso | Sem SLA | Aguardando aceite | Reabertos pendentes (aviso) | Abertos após a competência |
+|---|---|---|---|---|---|---|---|---|
+| 2026-09 | 18 | 11 | 10 | 6 | 3 | 2 | 3 | 5 |
+| 2026-10 | 17 | 5 | 6 | 10 | 4 | 2 | 3 | 0 |
+
+- Aviso esperado no rodapé do painel, nas duas competências: "3 chamado(s) reabertos depois da solução e não finalizados contam como resolvidos pela Data de Solução". Os KPIs não mudam por causa dele. Em set/26 há ainda o aviso de 5 abertos após a competência.
+- Filtros novos: **Autarquia** (Autarquia X, Autarquia Y, "(sem informação)") e **Tipo** (Incidente, Requisição, "(sem informação)"), na ordem Cliente, Autarquia, Área Superior, Área, Atividade, Tipo, Severidade, Operador, Situação na competência. Sem a coluna Atividade, o filtro Atividade não aparece para esta carga.
+- Para testar o filtro sem coluna: carregue junto uma carga antiga (com Atividade, sem Autarquia/Tipo), ative Autarquia ou Tipo e abra Comparar ou Evolução: a competência da carga antiga mostra "—" e o aviso "Sem a coluna Autarquia nesta carga: filtro não se aplica".

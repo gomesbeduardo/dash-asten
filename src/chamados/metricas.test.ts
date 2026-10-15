@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { calcularMetricas } from "./index"
-import { montarSheet, sheetChamados, type LinhaChamado } from "./test-util"
+import {
+  montarSheet,
+  sheetChamados,
+  sheetChamadosReab,
+  type LinhaChamado,
+} from "./test-util"
 
 const LINHAS: LinhaChamado[] = [
   // 1 aberto antes do mês, ainda aberto, SLA vencido
@@ -251,5 +256,63 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
     expect(c.kpis.find((x) => x.id === "sla")!.delta).toBeNull()
     expect(c.kpis.find((x) => x.id === "sla")!.anterior).toBeNull()
     expect(c.kpis.find((x) => x.id === "backlog")!.delta).not.toBeNull()
+  })
+})
+
+describe("reabertos depois da solução (aviso informativo, sem mudar KPI)", () => {
+  const kpisDe = (m: ReturnType<typeof calcularMetricas>) =>
+    Object.fromEntries(m.kpis.map((k) => [k.id, k.valor]))
+  const linhas: LinhaChamado[] = [
+    // reaberto pendente, resolvido em agosto: continua resolvido pela solução
+    {
+      abertura: "2026-07-01",
+      solucao: "2026-08-10",
+      ultimaReab: "2026-09-05",
+      situacao: "Em Análise",
+    },
+    // reaberto pendente, solução em setembro: continua em saídas
+    {
+      abertura: "2026-08-01",
+      solucao: "2026-09-03",
+      ultimaReab: "2026-09-08",
+      situacao: "Em Análise",
+    },
+    // reaberto já finalizado: não entra no aviso
+    {
+      abertura: "2026-07-01",
+      solucao: "2026-08-10",
+      ultimaReab: "2026-09-05",
+      situacao: "Finalizado",
+    },
+    // aberto de verdade
+    { abertura: "2026-08-15", situacao: "Em Análise" },
+  ]
+  const entrada = (ls: LinhaChamado[]) => ({
+    sheet: sheetChamadosReab(ls),
+    competencia: "2026-09",
+  })
+
+  it("KPIs seguem só as datas e o aviso conta os reabertos pendentes já resolvidos", () => {
+    const m = calcularMetricas(entrada(linhas))
+    const k = kpisDe(m)
+    expect(k.backlog).toBe(1)
+    expect(k.saidas).toBe(1)
+    expect(m.avisos).toContain(
+      "2 chamado(s) reabertos depois da solução e não finalizados contam como resolvidos pela Data de Solução"
+    )
+  })
+
+  it("com a coluna mas sem reaberto pendente, ou sem a coluna: sem aviso e KPIs idênticos", () => {
+    const ls = linhas.map((l) => ({ ...l, ultimaReab: null }))
+    const com = calcularMetricas(entrada(ls))
+    const sem = calcularMetricas({
+      sheet: sheetChamados(ls),
+      competencia: "2026-09",
+    })
+    expect(com.avisos.join(" ")).not.toMatch(/reabertos depois/)
+    expect(kpisDe(com)).toEqual(kpisDe(sem))
+    expect(sem.avisos.join(" ")).not.toMatch(/reabertos depois/)
+    // e os KPIs também não mudam com a reabertura presente
+    expect(kpisDe(calcularMetricas(entrada(linhas)))).toEqual(kpisDe(com))
   })
 })

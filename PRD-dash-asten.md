@@ -67,6 +67,7 @@
 | D58 | Nome, correção e arquivamento de cargas | Cada carga pode ter um **nome** (opcional, até 80 caracteres). O campo só aparece quando a carga vira **versão 2 ou mais** do mesmo mês, já preenchido com o nome do arquivo, para não atrasar o caso comum. No Histórico: **editar** nome, tipo e competência de uma carga já enviada (mudar tipo/mês faz dela a versão seguinte do destino) e **arquivar**/restaurar. Arquivar é soft delete para todos: some de listas, seletor, Comparar e Evolução, aparece em "Mostrar arquivadas", nada é apagado. Banco: colunas opcionais `nome` e `arquivada_em` (migração 0003, Prisma); API `PATCH /api/cargas/:id`. |
 | D59 | Lista viva e seletor por tipo | A lista de cargas se atualiza ao voltar para a aba (no máximo a cada 30 s), depois de enviar e depois de editar; carga apagada ou arquivada por outra pessoa some, e se for a aberta o app avisa e volta ao envio. O seletor de competência mostra só cargas do tipo aberto, com versão e nome; outros tipos aparecem rotulados. Sugestão de mês pelas datas conta eventos de abertura **e** solução, para não descartar mês legítimo com poucas entradas. |
 | D60 | Uso na TV e envio sem atrito | Soltar arquivos em **qualquer ponto da tela** (overlay de página inteira), não só na caixa. Aviso ao fechar a aba durante um envio; indicador ao abrir uma carga. **Tela cheia** (botão e tecla T). O navegador lembra a última visão e carga ("Abrir a última"). A barra não cobre os chips de filtro. |
+| D61 | Planilha de Chamados com estrutura nova | 14/10: a exportação ganhou **Mes Ref., Hora Abertura, Tipo, Autarquia, Data e Situação da Última Reabertura, Observação** e perdeu **Atividade**; o app já a reconhecia (5/5 colunas de reconhecimento). Decidido pelo responsável: (1) **backlog segue pelas datas (D34)**, também para reabertos: chamado com Data da Última Reabertura posterior à Data de Solução e Situação diferente de Finalizado continua resolvido no mês da solução, e o painel mostra um **aviso com a contagem** desses casos. Contar o reaberto como aberto foi descartado, porque só valeria para cargas com a coluna e faria o backlog "subir" no Comparar/Evolução sem piora real. (2) **Autarquia e Tipo** viram filtros (D39); vazio = "(sem informação)". (3) Filtro ativo numa carga **sem a coluna** mostra "—" com aviso, não zero (Comparar, Evolução e painel). Hora Abertura, Situação da Última Reabertura, Observação e Mes Ref. seguem só como colunas da planilha. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 0.1 Requisitos de origem
@@ -172,6 +173,9 @@ Construtor de cartões; contas individuais; exportação PNG/CSV; preferências 
 6. **Hospedagem definitiva** (D11): seguir na Vercel ou outro lugar.
 7. **Próximos tipos de conjunto** (R11): qual vem depois de Chamados e com que planilha.
 8. **Marca:** uso do logo e das cores como estão (D12).
+9. **Mês de referência da planilha nova** (D61): a coluna "Mes Ref." diz out/26 e a aba diz "ciclo Setembro". O app segue sugerindo pela aba (setembro); confirmar qual manda.
+10. **Recorte da exportação** (D61): o modelo de 14/10 não tem chamado aberto depois de jan/2026 (entradas do mês = 0) e a aba termina em "- RH"; confirmar se a exportação mensal virá completa ou por equipe.
+11. **Reabertos não finalizados** (D61): hoje contam como resolvidos pela Data de Solução, com aviso; confirmar com o Líder.
 
 ## 9. Experiência visual
 

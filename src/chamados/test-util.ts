@@ -50,6 +50,8 @@ export type LinhaChamado = {
   areaSuperior?: string | null
   atividade?: string | null
   reab?: number | null
+  /** Só vale em `sheetChamadosReab` (coluna Data Ultima Reabertura). */
+  ultimaReab?: string | null
 }
 
 export function linha(l: LinhaChamado, codigo: number): CellValue[] {
@@ -73,5 +75,16 @@ export function sheetChamados(linhas: LinhaChamado[]): Sheet {
   return montarSheet(
     ROTULOS_PADRAO,
     linhas.map((l, i) => linha(l, i + 1))
+  )
+}
+
+/** Como `sheetChamados`, com a coluna extra "Data Ultima Reabertura" no fim. */
+export function sheetChamadosReab(linhas: LinhaChamado[]): Sheet {
+  return montarSheet(
+    [...ROTULOS_PADRAO, "Data Ultima Reabertura"],
+    linhas.map((l, i) => [
+      ...linha(l, i + 1),
+      l.ultimaReab ? dia(l.ultimaReab) : null,
+    ])
   )
 }
