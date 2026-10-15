@@ -2,6 +2,7 @@ import type { CellValue, Row } from "@/core"
 import {
   classificarLinha,
   limitesDaCompetencia,
+  reabertoPendente,
   ROTULO_SITUACAO_COMPETENCIA,
   tempo,
   texto,
@@ -40,8 +41,17 @@ type Chamado = {
   slaPrevisto: number | null
   situacao: string
   reabertura: number | null
+  /** Decisão única de backlog: a classificação "aberto-no-fim" (situacao.ts). */
+  aberto: boolean
   tempoResolucao: number | null
   row: Row
+}
+
+/** Aviso curto de filtro ativo numa carga que não tem a coluna. */
+export function avisoColunasSemFiltro(rotulos: string[]): string {
+  return rotulos.length === 1
+    ? `Sem a coluna ${rotulos[0]} nesta carga: filtro não se aplica`
+    : `Sem as colunas ${rotulos.join(", ")} nesta carga: filtros não se aplicam`
 }
 
 const DEFINICOES = {
@@ -90,6 +100,29 @@ function distribuir(
 }
 
 function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
+  const sem = entrada.colunasSemFiltro ?? []
+  const m = calcularBruto(entrada)
+  if (sem.length === 0) return m
+  return {
+    ...m,
+    kpis: m.kpis.map((k) => ({
+      ...k,
+      valor: null,
+      detalhe: "filtro sem a coluna nesta carga",
+    })),
+    distribuicoes: m.distribuicoes.map((d) => ({ ...d, itens: [] })),
+    envelhecimento: [],
+    porSituacaoNaCompetencia: [],
+    linhasConsideradas: null,
+    linhasPosteriores: null,
+    linhasSemAbertura: null,
+    colunasSemFiltro: sem,
+    baseAguardandoAceite: null,
+    avisos: [...m.avisos, avisoColunasSemFiltro(sem)],
+  }
+}
+
+function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
   const { mapa } = mapearColunas(entrada.sheet)
   const { inicio, fim } = limitesDaCompetencia(entrada.competencia)
   const avisos: string[] = []
@@ -120,20 +153,29 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
     "aberto-apos": 0,
     "sem-abertura": 0,
   }
+  let reabertosPendentes = 0
   for (const row of entrada.sheet.rows) {
     const abertura = tempo(col("abertura", row))
     const situacaoCompetencia = classificarLinha(row, mapa, entrada.competencia)
     contagem[situacaoCompetencia]++
     if (abertura === null || abertura > fim) continue
+    const solucaoTempo = tempo(col("solucao", row))
+    if (
+      reabertoPendente(row, mapa) &&
+      solucaoTempo !== null &&
+      solucaoTempo <= fim
+    )
+      reabertosPendentes++
     const reneg = tempo(col("slaRenegociado", row))
     chamados.push({
       abertura,
-      solucao: tempo(col("solucao", row)),
+      solucao: solucaoTempo,
       aceite: tempo(col("aceite", row)),
       sla: reneg ?? tempo(col("slaPrevisto", row)),
       slaPrevisto: tempo(col("slaPrevisto", row)),
       situacao: normalizar(texto(col("situacao", row)) ?? ""),
       reabertura: numero(col("qtdReabertura", row)),
+      aberto: situacaoCompetencia === "aberto-no-fim",
       tempoResolucao: numero(col("tempoResolucao", row)),
       row,
     })
@@ -147,13 +189,16 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
       `${contagem["sem-abertura"]} chamado(s) sem Data de Abertura — mostrados à parte`
     )
 
+  if (reabertosPendentes > 0)
+    avisos.push(
+      `${reabertosPendentes} chamado(s) reabertos depois da solução e não finalizados contam como resolvidos pela Data de Solução`
+    )
+
   const temSolucao = !!mapa.solucao
   const temSla = !!(mapa.slaPrevisto || mapa.slaRenegociado)
   const noMes = (t: number | null) => t !== null && t >= inicio && t <= fim
 
-  const backlog = temSolucao
-    ? chamados.filter((c) => c.solucao === null || c.solucao > fim)
-    : []
+  const backlog = temSolucao ? chamados.filter((c) => c.aberto) : []
   const saidas = temSolucao ? chamados.filter((c) => noMes(c.solucao)) : []
   const entradas = chamados.filter((c) => noMes(c.abertura))
 
@@ -188,9 +233,7 @@ function calcularBase(entrada: EntradaCompetencia): MetricasChamados {
   // backlog + resolvidos (até o fim) que ainda aguardam aceite: base coerente do % aguardando
   const baseAguardandoAceite = mapa.situacao
     ? chamados.filter(
-        (c) =>
-          (c.solucao === null || c.solucao > fim) ||
-          (c.solucao !== null && aguardandoAceite(c))
+        (c) => c.aberto || (c.solucao !== null && aguardandoAceite(c))
       ).length
     : null
 

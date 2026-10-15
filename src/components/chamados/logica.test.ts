@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest"
 import type { CargaMeta } from "@/cargas"
 import type { Leitura, MetricasChamados } from "@/chamados"
-import { sheetChamados } from "@/chamados/test-util"
+import { calcularMetricas } from "@/chamados"
+import { montarSheet, ROTULOS_PADRAO, sheetChamados } from "@/chamados/test-util"
 import {
+  CAMPOS_FILTRO,
+  colunasAusentes,
   agruparSeries,
   compararN,
   proximaParaAdicionar,
@@ -314,7 +317,7 @@ describe("pontosDaEvolucao", () => {
       expect(pontos[0].competencia).toBe("2026-04")
     })
     it("sem cargas: vazio", () => {
-      expect(pontosDaEvolucao([], 6)).toEqual({ pontos: [], kpis: [] })
+      expect(pontosDaEvolucao([], 6)).toEqual({ pontos: [], kpis: [], avisosFiltro: [] })
     })
   })
 })
@@ -546,5 +549,78 @@ describe("leituras: regra, números, evidência e selos", () => {
   it("temOutros", () => {
     expect(temOutros([{ rotulo: "A", valor: 1 }, { rotulo: "Outros", valor: 3 }])).toBe(true)
     expect(temOutros([{ rotulo: "A", valor: 1 }])).toBe(false)
+  })
+})
+
+describe("filtros Autarquia e Tipo", () => {
+  const novo = montarSheet(
+    [...ROTULOS_PADRAO, "Autarquia", "Tipo"],
+    [
+      ["2026-08-02", "Em Análise", null, null, null, null, "Cli A", "Á1", "Suporte", 0, 1, "SPPrev", "Incidente"],
+      ["2026-08-03", "Em Análise", null, null, null, null, "Cli A", "Á1", "Suporte", 0, 2, null, "Requisição"],
+      ["2026-08-04", "Em Análise", null, null, null, null, "Cli A", "Á1", "Suporte", 0, 3, "SPPrev", null],
+    ].map((l) => l.map((v, i) => (i === 0 && typeof v === "string" ? new Date(`${v}T00:00:00Z`) : v)))
+  )
+  it("ordem dos campos: Cliente, Autarquia, Área Superior, Área, Atividade, Tipo, Severidade, Operador, Situação", () => {
+    expect(CAMPOS_FILTRO.map((c) => c.rotulo)).toEqual([
+      "Cliente",
+      "Autarquia",
+      "Área Superior",
+      "Área",
+      "Atividade",
+      "Tipo",
+      "Severidade",
+      "Operador",
+      "Situação na competência",
+    ])
+  })
+  it("filtra por autarquia e por tipo; vazio é (sem informação)", () => {
+    expect(filtrarSheet(novo, { autarquia: ["SPPrev"] }, "2026-08").rows).toHaveLength(2)
+    expect(filtrarSheet(novo, { autarquia: ["(sem informação)"] }, "2026-08").rows).toHaveLength(1)
+    expect(filtrarSheet(novo, { tipo: ["Incidente"], autarquia: ["SPPrev"] }, "2026-08").rows).toHaveLength(1)
+    expect(opcoesDoFiltro(novo, "tipo")).toEqual(["(sem informação)", "Incidente", "Requisição"])
+    expect(opcoesDoFiltro(novo, "autarquia")).toEqual(["(sem informação)", "SPPrev"])
+  })
+})
+
+describe("filtro ativo em carga sem a coluna", () => {
+  const antigo = sheetChamados([
+    { abertura: "2026-08-02" },
+    { abertura: "2026-08-03" },
+  ])
+  it("colunasAusentes lista os rótulos dos filtros ativos sem coluna na carga", () => {
+    expect(colunasAusentes(antigo, { autarquia: ["X"], tipo: ["Y"], cliente: ["Cli A"] })).toEqual(["Autarquia", "Tipo"])
+    expect(colunasAusentes(antigo, {})).toEqual([])
+    expect(colunasAusentes(antigo, { cliente: ["Cli A"], situacaoNaCompetencia: ["Resolvido no mês"] })).toEqual([])
+  })
+  it("o motor devolve KPIs sem valor (não zero) e um aviso curto", () => {
+    const m = calcularMetricas({
+      sheet: antigo,
+      competencia: "2026-08",
+      colunasSemFiltro: ["Autarquia"],
+    })
+    expect(m.kpis.every((k) => k.valor === null)).toBe(true)
+    expect(m.avisos).toContain(
+      "Sem a coluna Autarquia nesta carga: filtro não se aplica"
+    )
+  })
+  it("Evolução: o ponto da carga sem a coluna fica null e o aviso é devolvido", () => {
+    const comColuna = montarSheet(
+      [...ROTULOS_PADRAO, "Autarquia"],
+      [[new Date("2026-09-02T00:00:00Z"), "Em Análise", null, null, null, null, "Cli A", "Á1", "Suporte", 0, 1, "SPPrev"]]
+    )
+    const { pontos, avisosFiltro } = pontosDaEvolucao(
+      [
+        { meta: meta("2026-08"), sheet: antigo },
+        { meta: meta("2026-09"), sheet: comColuna },
+      ],
+      2,
+      { autarquia: ["SPPrev"] }
+    )
+    expect(pontos[0].valores.backlog).toBeNull()
+    expect(pontos[1].valores.backlog).toBe(1)
+    expect(avisosFiltro).toEqual([
+      "Sem a coluna Autarquia nesta carga: filtro não se aplica",
+    ])
   })
 })

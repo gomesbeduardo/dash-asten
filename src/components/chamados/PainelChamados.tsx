@@ -2,12 +2,12 @@ import { motion, useReducedMotion } from "motion/react"
 import { ArrowRightIcon } from "lucide-react"
 
 import { formatarCompetencia } from "@/cargas"
-import type { Distribuicao } from "@/chamados"
+import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
 import { entryContainer } from "@/components/app/motion/variants"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, KpiCartao } from "./cartoes"
-import { ChipsFiltrosChamados } from "./filtros"
+import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BarrasFaixas, BarrasRanking, COR } from "./graficos"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
@@ -26,7 +26,10 @@ const COR_SITUACAO: Record<string, string> = {
   "Sem data de abertura": COR.laranja,
 }
 
-const tabelaDe = (itens: { rotulo: string; valor: number }[], total = false) => ({
+const tabelaDe = (
+  itens: { rotulo: string; valor: number }[],
+  total = false
+) => ({
   colunas: ["Categoria", "Chamados"],
   linhas: [
     ...itens.map((i) => [i.rotulo, n(i.valor)]),
@@ -43,11 +46,8 @@ export function PainelChamados({
   irPara,
 }: VisaoTipoProps) {
   const reduce = useReducedMotion()
-  const { sheet, filtros, metricas, leituras, anterior } = useMesDeChamados(
-    carga,
-    historico,
-    obterCarga
-  )
+  const { sheet, filtros, metricas, leituras, anterior, semColuna } =
+    useMesDeChamados(carga, historico, obterCarga)
 
   const recorte = recorteTexto(filtros)
   const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
@@ -60,6 +60,9 @@ export function PainelChamados({
         {carga.arquivo}
       </p>
       <ChipsFiltrosChamados />
+      <AvisoFiltroSemColuna
+        avisos={semColuna.length ? [avisoColunasSemFiltro(semColuna)] : []}
+      />
     </header>
   )
 
@@ -82,6 +85,10 @@ export function PainelChamados({
     )
 
   const play = entrada && !reduce
+  // o aviso de filtro sem coluna já aparece junto dos chips
+  const avisosRodape = metricas.avisos.filter(
+    (a) => !a.startsWith("Sem a coluna") && !a.startsWith("Sem as colunas")
+  )
   const rotuloAnterior = anterior
     ? formatarCompetencia(anterior.entrada.competencia)
     : "mês anterior"
@@ -97,6 +104,12 @@ export function PainelChamados({
     0
   )
   const mes = formatarCompetencia(carga.competencia, "longo")
+  const semDados = semColuna.length > 0
+  const vazio = (
+    <p className="py-10 text-center text-lg text-muted-foreground">
+      Sem dados com este filtro nesta carga
+    </p>
+  )
   const selosDe = (itens: { rotulo: string }[], ...mais: SeloTipo[]) => [
     ...mais,
     ...(temOutros(itens) ? (["outros"] as const) : []),
@@ -113,10 +126,14 @@ export function PainelChamados({
   const situacaoAtual = dist("situacao")
   // símbolos que aparecem nesta tela, para a legenda
   const tiposNaTela: SeloTipo[] = [
-    ...(metricas.kpis.some((k) => !k.reconstruivel) ? (["calculado"] as const) : []),
+    ...(metricas.kpis.some((k) => !k.reconstruivel)
+      ? (["calculado"] as const)
+      : []),
     "derivado",
     ...(situacaoAtual ? (["exportacao"] as const) : []),
-    ...([cliente, ...rankings.map((r) => dist(r.id))].some((d) => d && temOutros(d.itens))
+    ...([cliente, ...rankings.map((r) => dist(r.id))].some(
+      (d) => d && temOutros(d.itens)
+    )
       ? (["outros"] as const)
       : []),
   ]
@@ -206,7 +223,11 @@ export function PainelChamados({
             subtitulo="dias desde a abertura até o fim do mês"
             tabela={tabelaDe(metricas.envelhecimento)}
           >
-            <BarrasFaixas itens={metricas.envelhecimento} animar={play} />
+            {semDados ? (
+              vazio
+            ) : (
+              <BarrasFaixas itens={metricas.envelhecimento} animar={play} />
+            )}
           </GraficoCartao>
         </div>
 
@@ -233,20 +254,26 @@ export function PainelChamados({
             id="situacaoCompetencia"
             titulo="Situação na competência"
             subtitulo={
-              totalLinhas === sheet.rows.length
-                ? `${n(totalLinhas)} chamados na planilha, nenhum excluído`
-                : `${n(totalLinhas)} chamados no recorte, de ${n(sheet.rows.length)} na planilha; nenhum excluído`
+              semDados
+                ? "sem dados com este filtro nesta carga"
+                : totalLinhas === sheet.rows.length
+                  ? `${n(totalLinhas)} chamados na planilha, nenhum excluído`
+                  : `${n(totalLinhas)} chamados no recorte, de ${n(sheet.rows.length)} na planilha; nenhum excluído`
             }
             nota="Todas as linhas da planilha aparecem aqui, classificadas pelas datas. Os abertos após a competência pertencem ao mês seguinte e ficam só como referência."
             tabela={tabelaDe(metricas.porSituacaoNaCompetencia, true)}
             selos={["derivado"]}
             className="xl:col-span-2"
           >
-            <BarrasRanking
-              itens={metricas.porSituacaoNaCompetencia}
-              corDoItem={(i) => COR_SITUACAO[i.rotulo] ?? COR.principal}
-              animar={play}
-            />
+            {semDados ? (
+              vazio
+            ) : (
+              <BarrasRanking
+                itens={metricas.porSituacaoNaCompetencia}
+                corDoItem={(i) => COR_SITUACAO[i.rotulo] ?? COR.principal}
+                animar={play}
+              />
+            )}
           </GraficoCartao>
           {situacaoAtual && (
             <GraficoCartao
@@ -262,10 +289,13 @@ export function PainelChamados({
           )}
         </div>
 
-        {metricas.avisos.length > 0 && (
-          <footer aria-label="Avisos" className="text-base text-muted-foreground">
+        {avisosRodape.length > 0 && (
+          <footer
+            aria-label="Avisos"
+            className="text-base text-muted-foreground"
+          >
             <ul className="flex flex-col gap-1">
-              {metricas.avisos.map((a) => (
+              {avisosRodape.map((a) => (
                 <li key={a}>{a}</li>
               ))}
             </ul>

@@ -29,18 +29,22 @@ export type MetricasChamados = {
   envelhecimento: ItemDistribuicao[]
   /** Backlog + resolvidos até o fim ainda sem aceite: denominador coerente de "aguardando aceite". */
   baseAguardandoAceite: number | null
-  linhasConsideradas: number
+  linhasConsideradas: number | null
   /** Abertos após o fim da competência (aberto-apos); mostrados à parte. */
-  linhasPosteriores: number
-  linhasSemAbertura: number
+  linhasPosteriores: number | null
+  linhasSemAbertura: number | null
   porSituacaoNaCompetencia: ItemDistribuicao[]
   avisos: string[]
+  /** Filtros ativos sem a coluna nesta carga: nada é calculado (nunca zero). */
+  colunasSemFiltro?: string[]
 }
 /** cargaPropria === false: a planilha é de outro mês; KPIs não reconstruíveis ficam null. Padrão true. */
 export type EntradaCompetencia = {
   sheet: Sheet
   competencia: Competencia
   cargaPropria?: boolean
+  /** Rótulos dos filtros ativos cuja coluna não existe nesta carga: KPIs ficam sem valor (nunca zero). */
+  colunasSemFiltro?: string[]
 }
 export type Comparacao = {
   a: MetricasChamados
