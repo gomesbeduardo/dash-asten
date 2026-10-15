@@ -164,15 +164,15 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(modalCmp).toBeHidden()
   await expect(cartao).toBeFocused()
 
-  // Evolução: um ponto por foto; mês sem carga não é reconstruído
+  // Evolução: janela de meses sem buracos; mês sem foto fica sem ponto e com a dica
   // O seletor segue focado (como o select nativo): tira o foco para o atalho valer.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await page.keyboard.press("e")
   await expect(page.getByRole("heading", { level: 1, name: "Evolução" })).toBeVisible()
-  const card = page.getByRole("region", { name: "Não finalizados", exact: true })
+  const card = page.getByRole("region", { name: "% no SLA", exact: true })
   await expect(card.getByRole("button", { name: "Reconstruído pelas datas" })).toHaveCount(0)
   await card.getByRole("button", { name: /Ver dados/ }).click()
   await expect(card.getByRole("row", { name: /^ago\/26 / })).toBeVisible()
   await expect(card.getByRole("row", { name: /^set\/26 / })).toBeVisible()
-  await expect(card.getByRole("row", { name: /jul\/26/ })).toHaveCount(0)
+  await expect(card.getByRole("row", { name: /^jul\/26 / })).toContainText("sem foto de jul/26")
 })

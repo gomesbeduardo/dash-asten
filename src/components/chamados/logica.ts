@@ -6,8 +6,12 @@ import {
   type Competencia,
 } from "@/cargas"
 import {
-  evolucao,
+  calcularMetricas,
+  corrigirFoto,
   mapearColunas,
+  metricasCorrigidas,
+  metricasDoMesSemFoto,
+  rotuloCompetencia,
   classificarLinha,
   type CampoChamado,
   type EntradaCompetencia,
@@ -121,19 +125,57 @@ export type PontoEvolucao = {
   competencia: Competencia
   rotulo: string
   valores: Record<string, number | null>
+  /** Mês sem foto (D65): só entradas e finalizados (das datas) têm valor; o resto é null. */
+  semFoto?: boolean
+  /** "sem foto de jun/26", para o tooltip e a tabela. */
+  dica?: string
+  /** Valor da foto como está, para cada id cujo valor mudou pela correção das fotos posteriores. */
+  originais?: Record<string, number | null>
+  /** Mes Ref. das fotos posteriores que originaram alguma correção neste ponto. */
+  corrigidoPor?: Competencia[]
 }
 
+export type SeriesSituacao = {
+  series: { id: string; rotulo: string }[]
+  pontos: PontoEvolucao[]
+}
+
+const somarMeses = (c: Competencia, n: number): Competencia => {
+  const t = Number(c.slice(0, 4)) * 12 + Number(c.slice(5, 7)) - 1 + n
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`
+}
+
+const pontoSemFoto = (
+  competencia: Competencia,
+  valores: Record<string, number | null> = {}
+): PontoEvolucao => ({
+  competencia,
+  rotulo: formatarCompetencia(competencia),
+  valores,
+  semFoto: true,
+  dica: `sem foto de ${rotuloCompetencia(competencia)}`,
+})
+
+/**
+ * Evolução (D65): `maxPontos` meses de calendário terminando em `fim` (padrão: a foto mais
+ * recente), sem buracos. Mês com foto = versão atual do mês, corrigida pelas fotos de Mes Ref.
+ * posterior (com `originais` quando o valor mudou). Mês sem foto = só entradas e finalizados,
+ * tirados das datas da foto mais atual; o resto é null (a linha quebra, nunca vira zero).
+ */
 export function pontosDaEvolucao(
   proprias: { meta: CargaMeta; sheet: Sheet }[],
   maxPontos = 6,
-  filtros: FiltrosChamados = {}
+  filtros: FiltrosChamados = {},
+  fim?: Competencia
 ): {
   pontos: PontoEvolucao[]
   kpis: { id: string; rotulo: string; formato: FormatoKpi }[]
-  /** Filtros ativos sem coluna em alguma carga da janela: os pontos dela ficam vazios. */
+  /** Filtros ativos sem coluna em alguma foto da janela: os pontos dela ficam vazios. */
   avisosFiltro: string[]
   /** Não finalizados por operador (8 maiores) e por cliente (5 maiores) ao longo da janela. */
   dimensoes: { operador: SeriesDimensao; cliente: SeriesDimensao }
+  /** Chamados por Situação, uma linha por situação. */
+  situacoes: SeriesSituacao
 } {
   const maisRecentes = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>()
   for (const p of proprias) {
@@ -142,43 +184,130 @@ export function pontosDaEvolucao(
       maisRecentes.set(p.meta.competencia, p)
   }
   const n = Math.max(maxPontos, 0)
-  // Uma foto por competência (a versão mais recente), as `n` mais recentes. Mês sem foto não é reconstruído.
-  const comps = [...maisRecentes.keys()]
-    .sort((a, b) => a.localeCompare(b))
-    .slice(-n || undefined)
-  if (comps.length === 0 || n === 0)
-    return {
-      pontos: [],
-      kpis: [],
-      avisosFiltro: [],
-      dimensoes: {
-        operador: seriesPorDimensao([], "operador", MAX_OPERADORES),
-        cliente: seriesPorDimensao([], "cliente", MAX_CLIENTES),
-      },
+  const comps = [...maisRecentes.keys()].sort((a, b) => a.localeCompare(b))
+  const vazio = {
+    pontos: [],
+    kpis: [],
+    avisosFiltro: [],
+    dimensoes: {
+      operador: seriesPorDimensao([], "operador", MAX_OPERADORES),
+      cliente: seriesPorDimensao([], "cliente", MAX_CLIENTES),
+    },
+    situacoes: { series: [], pontos: [] },
+  }
+  if (comps.length === 0 || n === 0) return vazio
+  const ultima = comps[comps.length - 1]
+  const topo = fim ?? ultima
+  const janela = Array.from({ length: n }, (_, i) => somarMeses(topo, i - n + 1))
+  const brutas = comps.map(
+    (c): EntradaCompetencia => ({
+      competencia: c,
+      sheet: maisRecentes.get(c)!.sheet,
+    })
+  )
+  const filtrada = (e: EntradaCompetencia): EntradaCompetencia => ({
+    competencia: e.competencia,
+    colunasSemFiltro: colunasAusentes(e.sheet, filtros),
+    sheet: filtrarSheet(e.sheet, filtros, e.competencia),
+  })
+  const maisAtual = filtrada(brutas[brutas.length - 1])
+  const kpis = calcularMetricas(maisAtual).kpis.map(
+    ({ id, rotulo, formato }) => ({ id, rotulo, formato })
+  )
+  const posterioresDe = (c: Competencia) =>
+    brutas.filter((e) => e.competencia > c)
+
+  type Item = { c: Competencia; entrada: EntradaCompetencia | null }
+  const itens: Item[] = janela.map((c) => ({
+    c,
+    entrada: maisRecentes.has(c) ? filtrada(brutas[comps.indexOf(c)]) : null,
+  }))
+  const comFoto = itens.filter((i) => i.entrada)
+  const corrigidas = comFoto.map((i) =>
+    corrigirFoto(i.entrada!, posterioresDe(i.c)).entrada
+  )
+
+  const situacaoPorMes = new Map<
+    Competencia,
+    { rotulo: string; valor: number; original?: number }[] | null
+  >()
+  const pontos: PontoEvolucao[] = itens.map(({ c, entrada }) => {
+    if (!entrada) {
+      if ((maisAtual.colunasSemFiltro ?? []).length > 0) return pontoSemFoto(c)
+      const parcial = metricasDoMesSemFoto(c, maisAtual)
+      return pontoSemFoto(
+        c,
+        Object.fromEntries(parcial.kpis.map((k) => [k.id, k.valor]))
+      )
     }
-  const todas = comps.map((c): EntradaCompetencia => {
-    const { sheet } = maisRecentes.get(c)!
+    const m = metricasCorrigidas(entrada, posterioresDe(c))
+    situacaoPorMes.set(
+      c,
+      (entrada.colunasSemFiltro ?? []).length > 0 ? null : m.situacoes
+    )
+    const originais = Object.fromEntries(
+      m.kpis.filter((k) => "original" in k).map((k) => [k.id, k.original ?? null])
+    )
     return {
       competencia: c,
-      colunasSemFiltro: colunasAusentes(sheet, filtros),
-      sheet: filtrarSheet(sheet, filtros, c),
+      rotulo: formatarCompetencia(c),
+      valores: Object.fromEntries(m.kpis.map((k) => [k.id, k.valor])),
+      ...(Object.keys(originais).length ? { originais } : {}),
+      ...(m.corrigidoPor.length ? { corrigidoPor: m.corrigidoPor } : {}),
     }
   })
-  const ev = evolucao(todas)
-  const pontos = ev.competencias.map((competencia, i) => ({
-    competencia,
-    rotulo: formatarCompetencia(competencia),
-    valores: Object.fromEntries(ev.series.map((s) => [s.id, s.valores[i]])),
-  }))
-  const semColuna = [...new Set(todas.flatMap((e) => e.colunasSemFiltro ?? []))]
+
+  // Chamados por Situação: uma linha por rótulo visto nas fotos da janela, maiores primeiro.
+  const total = new Map<string, number>()
+  for (const lista of situacaoPorMes.values())
+    for (const s of lista ?? []) total.set(s.rotulo, (total.get(s.rotulo) ?? 0) + s.valor)
+  const seriesSit = [...total.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([rotulo], i) => ({ id: `s${i}`, rotulo }))
+  const pontosSit: PontoEvolucao[] = itens.map(({ c }) => {
+    if (!situacaoPorMes.has(c))
+      return pontoSemFoto(c, Object.fromEntries(seriesSit.map((s) => [s.id, null])))
+    const lista = situacaoPorMes.get(c)
+    const valores: Record<string, number | null> = {}
+    const originais: Record<string, number | null> = {}
+    for (const s of seriesSit) {
+      const it = lista?.find((x) => x.rotulo === s.rotulo)
+      valores[s.id] = lista ? (it?.valor ?? 0) : null
+      if (it && it.original !== undefined) originais[s.id] = it.original
+    }
+    return {
+      competencia: c,
+      rotulo: formatarCompetencia(c),
+      valores,
+      ...(Object.keys(originais).length ? { originais } : {}),
+    }
+  })
+
+  // Operador/cliente: não finalizados por foto (corrigida); mês sem foto fica sem ponto.
+  const dimensao = (campo: CampoChamado, max: number): SeriesDimensao => {
+    const d = seriesPorDimensao(corrigidas, campo, max)
+    const pontosDim = itens.map(({ c }) => {
+      const p = d.pontos.find((x) => x.competencia === c)
+      return p ?? pontoSemFoto(c, Object.fromEntries(d.series.map((s) => [s.id, null])))
+    })
+    return { ...d, pontos: pontosDim }
+  }
+
+  const semColuna = [
+    ...new Set(
+      [...comFoto.map((i) => i.entrada!), ...(pontos.some((p) => p.semFoto) ? [maisAtual] : [])]
+        .flatMap((e) => e.colunasSemFiltro ?? [])
+    ),
+  ]
   return {
     pontos,
+    kpis,
     avisosFiltro: semColuna.length ? [avisoColunasSemFiltro(semColuna)] : [],
     dimensoes: {
-      operador: seriesPorDimensao(todas, "operador", MAX_OPERADORES),
-      cliente: seriesPorDimensao(todas, "cliente", MAX_CLIENTES),
+      operador: dimensao("operador", MAX_OPERADORES),
+      cliente: dimensao("cliente", MAX_CLIENTES),
     },
-    kpis: ev.series.map(({ id, rotulo, formato }) => ({ id, rotulo, formato })),
+    situacoes: { series: seriesSit, pontos: pontosSit },
   }
 }
 
@@ -270,7 +399,13 @@ export function linhasDeSerie(
       competencia: p.competencia,
       rotulo: p.rotulo,
     }
-    for (const id of ids) linha[id] = p.valores[id] ?? null
+    for (const id of ids) {
+      linha[id] = p.valores[id] ?? null
+      // Valor da foto como está, quando a correção das fotos posteriores o mudou (D65).
+      const o = p.originais?.[id]
+      if (o !== undefined && o !== null) linha[`${id}__o`] = o
+    }
+    if (p.semFoto && p.dica) linha.dica = p.dica
     return linha
   })
 }
