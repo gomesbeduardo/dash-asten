@@ -153,8 +153,9 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
       within(topo).getByRole("listitem", { name: `Situação: ${n}` })
     expect(item("Aguardando cliente")).toHaveTextContent("nova")
     expect(within(item("Finalizado")).getByLabelText("8")).toBeInTheDocument()
-    // set/26 é corrigido pela posição de out (D65): 5000, 5003 e 5010 já estavam finalizados lá
-    expect(item("Finalizado")).toHaveTextContent("+3 vs set/26")
+    // set/26 é corrigido pela posição de out (D65): 5000 e 5003 já estavam finalizados lá. 5010 estava
+    // "Aguardando aceite" e a out não traz Data de Aceite: continua aguardando (posição de set estava certa)
+    expect(item("Finalizado")).toHaveTextContent("+4 vs set/26")
     expect(item("Em Análise")).toHaveTextContent("nova")
     const total = within(topo).getByRole("article", {
       name: "Total de chamados",

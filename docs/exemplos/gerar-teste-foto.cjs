@@ -52,7 +52,7 @@ const out = mai.map((r) => [...r])
 const i5003 = out.findIndex((r) => r[1] === 5003)
 out[i5003][7] = "Finalizado"; out[i5003][10] = "2026-06-20"; out[i5003][11] = "2026-06-22" // resolvido em junho (mês sem foto)
 const i5015 = out.findIndex((r) => r[1] === 5015)
-out[i5015][7] = "Finalizado"; out[i5015][10] = "2026-05-30"; out[i5015][11] = "2026-06-02" // corrige maio: resolvido em 30/05, lançado depois
+out[i5015][7] = "Finalizado"; out[i5015][10] = "2026-05-30"; out[i5015][11] = "2026-05-31" // corrige maio: resolvido em 30/05, aceito em 31/05 (aceite dentro de maio)
 out.push(["2026-08-14", 5020, "Cliente Delta", "Operações", "Armazém", "Correção", "Média", "Em Análise", "2026-08-30", null, null, null, 0, "Erro no inventário", "Operador 05", "Responsável B"])
 out.push(["2026-10-06", 5022, "Cliente Ômega", "Comercial", "Cadastro", "Integração", "Baixa", "Aguardando cliente", "2026-10-20", null, null, null, 0, "Validação de layout", "Operador 04", "Responsável A"])
 out.push(["2026-10-01", 5024, "Cliente Delta", "Comercial", "Cadastro", "Suporte", "Alta", "Finalizado", "2026-10-15", null, "2026-10-09", "2026-10-10", 2, "Ajuste de permissão", "Operador 05", "Responsável B"])
