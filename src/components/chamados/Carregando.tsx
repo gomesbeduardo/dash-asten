@@ -61,7 +61,7 @@ function Forma({ forma }: { forma: FormaCarregando }) {
     case "evolucao":
       return (
         <div className="flex flex-col gap-8">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 min-[1700px]:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3 min-[137.5rem]:grid-cols-4">
             {blocos(4, "h-80")}
           </div>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

@@ -57,6 +57,21 @@ function useEscalaTv() {
   return escala
 }
 
+/** Tamanho do rem em px (cresce com a viewport, D67); eixos e margens em px acompanham a fonte. */
+function useRem() {
+  const ler = () =>
+    typeof document === "undefined"
+      ? 16
+      : parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  const [rem, setRem] = useState(ler)
+  useEffect(() => {
+    const aoRedimensionar = () => setRem(ler())
+    window.addEventListener("resize", aoRedimensionar)
+    return () => window.removeEventListener("resize", aoRedimensionar)
+  }, [])
+  return rem
+}
+
 export function animacao(animar: boolean) {
   return {
     isAnimationActive: animar,
@@ -73,6 +88,8 @@ type TipProps = {
     dataKey?: string | number
     value?: unknown
     color?: string
+    /** A linha de dados do ponto (traz `dica` e `<id>__o`, quando houver). */
+    payload?: Record<string, unknown>
   }[]
   formatar?: (v: number) => string
 }
@@ -94,6 +111,23 @@ function Dica({ active, label, payload, formatar }: TipProps) {
           </span>
         </p>
       ))}
+      {typeof payload[0]?.payload?.dica === "string" &&
+        payload.some((p) => p.value == null) && (
+          <p className="mt-1 text-muted-foreground">
+            {payload[0].payload.dica}
+          </p>
+        )}
+      {payload.map((p) => {
+        const o = p.payload?.[`${String(p.dataKey)}__o`]
+        return typeof o === "number" ? (
+          <p
+            key={`o-${String(p.dataKey)}`}
+            className="mt-1 text-muted-foreground"
+          >
+            {`Corrigido (${p.name}): na foto estava ${formatar ? formatar(o) : inteiro.format(o)}`}
+          </p>
+        ) : null
+      })}
     </div>
   )
 }
@@ -408,13 +442,17 @@ export function LinhaMini({
   series,
   formato,
   animar,
+  altura = "clamp(13rem, 22vh, 30rem)",
 }: {
   linhas: LinhaSerie[]
   series: SerieLinha[]
   formato: FormatoKpi
   animar: boolean
+  /** Altura CSS do gráfico; o padrão acompanha a viewport (legível na TV, D67). */
+  altura?: string
 }) {
   const ultimo = linhas.length - 1
+  const rem = useRem()
   const { ocultas, alternar } = useSeriesOcultas(
     `${series.map((s) => s.id).join(",")}|${linhas.map((l) => l.rotulo).join(",")}`,
     series.map((s) => s.id)
@@ -434,7 +472,7 @@ export function LinhaMini({
           series.map((s) => [s.id, { label: s.rotulo, color: s.cor }])
         )}
         className="aspect-auto w-full"
-        style={{ height: 220 }}
+        style={{ height: altura }}
         role="img"
         aria-label={series
           .map(
@@ -445,13 +483,25 @@ export function LinhaMini({
       >
         <LineChart
           data={linhas}
-          margin={{ top: 12, right: 20, left: 4, bottom: 4 }}
+          margin={{
+            top: 0.75 * rem,
+            right: 1.5 * rem,
+            left: 0.25 * rem,
+            bottom: 0.25 * rem,
+          }}
         >
           <CartesianGrid vertical={false} stroke={GRADE} />
-          <XAxis dataKey="rotulo" tick={EIXO} tickMargin={8} tickLine={false} />
+          <XAxis
+            dataKey="rotulo"
+            tick={EIXO}
+            tickMargin={0.5 * rem}
+            tickLine={false}
+            padding={{ left: 0.75 * rem, right: 0.75 * rem }}
+            minTickGap={0.75 * rem}
+          />
           <YAxis
             tick={EIXO}
-            width={52}
+            width={Math.round(4.25 * rem)}
             domain={[0, topo]}
             tickCount={3}
             tickLine={false}
@@ -479,15 +529,28 @@ export function LinhaMini({
                 payload?: LinhaSerie
               }) =>
                 p.payload?.[s.id] !== null && Number.isFinite(p.cy) ? (
-                  <circle
-                    key={`p${p.index}`}
-                    cx={p.cx}
-                    cy={p.cy}
-                    r={p.index === ultimo ? 8 : 5}
-                    fill={s.cor}
-                    stroke="var(--card)"
-                    strokeWidth={2}
-                  />
+                  p.payload?.[`${s.id}__o`] !== undefined ? (
+                    // Ponto corrigido pelas fotos posteriores: anel vazado.
+                    <circle
+                      key={`p${p.index}`}
+                      cx={p.cx}
+                      cy={p.cy}
+                      r={p.index === ultimo ? 8 : 6}
+                      fill="var(--card)"
+                      stroke={s.cor}
+                      strokeWidth={3}
+                    />
+                  ) : (
+                    <circle
+                      key={`p${p.index}`}
+                      cx={p.cx}
+                      cy={p.cy}
+                      r={p.index === ultimo ? 8 : 5}
+                      fill={s.cor}
+                      stroke="var(--card)"
+                      strokeWidth={2}
+                    />
+                  )
                 ) : (
                   <g key={`p${p.index}`} />
                 )

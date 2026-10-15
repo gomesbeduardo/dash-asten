@@ -33,6 +33,8 @@ import {
   ultimasVersoes,
 } from "./logica"
 
+import { foto, mai, out, v1, v2 } from "@/chamados/fotos-teste"
+
 const meta = (competencia: string, versao = 1): CargaMeta => ({
   id: `${competencia}-v${versao}`,
   tipo: "chamados",
@@ -178,21 +180,28 @@ describe("pontosDaEvolucao", () => {
   const proprias = (...cs: string[]) =>
     cs.map((c) => ({ meta: meta(c), sheet: longa }))
 
-  it("um ponto por foto: mês sem carga não é reconstruído", () => {
+  it("janela de calendário sem buracos: mês sem foto vira ponto marcado", () => {
     const { pontos } = pontosDaEvolucao(proprias("2026-07", "2026-09"), 6)
-    expect(pontos.map((p) => p.competencia)).toEqual(["2026-07", "2026-09"])
+    expect(pontos.map((p) => p.competencia)).toEqual([
+      "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09",
+    ])
+    expect(pontos.map((p) => !!p.semFoto)).toEqual([true, true, true, false, true, false])
+    expect(pontos[0].dica).toBe("sem foto de abr/26")
+    expect(pontos[0].valores.naoFinalizados).toBeNull()
   })
   it("cada ponto é a foto do próprio Mes Ref.", () => {
     const { pontos, kpis } = pontosDaEvolucao(
       [{ meta: meta("2026-09"), sheet: a }],
       6
     )
-    expect(pontos.map((p) => p.competencia)).toEqual(["2026-09"])
+    expect(pontos).toHaveLength(6)
+    expect(pontos.slice(0, 5).every((p) => p.semFoto)).toBe(true)
+    expect(pontos[5].semFoto).toBeUndefined()
     expect(kpis.map((k) => k.id)).toContain("naoFinalizados")
     expect(kpis.map((k) => k.id)).not.toContain("backlog")
     // 08-10 e 09-02 estão abertos; 08-03 está Finalizado
-    expect(pontos[0].valores.naoFinalizados).toBe(2)
-    expect(pontos[0].valores.entradas).toBe(1)
+    expect(pontos[5].valores.naoFinalizados).toBe(2)
+    expect(pontos[5].valores.entradas).toBe(1)
     expect(kpis.every((k) => !("reconstruivel" in k))).toBe(true)
   })
   it("limita o total de pontos ao máximo informado (os mais recentes)", () => {
@@ -227,10 +236,82 @@ describe("pontosDaEvolucao", () => {
       ],
       6
     )
-    expect(pontos[0].valores.naoFinalizados).toBe(2)
+    expect(pontos[5].valores.naoFinalizados).toBe(2)
   })
   it("sem cargas: vazio", () => {
     expect(pontosDaEvolucao([], 6)).toMatchObject({ pontos: [], kpis: [], avisosFiltro: [] })
+  })
+})
+
+describe("pontosDaEvolucao com as fotos de teste (D65)", () => {
+  const m = (c: string, versao = 1) => meta(c, versao)
+  const cargas = [
+    { meta: m("2026-04", 1), sheet: foto(v1, "2026-04-01") },
+    { meta: m("2026-04", 2), sheet: foto(v2, "2026-04-01") },
+    { meta: m("2026-05"), sheet: foto(mai, "2026-05-01") },
+    { meta: m("2026-10"), sheet: foto(out, "2026-10-01") },
+  ]
+  const r = pontosDaEvolucao(cargas, 7)
+  const por = (c: string) => r.pontos.find((p) => p.competencia === c)!
+
+  it("janela abr–out: mês com foto e mês sem foto, sem buracos", () => {
+    expect(r.pontos.map((p) => p.competencia)).toEqual([
+      "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10",
+    ])
+    expect(r.pontos.map((p) => !!p.semFoto)).toEqual([
+      false, false, true, true, true, true, false,
+    ])
+  })
+  it("maio corrigido pela foto de outubro: finalizados 2, original 1", () => {
+    expect(por("2026-05").valores.finalizados).toBe(2)
+    expect(por("2026-05").originais?.finalizados).toBe(1)
+    expect(por("2026-05").corrigidoPor).toEqual(["2026-10"])
+    expect(por("2026-10").originais).toBeUndefined()
+  })
+  it("meses sem foto: só entradas e finalizados das datas; o resto null", () => {
+    const par = (c: string) => [por(c).valores.entradas, por(c).valores.finalizados]
+    expect(par("2026-06")).toEqual([0, 1])
+    expect(par("2026-07")).toEqual([0, 0])
+    expect(par("2026-08")).toEqual([1, 0])
+    expect(par("2026-09")).toEqual([0, 0])
+    for (const c of ["2026-06", "2026-07", "2026-08", "2026-09"]) {
+      for (const k of r.kpis)
+        if (k.id !== "entradas" && k.id !== "finalizados")
+          expect(por(c).valores[k.id]).toBeNull()
+      expect(por(c).dica).toBe(`sem foto de ${por(c).rotulo.toLowerCase().slice(0, 3)}/26`)
+    }
+  })
+  it("Chamados por situação: uma linha por situação; mês sem foto é null", () => {
+    const rotulos = r.situacoes.series.map((s) => s.rotulo)
+    expect(rotulos).toContain("Aguardando cliente")
+    const id = r.situacoes.series.find((s) => s.rotulo === "Em Atendimento")!.id
+    const sp = (c: string) => r.situacoes.pontos.find((p) => p.competencia === c)!
+    expect(sp("2026-06").valores[id]).toBeNull()
+    expect(sp("2026-05").valores[id]).toBe(0) // corrigido: era 1
+    expect(sp("2026-05").originais?.[id]).toBe(1)
+  })
+  it("cartões por operador/cliente: não finalizados por foto; mês sem foto null", () => {
+    const op = r.dimensoes.operador
+    expect(op.pontos).toHaveLength(7)
+    const id = op.series[0].id
+    expect(op.pontos[2].valores[id]).toBeNull() // jun
+    expect(op.pontos[6].valores[id]).not.toBeNull()
+  })
+})
+
+describe("linhasDeSerie (D65: marcas de corrigido e sem foto)", () => {
+  it("leva o original e a dica do ponto para a linha", () => {
+    const ls = linhasDeSerie(
+      [
+        { competencia: "2026-05", rotulo: "mai/26", valores: { x: 2 }, originais: { x: 1 } },
+        { competencia: "2026-06", rotulo: "jun/26", valores: { x: null }, semFoto: true, dica: "sem foto de jun/26" },
+      ],
+      ["x"]
+    )
+    expect(ls[0]).toMatchObject({ x: 2, x__o: 1 })
+    expect(ls[0].dica).toBeUndefined()
+    expect(ls[1]).toMatchObject({ x: null, dica: "sem foto de jun/26" })
+    expect("x__o" in ls[1]).toBe(false)
   })
 })
 
