@@ -221,3 +221,19 @@ describe("NovaCargaLoteDialog: ano presumido", () => {
     await waitFor(() => expect(p.guardar).toHaveBeenCalledTimes(2))
   })
 })
+
+describe("NovaCargaLoteDialog: Mes Ref. (D63)", () => {
+  const comMesRef = (nome: string, ...meses: string[]) =>
+    item(nome, [["Área", "Mes Ref."], ...meses.map((m) => ["TI", m])])
+
+  it("origem em cada linha e aviso só na linha com dois meses", async () => {
+    montar({ itens: [comMesRef("a.xlsx", "out/26", "out/26"), comMesRef("b.xlsx", "out/26", "set/26", "set/26")] })
+    const a = (await screen.findByText("a.xlsx")).closest("tr")!
+    const b = screen.getByText("b.xlsx").closest("tr")!
+    expect(within(a).getByText("da planilha (Mes Ref.)")).toBeInTheDocument()
+    expect(within(b).getByText("da planilha (Mes Ref.)")).toBeInTheDocument()
+    expect(within(b).getByRole("combobox", { name: "Mês de b.xlsx" })).toHaveTextContent("Setembro")
+    expect(within(b).getByText(/tem 2 meses diferentes; usamos Setembro de 2026/)).toBeInTheDocument()
+    expect(within(a).queryByText(/meses diferentes/)).toBeNull()
+  })
+})

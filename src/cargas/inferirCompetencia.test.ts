@@ -208,8 +208,8 @@ describe("inferirCompetencia", () => {
       expect(inferirCompetencia(w, "x.xlsx", hoje).anoPresumido).toBe(false)
     })
     it("(a) coluna de competência dá o ano; o mês continua o da aba", () => {
-      const w = planilha("chamados ciclo Setembro - RH", [col("r", "Mês Ref.", "date")], [{ r: utc(2025, 10, 1) }, { r: utc(2025, 10, 1) }])
-      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2025-09", origem: "aba", anoPresumido: false })
+      const w = planilha("chamados ciclo Setembro - RH", [col("r", "Referência", "date")], [{ r: utc(2025, 10, 1) }, { r: utc(2025, 10, 1) }])
+      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2025-10", origem: "mesref", anoPresumido: false })
     })
     it("(a) coluna de competência em texto com ano", () => {
       const w = planilha("Setembro", [col("r", "Competência", "text")], [{ r: "09/2025" }])
@@ -230,6 +230,54 @@ describe("inferirCompetencia", () => {
     })
     it("mês anterior (fallback total) não é tratado como presumido", () => {
       expect(inferirCompetencia(wb(["Dados"]), "a.xlsx", hoje).anoPresumido).toBe(false)
+    })
+  })
+
+  describe("Mes Ref. (D63)", () => {
+    const col = (key: string, label: string, type: "date" | "text") =>
+      ({ key, label, type, filterable: false, distinctCount: 1 })
+    const planilha = (aba: string, rotulo: string, type: "date" | "text", valores: unknown[], arquivo = "x.xlsx"): [Workbook, string] => [{
+      fileName: arquivo, importedAt: new Date(),
+      sheets: [{ id: "a", name: aba, index: 0, columns: [col("r", rotulo, type)], rows: valores.map((r) => ({ r })) as Sheet["rows"] }],
+    }, arquivo]
+
+    it("Date mmm/yy gravada no dia 26: vale o mês e o ano da data", () => {
+      const [w, a] = planilha("Dados", "Mes Ref.", "date", [utc(2026, 10, 26), utc(2026, 10, 26)])
+      expect(inferirCompetencia(w, a, hoje)).toEqual({ competencia: "2026-10", origem: "mesref", anoPresumido: false })
+    })
+    it("Date no dia 1 (abr/26)", () => {
+      const [w, a] = planilha("Dados", "Mês Ref.", "date", [utc(2026, 4, 1)])
+      expect(inferirCompetencia(w, a, hoje).competencia).toBe("2026-04")
+    })
+    it("texto abr/26, Outubro 2026 e 2026-10", () => {
+      for (const [t, esperado] of [["abr/26", "2026-04"], ["Outubro 2026", "2026-10"], ["2026-10", "2026-10"]]) {
+        const [w, a] = planilha("Dados", "Mes Ref.", "text", [t])
+        expect(inferirCompetencia(w, a, hoje)).toMatchObject({ competencia: esperado, origem: "mesref", anoPresumido: false })
+      }
+    })
+    it("vence a aba: 'chamados ciclo Setembro - RH' + Mes Ref. out/26", () => {
+      const [w, a] = planilha("chamados ciclo Setembro - RH", "Mes Ref.", "text", ["out/26", "out/26"])
+      expect(inferirCompetencia(w, a, hoje)).toMatchObject({ competencia: "2026-10", origem: "mesref" })
+    })
+    it("um único mês: sem aviso", () => {
+      const [w, a] = planilha("Dados", "Mes Ref.", "text", ["out/26", "out/26"])
+      expect(inferirCompetencia(w, a, hoje).avisoMesRef).toBeUndefined()
+    })
+    it("mais de um mês: usa o mais frequente e avisa", () => {
+      const [w, a] = planilha("Dados", "Mes Ref.", "date", [utc(2026, 9, 1), utc(2026, 10, 1), utc(2026, 10, 26), utc(2026, 10, 3)])
+      expect(inferirCompetencia(w, a, hoje)).toEqual({
+        competencia: "2026-10", origem: "mesref", anoPresumido: false,
+        avisoMesRef: "A coluna Mes Ref. tem 2 meses diferentes; usamos Outubro de 2026. Confira.",
+      })
+    })
+    it("coluna vazia ou ilegível: cai na reserva com aviso", () => {
+      for (const vals of [[null, null], ["abc", "???"]]) {
+        const [w, a] = planilha("Setembro 2026", "Mes Ref.", "text", vals)
+        expect(inferirCompetencia(w, a, hoje)).toMatchObject({ competencia: "2026-09", origem: "aba", avisoMesRef: "Mes Ref. vazio ou ilegível" })
+      }
+    })
+    it("sem a coluna: igual a antes", () => {
+      expect(inferirCompetencia(wb(["Setembro 2026"]), "x.xlsx", hoje)).toEqual({ competencia: "2026-09", origem: "aba", anoPresumido: false })
     })
   })
 })

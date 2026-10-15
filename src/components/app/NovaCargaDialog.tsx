@@ -45,6 +45,7 @@ export const MESES = [
 ]
 
 export const DICA_ORIGEM: Record<OrigemCompetencia, string> = {
+  mesref: "da planilha (Mes Ref.)",
   aba: "pelo nome da aba",
   arquivo: "pelo nome do arquivo",
   titulo: "pelo título da planilha",
@@ -78,6 +79,7 @@ export function NovaCargaDialog({
       mes,
       origem: comp.origem,
       anoPresumido: comp.anoPresumido,
+      avisoMesRef: comp.avisoMesRef,
     }
   }, [workbook])
   const tipos = tiposRegistrados()
@@ -188,6 +190,11 @@ export function NovaCargaDialog({
             <p className="text-sm text-muted-foreground">
               {DICA_ORIGEM[inicial.origem]}
             </p>
+            {inicial.avisoMesRef && (
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                {inicial.avisoMesRef}
+              </p>
+            )}
             {presumido && (
               <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
                 Ano não encontrado na planilha — confira

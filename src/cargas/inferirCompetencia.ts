@@ -187,15 +187,98 @@ function resolverAno(
   return { competencia: `${ano}-${competencia.slice(5)}`, anoPresumido: false }
 }
 
+export type CompetenciaInferida = {
+  competencia: Competencia
+  origem: OrigemCompetencia
+  anoPresumido: boolean
+  /** Aviso sobre a coluna Mes Ref. (mais de um mês, ou vazia/ilegível). */
+  avisoMesRef?: string
+}
+
+const NOMES_DOS_MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+]
+const porExtenso = (c: Competencia) =>
+  `${NOMES_DOS_MESES[Number(c.slice(5)) - 1]} de ${c.slice(0, 4)}`
+
+/**
+ * Coluna Mes Ref. (D63): competência mais frequente entre as linhas. Date vale mês e ano
+ * (o dia é ignorado); texto precisa ter ano. `null` = sem coluna de referência.
+ */
+function doMesRef(
+  workbook: Workbook,
+  hoje: Date
+): { competencia: Competencia; meses: number } | "ilegivel" | null {
+  const contagem = new Map<Competencia, number>()
+  let achouColuna = false
+  for (const sheet of workbook.sheets) {
+    for (const col of sheet.columns) {
+      if (!COLUNA_DE_REFERENCIA.test(semAcento(col.label))) continue
+      achouColuna = true
+      for (const row of sheet.rows) {
+        const v = row[col.key]
+        let c: Competencia | null = null
+        if (v instanceof Date) {
+          if (!Number.isNaN(v.getTime()) && v.getUTCFullYear() >= MIN_ANO)
+            c = competenciaDe(v)
+        } else if (typeof v === "string") {
+          const r = mesEmTextoComAno(v, hoje)
+          c = r?.temAno ? r.competencia : null
+        }
+        if (c) contagem.set(c, (contagem.get(c) ?? 0) + 1)
+      }
+    }
+  }
+  if (!achouColuna) return null
+  if (contagem.size === 0) return "ilegivel"
+  const [competencia] = [...contagem.entries()].sort(
+    (a, b) => b[1] - a[1] || (a[0] < b[0] ? 1 : -1)
+  )[0]
+  return { competencia, meses: contagem.size }
+}
+
 export function inferirCompetencia(
   workbook: Workbook,
   arquivo: string,
   hoje: Date = new Date()
-): {
-  competencia: Competencia
-  origem: OrigemCompetencia
-  anoPresumido: boolean
-} {
+): CompetenciaInferida {
+  const mesRef = doMesRef(workbook, hoje)
+  if (mesRef === "ilegivel")
+    return {
+      ...reserva(workbook, arquivo, hoje),
+      avisoMesRef: "Mes Ref. vazio ou ilegível",
+    }
+  if (mesRef)
+    return {
+      competencia: mesRef.competencia,
+      origem: "mesref",
+      anoPresumido: false,
+      ...(mesRef.meses > 1
+        ? {
+            avisoMesRef: `A coluna Mes Ref. tem ${mesRef.meses} meses diferentes; usamos ${porExtenso(mesRef.competencia)}. Confira.`,
+          }
+        : {}),
+    }
+  return reserva(workbook, arquivo, hoje)
+}
+
+/** Inferência sem a coluna Mes Ref.: aba, arquivo, títulos, datas, mês anterior. */
+function reserva(
+  workbook: Workbook,
+  arquivo: string,
+  hoje: Date
+): CompetenciaInferida {
   for (const sheet of workbook.sheets) {
     const c = mesEmTextoComAno(sheet.name, hoje)
     if (c)
