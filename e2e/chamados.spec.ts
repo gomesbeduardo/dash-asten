@@ -68,7 +68,7 @@ function criar(path: string, linhas: L[]) {
 const kpi = (page: Page, nome: string) =>
   page.getByRole("article", { name: nome, exact: true })
 
-test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async ({
+test("Chamados: KPIs, leituras em modal, filtros, Comparar e Ao longo do tempo", async ({
   page,
 }, testInfo) => {
   const ago = testInfo.outputPath("chamados-agosto-2026.xlsx")
@@ -164,11 +164,12 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Evolução", async 
   await expect(modalCmp).toBeHidden()
   await expect(cartao).toBeFocused()
 
-  // Evolução: janela de meses sem buracos; mês sem foto fica sem ponto e com a dica
-  // O seletor segue focado (como o select nativo): tira o foco para o atalho valer.
+  // A aba Evolução não existe mais: ela virou o bloco "Ao longo do tempo" do Painel (decisão 27)
+  await expect(page.getByRole("tab", { name: "Evolução" })).toHaveCount(0)
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-  await page.keyboard.press("e")
-  await expect(page.getByRole("heading", { level: 1, name: "Evolução" })).toBeVisible()
+  await page.keyboard.press("p")
+  await expect(page.getByRole("region", { name: "Ao longo do tempo" })).toBeVisible()
+  // janela de meses sem buracos; mês sem foto fica sem ponto e com a dica
   const card = page.getByRole("region", { name: "% no SLA", exact: true })
   await expect(card.getByRole("button", { name: "Reconstruído pelas datas" })).toHaveCount(0)
   await card.getByRole("button", { name: /Ver dados/ }).click()

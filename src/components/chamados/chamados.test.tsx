@@ -12,10 +12,14 @@ import { registrarTiposDoApp } from "@/app/bootstrap"
 import { makeXlsx } from "@/test/makeWorkbook"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { CompararChamados } from "./CompararChamados"
-import { EvolucaoChamados } from "./EvolucaoChamados"
+import { BlocoTempo } from "./BlocoTempo"
 import { LeiturasChamados } from "./LeiturasChamados"
 import { PainelChamados } from "./PainelChamados"
 import { FiltrosChamadosProvider } from "./filtros"
+
+
+/** O bloco "Ao longo do tempo" (antes a aba Evolução), renderizado sozinho. */
+const EvolucaoChamados = BlocoTempo
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`)
 const CAB = [
@@ -711,8 +715,8 @@ describe("filtros de Chamados", () => {
     await waitFor(() => expect(linha).toHaveTextContent(/2\s*2\s*0/))
 
     rerender(<Visao props={props} qual="evolucao" />)
+    // sozinho, o bloco não desenha os chips (ficam no cabeçalho do Painel), mas lê o mesmo filtro
     const card = await screen.findByRole("region", { name: "Não finalizados por situação" })
-    expect(screen.getByRole("list", { name: "Filtros ativos" })).toBeInTheDocument()
     await user.click(within(card).getByRole("button", { name: /Ver dados/ }))
     // Cli B em set/26: 1 Em Análise + 1 Aguardando aceite
     expect(within(card).getByRole("row", { name: /^set\/26 / })).toHaveTextContent("set/2611")
@@ -860,7 +864,6 @@ describe("estado de carregamento", () => {
 
   it.each([
     ["Comparar", CompararChamados, "Comparar competências"],
-    ["Evolução", EvolucaoChamados, "Evolução"],
   ])("%s mostra título e 'Carregando competências…' com aria-busy", async (_n, Visao, titulo) => {
     const props = await pendente()
     render(
@@ -869,6 +872,19 @@ describe("estado de carregamento", () => {
       </FiltrosChamadosProvider>
     )
     expect(screen.getByRole("heading", { level: 1, name: titulo })).toBeInTheDocument()
+    const status = screen.getByRole("status")
+    expect(status).toHaveTextContent("Carregando competências…")
+    expect(status).toHaveAttribute("aria-busy", "true")
+  })
+
+  it("Ao longo do tempo mostra o título e 'Carregando competências…' com aria-busy", async () => {
+    const props = await pendente()
+    render(
+      <FiltrosChamadosProvider carga={props.carga}>
+        <BlocoTempo {...props} />
+      </FiltrosChamadosProvider>
+    )
+    expect(screen.getByRole("heading", { level: 2, name: "Ao longo do tempo" })).toBeInTheDocument()
     const status = screen.getByRole("status")
     expect(status).toHaveTextContent("Carregando competências…")
     expect(status).toHaveAttribute("aria-busy", "true")

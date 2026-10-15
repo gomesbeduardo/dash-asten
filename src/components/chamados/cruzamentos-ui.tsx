@@ -46,7 +46,7 @@ function notaBase(base: BaseAnterior, tem: boolean): string | undefined {
 /** Junta os rótulos do Mes Ref. e do mês escolhido (Mes Ref. primeiro). */
 const uniao = (a: string[], b: string[]) => [...new Set([...a, ...b])]
 
-function lerDuas<T>(
+function useDuas<T>(
   fn: (e: EntradaCompetencia | undefined) => T | null,
   d: DadosCruzamento
 ) {
@@ -65,7 +65,7 @@ const mesesDe = (d: DadosCruzamento, temBase: boolean) => {
 
 /** Cliente × Situação: não finalizados por cliente, empilhados pela Situação. */
 export function ClienteSituacao(d: DadosCruzamento) {
-  const { a, b } = lerDuas((e) => clientePorSituacao(e), d)
+  const { a, b } = useDuas((e) => clientePorSituacao(e), d)
   const cores = useMemo(
     () =>
       coresDasSituacoes([
@@ -165,7 +165,7 @@ const COR_FAIXA: Record<string, string> = {
 
 /** Operador × Atraso: não finalizados por operador, empilhados por faixa de atraso. */
 export function OperadorAtraso(d: DadosCruzamento) {
-  const { a, b } = lerDuas((e) => operadorPorAtraso(e), d)
+  const { a, b } = useDuas((e) => operadorPorAtraso(e), d)
   if (!a) return null
   const m = mesesDe(d, !!b)
   const faixas = ["No ciclo", ...FAIXAS_ATRASO]
@@ -256,7 +256,7 @@ const simples = (valor: number | null, cor: string, texto: string): Celula => ({
 
 /** Área × SLA: % no SLA dos finalizados no mês e SLA vencido dos não finalizados. */
 export function AreaSla(d: DadosCruzamento) {
-  const { a, b } = lerDuas((e) => areaPorSla(e), d)
+  const { a, b } = useDuas((e) => areaPorSla(e), d)
   if (!a) return null
   const m = mesesDe(d, !!b)
   const rotulos = uniao(
@@ -343,7 +343,7 @@ export function AreaSla(d: DadosCruzamento) {
 
 /** Cliente × Tempo médio: dias para resolver e dias até o aceite, por cliente. */
 export function ClienteTempo(d: DadosCruzamento) {
-  const { a, b } = lerDuas((e) => clientePorTempo(e), d)
+  const { a, b } = useDuas((e) => clientePorTempo(e), d)
   if (!a) return null
   const m = mesesDe(d, !!b)
   const rotulos = uniao(

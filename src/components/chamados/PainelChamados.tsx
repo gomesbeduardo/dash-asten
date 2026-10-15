@@ -10,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { KpiCartao } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
+import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useMesDeChamados } from "./hooks"
@@ -368,7 +369,13 @@ export function PainelChamados({
           </div>
         </section>
 
-        {/* "Ao longo do tempo": o BlocoTempo (Evolução) entra aqui quando o worker P2 o entregar. */}
+        {/* 3º bloco: a Evolução, com os mesmos filtros do Painel */}
+        <BlocoTempo
+          carga={carga}
+          historico={historico}
+          obterCarga={obterCarga}
+          entrada={entrada}
+        />
 
         {avisosRodape.length > 0 && (
           <footer
