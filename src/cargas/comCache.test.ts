@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { comCache } from "./comCache"
+import { comCache, espiarCarga } from "./comCache"
 import type { Carga, RepositorioDeCargas } from "./types"
 
 const carga = (id: string) => ({ id }) as unknown as Carga
@@ -92,5 +92,24 @@ describe("comCache", () => {
     expect(base.listar).toHaveBeenCalledTimes(2)
     expect(base.obter).toHaveBeenCalledTimes(1)
     expect(base.alterar).toHaveBeenCalledWith("x", { nome: "n" })
+  })
+
+  it("espiarCarga: undefined antes de resolver, a carga depois e undefined após excluir", async () => {
+    const repo = comCache(repoFalso(async (id) => carga(id)))
+    expect(espiarCarga(repo.obter, "x")).toBeUndefined()
+    const pedido = repo.obter("x")
+    expect(espiarCarga(repo.obter, "x")).toBeUndefined()
+    const c = await pedido
+    expect(espiarCarga(repo.obter, "x")).toBe(c)
+    expect(espiarCarga(repo.obter, "outro")).toBeUndefined()
+    await repo.excluir("x")
+    expect(espiarCarga(repo.obter, "x")).toBeUndefined()
+  })
+
+  it("espiarCarga: função que não vem de comCache e carga nula não aparecem", async () => {
+    expect(espiarCarga(async () => carga("x"), "x")).toBeUndefined()
+    const repo = comCache(repoFalso(async () => null))
+    await repo.obter("n")
+    expect(espiarCarga(repo.obter, "n")).toBeUndefined()
   })
 })

@@ -1,5 +1,19 @@
 import type { Carga, RepositorioDeCargas } from "./types"
 
+// Cargas já resolvidas, por função `obter` embrulhada (consulta síncrona de `espiarCarga`).
+const resolvidasPorObter = new WeakMap<object, Map<string, Carga>>()
+
+/**
+ * Carga já em memória para `id`, sem esperar: `undefined` se ainda não resolveu
+ * (ou se `obter` não vem de `comCache`). Deixa a tela montar já com os dados.
+ */
+export function espiarCarga(
+  obter: RepositorioDeCargas["obter"],
+  id: string
+): Carga | undefined {
+  return resolvidasPorObter.get(obter)?.get(id)
+}
+
 /**
  * Memoiza `obter(id)` pela Promise: pedidos simultâneos do mesmo id dividem uma só
  * requisição. Uma carga (id) é imutável, então não há expiração; erro e `null`
@@ -7,6 +21,7 @@ import type { Carga, RepositorioDeCargas } from "./types"
  */
 export function comCache(base: RepositorioDeCargas): RepositorioDeCargas {
   const cache = new Map<string, Promise<Carga | null>>()
+  const resolvidas = new Map<string, Carga>()
   let listando: ReturnType<RepositorioDeCargas["listar"]> | null = null
 
   const repo: RepositorioDeCargas = {
@@ -24,7 +39,10 @@ export function comCache(base: RepositorioDeCargas): RepositorioDeCargas {
       if (existente) return existente
       const pedido = base.obter(id).then(
         (carga) => {
-          if (carga === null && cache.get(id) === pedido) cache.delete(id)
+          if (cache.get(id) === pedido) {
+            if (carga === null) cache.delete(id)
+            else resolvidas.set(id, carga)
+          }
           return carga
         },
         (erro) => {
@@ -51,17 +69,22 @@ export function comCache(base: RepositorioDeCargas): RepositorioDeCargas {
     async excluir(id) {
       listando = null
       cache.delete(id)
+      resolvidas.delete(id)
       await base.excluir(id)
       cache.delete(id)
+      resolvidas.delete(id)
       listando = null
     },
   }
+  resolvidasPorObter.set(repo.obter, resolvidas)
   if (base.limparTudo) {
     const limpar = base.limparTudo.bind(base)
     repo.limparTudo = async () => {
       cache.clear()
+      resolvidas.clear()
       await limpar()
       cache.clear()
+      resolvidas.clear()
     }
   }
   return repo

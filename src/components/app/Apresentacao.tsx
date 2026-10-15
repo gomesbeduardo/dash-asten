@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  memo,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import type { ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
@@ -26,7 +35,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Carregando } from "@/components/chamados/Carregando"
 import { BarraContext } from "./BarraContext"
 import { HistoricoSheet } from "./HistoricoSheet"
 import { NovoEnvioDialog } from "./NovoEnvioDialog"
@@ -55,45 +63,83 @@ export type ApresentacaoProps = {
 }
 
 /**
- * Mostra o esqueleto da aba por um quadro antes de montar a visão: a montagem
- * dos painéis pesados trava a thread por ~300 ms, e sem isso a tela ficaria
- * em branco (a saída já terminou) até o fim dela. Repassa a `entrada` do
- * momento em que a aba abriu.
+ * Trava a `entrada` do momento em que a aba montou e a marca como vista logo
+ * depois (a próxima visita não anima). Repassa a `entrada` travada à visão.
  */
-function Diferida({
-  visao,
+function Montada({
   entrada,
   onMontar,
   children,
 }: {
-  visao: Visao
   entrada: boolean
   onMontar: () => void
   children: (entrada: boolean) => ReactNode
 }) {
-  // Trava aqui: a visão só monta um quadro depois, quando a chave já foi marcada.
+  // Trava aqui: a chave só é marcada depois da montagem.
   const entradaTravada = useEntrada(entrada)
   useEffect(() => {
     const t = setTimeout(onMontar, 0)
     return () => clearTimeout(t)
   }, [onMontar])
-  const [pronto, setPronto] = useState(false)
-  useEffect(() => {
-    let t = 0
-    const r = requestAnimationFrame(() => {
-      t = window.setTimeout(() => setPronto(true), 0)
-    })
-    return () => {
-      cancelAnimationFrame(r)
-      clearTimeout(t)
-    }
-  }, [])
-  return pronto ? <>{children(entradaTravada)}</> : <Carregando forma={visao} />
+  return <>{children(entradaTravada)}</>
 }
 
 const Fragmento = ({ children }: { carga: Carga; children: ReactNode }) => (
   <>{children}</>
 )
+
+type ConteudoProps = {
+  carga: Carga
+  visao: Visao
+  chave: string
+  entrada: boolean
+  onMontar: () => void
+  historico: CargaMeta[]
+  obterCarga: ApresentacaoProps["obterCarga"]
+  irPara: (v: Visao) => void
+}
+
+/**
+ * Conteúdo da aba. Memoizado: quando só a aba escolhida muda (render urgente), as
+ * props ficam as da aba antiga e esta parte pesada não renderiza de novo.
+ */
+const Conteudo = memo(function Conteudo(p: ConteudoProps) {
+  const reduce = useReducedMotion()
+  const visoes = visoesDoTipo(p.carga.tipo)
+  const Envoltorio = visoes.Envoltorio ?? Fragmento
+  const Visao =
+    p.visao === "leituras"
+      ? visoes.Leituras!
+      : p.visao === "comparar"
+        ? visoes.Comparar!
+        : p.visao === "evolucao"
+          ? visoes.Evolucao!
+          : visoes.Painel
+  return (
+    <Envoltorio carga={p.carga}>
+      <motion.div
+        key={p.chave}
+        initial={{ opacity: reduce ? 1 : 0.3 }}
+        animate={{
+          opacity: 1,
+          transition: { duration: reduce ? 0 : duration.fast, ease: standard },
+        }}
+      >
+        <Montada entrada={p.entrada} onMontar={p.onMontar}>
+          {(e) => (
+            <Visao
+              carga={p.carga}
+              historico={p.historico}
+              obterCarga={p.obterCarga}
+              entrada={e}
+              irPara={p.irPara}
+            />
+          )}
+        </Montada>
+      </motion.div>
+    </Envoltorio>
+  )
+})
 
 /** Casca do modo apresentação: barra, visões do tipo e diálogos de histórico/limpeza. */
 export function Apresentacao(p: ApresentacaoProps) {
@@ -109,6 +155,9 @@ export function Apresentacao(p: ApresentacaoProps) {
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const [vistas, setVistas] = useState<string[]>([])
 
+  // A barra e a aba escolhida respondem na hora; o conteúdo troca depois, num
+  // render interrompível. O conteúdo antigo fica na tela até o novo estar pronto
+  // (sem esqueleto nem branco quando os dados já estão em cache).
   const visoes = visoesDoTipo(carga.tipo)
   const disponiveis = useMemo<Visao[]>(
     () => [
@@ -119,16 +168,9 @@ export function Apresentacao(p: ApresentacaoProps) {
     ],
     [visoes]
   )
-  const Envoltorio = visoes.Envoltorio ?? Fragmento
   const visao = resolverVisao(visaoPedida, disponiveis)
-  const Visao =
-    visao === "leituras"
-      ? visoes.Leituras!
-      : visao === "comparar"
-      ? visoes.Comparar!
-      : visao === "evolucao"
-        ? visoes.Evolucao!
-        : visoes.Painel
+  const alvo = useMemo(() => ({ carga, visao }), [carga, visao])
+  const { carga: cargaVista, visao: visaoVista } = useDeferredValue(alvo)
 
   const overlay = historicoOpen || limparOpen || seletorOpen || envioOpen || painelHold
   const barRef = useRef<HTMLElement>(null)
@@ -179,9 +221,9 @@ export function Apresentacao(p: ApresentacaoProps) {
     return () => ro.disconnect()
   }, [barraSegura])
 
-  const chave = `${carga.id}:${visao}`
+  const chave = `${cargaVista.id}:${visaoVista}`
   const entrada = !vistas.includes(chave)
-  // A aba só vira "vista" quando a Diferida monta (depois da saída da anterior).
+  // A aba só vira "vista" quando monta na tela.
   const marcarVista = useCallback(
     () => setVistas((s) => (s.includes(chave) ? s : [...s, chave])),
     [chave]
@@ -189,8 +231,8 @@ export function Apresentacao(p: ApresentacaoProps) {
 
   const ctx = useMemo(() => ({ slot, setHold: setPainelHold, setDica }), [slot])
   const doTipo = useMemo(
-    () => metas.filter((m) => m.tipo === carga.tipo),
-    [metas, carga.tipo]
+    () => metas.filter((m) => m.tipo === cargaVista.tipo),
+    [metas, cargaVista.tipo]
   )
   const atualMeta = metas.find((m) => m.id === carga.id) ?? carga
   const tipoNome =
@@ -262,34 +304,16 @@ export function Apresentacao(p: ApresentacaoProps) {
           }
           className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16"
         >
-          <Envoltorio carga={carga}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={chave}
-              initial={{ opacity: reduce ? 1 : 0.3 }}
-              animate={{
-                opacity: 1,
-                transition: { duration: reduce ? 0 : duration.fast, ease: standard },
-              }}
-              exit={{
-                opacity: 0,
-                transition: { duration: reduce ? 0 : saida, ease: standard },
-              }}
-            >
-              <Diferida visao={visao} entrada={entrada} onMontar={marcarVista}>
-                {(e) => (
-                  <Visao
-                    carga={carga}
-                    historico={doTipo}
-                    obterCarga={p.obterCarga}
-                    entrada={e}
-                    irPara={pedirVisao}
-                  />
-                )}
-              </Diferida>
-            </motion.div>
-          </AnimatePresence>
-          </Envoltorio>
+          <Conteudo
+            carga={cargaVista}
+            visao={visaoVista}
+            chave={chave}
+            entrada={entrada}
+            onMontar={marcarVista}
+            historico={doTipo}
+            obterCarga={p.obterCarga}
+            irPara={pedirVisao}
+          />
         </main>
 
         <NovoEnvioDialog

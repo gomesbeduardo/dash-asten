@@ -117,3 +117,36 @@ describe("Apresentacao: entrada animada na primeira visita", () => {
     expect(await screen.findByTestId("visao-1")).not.toHaveAttribute("data-entrada")
   })
 })
+
+describe("Apresentacao: sem esqueleto quando a visão monta direto", () => {
+  const nova = (id: string) => ({ ...carga, id, tipo: "entrada" }) as unknown as Carga
+  const props = (c: Carga): ApresentacaoProps => ({
+    carga: c,
+    metas: [nova("1"), nova("2")],
+    metasTodas: [nova("1"), nova("2")],
+    onAlterar: async () => {},
+    obterCarga: async () => c,
+    onAbrir: () => {},
+    onNovaCarga: () => {},
+    onFecharCarga: () => {},
+    erro: null,
+    onDismissErro: () => {},
+  })
+
+  it("abrir e trocar de competência não mostram o esqueleto em nenhum momento", async () => {
+    let esqueletos = 0
+    const olho = new MutationObserver(() => {
+      if (document.querySelector('[aria-busy="true"]')) esqueletos++
+    })
+    olho.observe(document.body, { childList: true, subtree: true })
+    const { rerender } = render(<Apresentacao {...props(nova("1"))} />)
+    await screen.findByTestId("visao-1")
+    rerender(<Apresentacao {...props(nova("2"))} />)
+    await screen.findByTestId("visao-2")
+    rerender(<Apresentacao {...props(nova("1"))} />)
+    await screen.findByTestId("visao-1")
+    await new Promise((r) => setTimeout(r, 50))
+    olho.disconnect()
+    expect(esqueletos).toBe(0)
+  })
+})
