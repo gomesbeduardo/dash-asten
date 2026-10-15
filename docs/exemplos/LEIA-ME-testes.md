@@ -97,7 +97,7 @@ Regras usadas na conta: **não finalizado** = Situação ≠ Finalizado; **final
 | 5007 | Delta | Op 04 | 02/04/26 | Finalizado 12/04 (SLA 15/04), aceite 13/04, 1 reabertura | igual | igual | igual |
 | 5010 | Ômega | Op 04 | 05/12/25 | Aguardando aceite, solução 25/04, sem SLA | Finalizado, aceite 27/04 | igual | igual |
 | 5012 | Delta | Op 05 | 22/04/26 | — | Em Análise (SLA 06/05) | Finalizado 05/05, aceite 07/05 | igual |
-| 5015 | Ômega | Op 04 | 10/05/26 | — | — | Em Atendimento (SLA 25/05) | Finalizado **30/05**, aceite 02/06 |
+| 5015 | Ômega | Op 04 | 10/05/26 | — | — | Em Atendimento (SLA 25/05) | Finalizado **30/05**, aceite **31/05** |
 | 5020 | Delta | Op 05 | 14/08/26 | — | — | — | Em Análise (SLA 30/08) |
 | 5022 | Ômega | Op 04 | 06/10/26 | — | — | — | **Aguardando cliente** (SLA 20/10) |
 | 5024 | Delta | Op 05 | 01/10/26 | — | — | — | Finalizado 09/10 (SLA 15/10), aceite 10/10, 2 reaberturas |
@@ -129,9 +129,10 @@ Faixa de atraso = meses entre o mês de abertura e o mês do Mes Ref. (jan→abr
 ### O que conferir nos saltos e na correção
 
 - **v1 × v2 de abril** (Comparar com as duas versões): Em Atendimento 1 → 0, Em Análise 1 → 2, Finalizado 2 → 4, Aguardando aceite 1 → 0; entradas 2 → 3; finalizados no mês 2 → 4; em atraso 2 → 1.
-- **Maio corrigido pela foto de outubro**: a foto de maio dizia 5015 "Em Atendimento"; a de outubro diz que foi resolvido em 30/05. Com as duas fotos carregadas, maio passa a mostrar **finalizados no mês 2** (era 1), **não finalizados 1** (era 2), **Em Atendimento 0** (era 1) e **SLA vencido 1** (era 2), **com a marca "corrigido pela foto de out/26"**. Indicadores que não mudaram ficam sem marca.
+- **Maio corrigido pela foto de outubro**: a foto de maio dizia 5015 "Em Atendimento"; a de outubro diz que foi resolvido em 30/05 e aceito em 31/05 (aceite dentro de maio; com o aceite depois do fim de maio, maio não seria corrigido). Com as duas fotos carregadas, maio passa a mostrar **finalizados no mês 2** (era 1), **não finalizados 1** (era 2), **Em Atendimento 0** (era 1) e **SLA vencido 1** (era 2), **com a marca "corrigido pela foto de out/26"**. Indicadores que não mudaram ficam sem marca.
 - **Meses sem foto (jun a set)**, ao comparar outubro com eles: só o que as datas dão, tirado da foto de outubro. Jun: entradas 0, finalizados 1 (5003). Jul: 0 e 0. Ago: entradas 1 (5020), finalizados 0. Set: 0 e 0. Cards por Situação e em atraso aparecem como "—" (sem foto).
 - **Abril v1 corrigida pelas fotos de maio e outubro**: 5000 (Em Atendimento na v1, Finalizado 28/04 nas posteriores) e 5010 (Aguardando aceite na v1, Finalizado com solução 25/04 nas posteriores) passam a contar como finalizados em abril → **finalizados 4** (era 2), com a marca "corrigido pela foto de out/26".
+- **O aceite manda na correção**: um chamado "Aguardando aceite" na posição antiga só vira Finalizado nela se a Data de Aceite da posição nova cair até o fim do mês antigo. Sem Data de Aceite na nova, "Aguardando aceite" continua; qualquer outra situação é corrigida pela Data de Solução (lançamento atrasado). Coberto por `src/chamados/fotos.aceite-correcao.test.ts`.
 - **v1 e v2 não se corrigem entre si**: a correção só vem de fotos com Mes Ref. posterior; a v1 escolhida no Comparar aparece como está.
 - **Aberto depois do Mes Ref.**: 5026 (03/11) aparece só na nota da foto de outubro; não entra em cards, entradas nem não finalizados.
 - **Situação nova**: "Aguardando cliente" só existe na foto de outubro e vira um card próprio.

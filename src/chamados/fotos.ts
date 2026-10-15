@@ -49,7 +49,13 @@ export type FotoCorrigida = {
 /**
  * Corrige uma foto pelas de Mes Ref. estritamente posterior (D65). Cruza por Código; a foto
  * posterior mais recente que tem o chamado manda. Só vira Finalizado quem, lá, está Finalizado
- * com Data de Solução até o fim do mês da foto antiga e aqui não estava. A planilha não é alterada.
+ * com Data de Solução até o fim do mês da foto antiga e aqui não estava, e só se o aceite não
+ * contradiz (o momento em que o chamado de fato virou Finalizado é o aceite, quando existe):
+ * - Data de Aceite preenchida na posterior: corrige só se ela for até o fim do mês da foto antiga;
+ * - sem Data de Aceite (coluna ausente ou vazia) e Situação aqui contendo "aceite": não corrige,
+ *   a posição antiga estava certa e o chamado já aparece Finalizado a partir do mês do aceite;
+ * - sem Data de Aceite e Situação sem "aceite": corrige pela Data de Solução (lançamento atrasado).
+ * A planilha não é alterada.
  */
 export function corrigirFoto(
   foto: EntradaCompetencia,
@@ -106,12 +112,16 @@ export function corrigirFoto(
       solucao > fim
     )
       return row
+    const aceite = m.aceite ? tempo(r[m.aceite]) : null
+    if (aceite !== null) {
+      if (aceite > fim) return row
+    } else if (normalizar(texto(row[mapa.situacao!]) ?? "").includes("aceite"))
+      return row
     const novo: Row = {
       ...row,
       [mapa.situacao!]: "Finalizado",
       [mapa.solucao!]: r[m.solucao!],
     }
-    const aceite = m.aceite ? tempo(r[m.aceite]) : null
     if (mapa.aceite && aceite !== null && aceite <= fim)
       novo[mapa.aceite] = r[m.aceite!]
     origens.add(p.competencia)
