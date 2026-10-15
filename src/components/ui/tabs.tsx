@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { Tabs as TabsPrimitive } from "radix-ui"
 import { LayoutGroup, motion, useReducedMotion } from "motion/react"
+import { molaAba } from "@/components/app/motion/tokens"
 
 const TabsCtx = React.createContext<{ valor: string | undefined; grupo: string }>({
   valor: undefined,
@@ -100,7 +101,7 @@ function TabsTrigger({
           aria-hidden
           className="absolute inset-0 rounded-md border border-ring/50 bg-brand-soft"
           transition={
-            reduzido ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }
+            reduzido ? { duration: 0 } : molaAba
           }
         >
           <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-ring" />

@@ -154,3 +154,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   .press:active { transform: none; }
 }
+
+/* Curva padrão (D26) para as animações de entrada/saída dos overlays (tw-animate-css). */
+.anim-padrao { animation-timing-function: var(--motion-ease-standard); }
