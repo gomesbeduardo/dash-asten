@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import { LIMITE_NOME, nomeSugerido } from "./formatoCarga"
 
 export const MESES = [
@@ -59,7 +60,11 @@ export function NovaCargaDialog({
 }: {
   workbook: Workbook
   metas: CargaMeta[]
-  onConfirm: (escolha: { tipo: string; competencia: string; nome?: string }) => void
+  onConfirm: (escolha: {
+    tipo: string
+    competencia: string
+    nome?: string
+  }) => void
   onCancel: () => void
 }) {
   const inicial = useMemo(() => {
@@ -72,6 +77,7 @@ export function NovaCargaDialog({
       ano,
       mes,
       origem: comp.origem,
+      anoPresumido: comp.anoPresumido,
     }
   }, [workbook])
   const tipos = tiposRegistrados()
@@ -80,6 +86,7 @@ export function NovaCargaDialog({
   const [mes, setMes] = useState(inicial.mes)
   const [ano, setAno] = useState(String(inicial.ano))
   const [editado, setEditado] = useState(false)
+  const [presumido, setPresumido] = useState(inicial.anoPresumido)
   const [nome, setNome] = useState(() => nomeSugerido(workbook.fileName))
 
   const anoNum = Number(ano)
@@ -142,9 +149,18 @@ export function NovaCargaDialog({
             <div className="flex gap-3">
               <Select
                 value={String(mes)}
-                onValueChange={(v) => setMes(Number(v))}
+                onValueChange={(v) => {
+                  setMes(Number(v))
+                  setPresumido(false)
+                }}
               >
-                <SelectTrigger aria-label="Mês" className="flex-1">
+                <SelectTrigger
+                  aria-label="Mês"
+                  className={cn(
+                    "flex-1",
+                    presumido && "border-amber-500 ring-2 ring-amber-500/40"
+                  )}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,14 +174,25 @@ export function NovaCargaDialog({
               <Input
                 aria-label="Ano"
                 inputMode="numeric"
-                className="w-28 tabular-nums"
+                className={cn(
+                  "w-28 tabular-nums",
+                  presumido && "border-amber-500 ring-2 ring-amber-500/40"
+                )}
                 value={ano}
-                onChange={(e) => setAno(e.target.value)}
+                onChange={(e) => {
+                  setAno(e.target.value)
+                  setPresumido(false)
+                }}
               />
             </div>
             <p className="text-sm text-muted-foreground">
               {DICA_ORIGEM[inicial.origem]}
             </p>
+            {presumido && (
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                Ano não encontrado na planilha — confira
+              </p>
+            )}
           </fieldset>
 
           {versao > 1 && (

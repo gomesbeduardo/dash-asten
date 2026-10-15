@@ -55,3 +55,27 @@ describe("NovaCargaDialog: Nome (opcional)", () => {
     expect(onConfirm).toHaveBeenCalledWith({ tipo: "outro", competencia: "2026-03" })
   })
 })
+
+describe("NovaCargaDialog: ano presumido", () => {
+  const AVISO = "Ano não encontrado na planilha — confira"
+
+  it("avisa quando o ano não está na planilha, e trocar o ano tira o aviso", async () => {
+    montar([], "reuniao-setembro.xlsx")
+    expect(screen.getByText(AVISO)).toBeInTheDocument()
+    const ano = screen.getByLabelText("Ano")
+    await userEvent.clear(ano)
+    await userEvent.type(ano, "2025")
+    expect(screen.queryByText(AVISO)).toBeNull()
+  })
+
+  it("confirmar sem mudar continua permitido; com ano explícito não há aviso", async () => {
+    const { onConfirm } = montar([], "reuniao-setembro.xlsx")
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar carga" }))
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it("ano explícito no arquivo: sem aviso", () => {
+    montar([])
+    expect(screen.queryByText(AVISO)).toBeNull()
+  })
+})
