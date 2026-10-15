@@ -41,7 +41,7 @@ export type PainelComparado = {
   base: BaseAnterior
   /** Foto do período-base (filtrada e corrigida), para os cruzamentos; `null` sem posição ou sem base usável. */
   entradaBase: EntradaCompetencia | null
-  /** Rótulo do período-base nos Δ ("abr/26", "abr/26 · v1"); `null` sem base. */
+  /** Rótulo do período-base nos Δ ("abr/26", "abr/26 v1"); `null` sem base. */
   rotuloBase: string | null
   /** ["out/26"] ou ["mai/26", "out/26"]: fotos que corrigiram a foto aberta; vazio se nada mudou. */
   corrigidoPor: string[]
@@ -152,7 +152,7 @@ export function usePainelComparado({
       const aba = cargaVersao ? escolherAba(cargaVersao.workbook) : null
       if (cargaVersao && aba) {
         baseEntrada = entradaFiltradaDe(aba, carga.competencia, filtros)
-        rotuloBase = `${formatarCompetencia(carga.competencia)} · v${cargaVersao.versao}`
+        rotuloBase = `${formatarCompetencia(carga.competencia)} v${cargaVersao.versao}`
       }
     } else if (escolha.startsWith("mes:")) {
       competenciaBase = escolha.slice(4)
@@ -247,7 +247,7 @@ export function usePainelComparado({
         })),
       ...opcoesM.outrasVersoes.map((v) => ({
         valor: valorVersao(v),
-        rotulo: `${cap(formatarCompetencia(carga.competencia, "longo"))} · v${v}`,
+        rotulo: `${cap(formatarCompetencia(carga.competencia, "longo"))} v${v}`,
       })),
     ]
 

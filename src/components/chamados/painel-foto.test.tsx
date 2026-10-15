@@ -138,7 +138,8 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
       ).getByLabelText("1")
     ).toBeInTheDocument()
     // sem carga anterior: nada de Δ
-    expect(topo).toHaveTextContent("sem base no mês anterior")
+    expect(topo).not.toHaveTextContent(/sem base|vs /)
+    expect(within(topo).queryByRole("group")).toBeNull()
   })
 
   it("foto out: situação nova na legenda, com Δ contra o mês anterior e 'nova'", async () => {
@@ -155,12 +156,12 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
     expect(within(item("Finalizado")).getByLabelText("8")).toBeInTheDocument()
     // set/26 é corrigido pela posição de out (D65): 5000 e 5003 já estavam finalizados lá. 5010 estava
     // "Aguardando aceite" e a out não traz Data de Aceite: continua aguardando (posição de set estava certa)
-    expect(item("Finalizado")).toHaveTextContent("+4 vs set/26")
+    expect(within(item("Finalizado")).getByRole("group", { name: "+4 em relação a set/26" })).toHaveTextContent("set/26")
     expect(item("Em Análise")).toHaveTextContent("nova")
     const total = within(topo).getByRole("article", {
       name: "Total de chamados",
     })
-    expect(total).toHaveTextContent("+5 vs set/26")
+    expect(within(total).getByRole("group", { name: "+5 em relação a set/26" })).toBeInTheDocument()
     expect(total).toHaveTextContent("10")
     // o aberto depois do Mes Ref. fica só na nota
     expect(screen.getByLabelText("Avisos")).toHaveTextContent(

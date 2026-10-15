@@ -1,12 +1,6 @@
 /** Peças do Painel da foto (D64): cards por Situação e gráficos com "comparar período". */
 import { useMemo, useState } from "react"
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CalendarRangeIcon,
-  MinusIcon,
-  SparklesIcon,
-} from "lucide-react"
+import { CalendarRangeIcon } from "lucide-react"
 
 import { formatarCompetencia } from "@/cargas"
 import {
@@ -25,6 +19,8 @@ import { GraficoCartao } from "./cartoes"
 import { BarrasComparar, COR } from "./graficos"
 import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
+import { deltaDeContagem, SeloDelta, SeloNova } from "./selo-delta"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
@@ -63,39 +59,10 @@ function Variacao({
   nova?: boolean
   semFoto?: string
 }) {
-  if (semFoto)
-    return (
-      <p className="text-base text-muted-foreground">
-        <span aria-hidden>—</span> {semFoto}
-      </p>
-    )
-  if (nova)
-    return (
-      <p className="flex items-center gap-1.5 text-base font-medium text-primary">
-        <SparklesIcon className="size-5 shrink-0" aria-hidden /> nova
-        <span className="font-normal text-muted-foreground">
-          · não estava em {rotulo}
-        </span>
-      </p>
-    )
-  if (anterior === null)
-    return (
-      <p className="text-base text-muted-foreground">
-        sem base no mês anterior
-      </p>
-    )
-  const dif = atual - anterior
-  const Seta = dif > 0 ? ArrowUpIcon : dif < 0 ? ArrowDownIcon : MinusIcon
-  return (
-    <p className="flex items-center gap-1.5 text-base text-muted-foreground">
-      <Seta className="size-5 shrink-0" aria-hidden />
-      <span>
-        {dif === 0
-          ? `sem variação vs ${rotulo}`
-          : `${dif > 0 ? "+" : "-"}${n(Math.abs(dif))} vs ${rotulo}`}
-      </span>
-    </p>
-  )
+  // sem base (ou sem foto): o aviso aparece uma vez, junto de "Comparar com"; o item não repete
+  if (semFoto || (anterior === null && !nova)) return null
+  if (nova) return <SeloNova periodo={rotulo} />
+  return <SeloDelta delta={deltaDeContagem(atual, anterior!, rotulo)} />
 }
 
 const normalizar = (r: string) =>
@@ -161,12 +128,12 @@ export function FaixaSituacao({
     <motion.section
       aria-label="Chamados por situação"
       variants={reduce ? undefined : entryItemPagina}
-      className="rounded-lg bg-card p-6 shadow-(--shadow-card)"
+      className="rounded-lg bg-card p-7 shadow-(--shadow-card)"
     >
       <div className="flex flex-col gap-6 min-[1100px]:flex-row min-[1100px]:items-stretch min-[1100px]:gap-10">
         <article
           aria-label="Total de chamados"
-          className="flex shrink-0 flex-col justify-center gap-1 min-[1100px]:min-w-60 min-[1100px]:border-r min-[1100px]:pr-10"
+          className="flex shrink-0 flex-col justify-center gap-1 min-[1100px]:min-w-60 min-[1100px]:border-r min-[1100px]:border-border/60 min-[1100px]:pr-10"
         >
           <h3 className="font-sans text-xl leading-tight font-medium text-muted-foreground">
             Total de chamados
@@ -189,7 +156,7 @@ export function FaixaSituacao({
           <div
             role="img"
             aria-label={`Situações: ${situacoes.map((s) => `${s.rotulo} ${s.valor}`).join("; ")}`}
-            className="flex h-14 w-full gap-0.5 overflow-hidden rounded-md bg-muted"
+            className="flex h-14 w-full gap-0.5 overflow-hidden rounded-lg bg-muted"
           >
             {situacoes.map((s) => (
               <div
@@ -218,9 +185,9 @@ export function FaixaSituacao({
                 <li
                   key={s.rotulo}
                   aria-label={`Situação: ${s.rotulo}`}
-                  className="flex min-w-0 flex-col gap-0.5"
+                  className="flex min-w-0 flex-col gap-1.5"
                 >
-                  <span className="flex items-center gap-2 text-lg text-muted-foreground">
+                  <span className="flex items-center gap-2 text-lg font-medium text-foreground/80">
                     <span
                       aria-hidden
                       className="size-3.5 shrink-0 rounded-sm"
@@ -362,20 +329,20 @@ export function GraficoMes({
     series = [
       {
         id: "finBase",
-        rotulo: `Finalizados · ${rotuloBase}`,
+        rotulo: `Finalizados ${rotuloBase}`,
         cor: claro(VERDE),
       },
-      { id: "finAtual", rotulo: `Finalizados · ${mesRef}`, cor: VERDE },
+      { id: "finAtual", rotulo: `Finalizados ${mesRef}`, cor: VERDE },
       ...(semFoto
         ? []
         : [
             {
               id: "naoBase",
-              rotulo: `Não finalizados · ${rotuloBase}`,
+              rotulo: `Não finalizados ${rotuloBase}`,
               cor: claro(AZUL),
             },
           ]),
-      { id: "naoAtual", rotulo: `Não finalizados · ${mesRef}`, cor: AZUL },
+      { id: "naoAtual", rotulo: `Não finalizados ${mesRef}`, cor: AZUL },
     ]
     linhas = rotulos.map((r) => ({
       rotulo: r,
@@ -390,9 +357,12 @@ export function GraficoMes({
   const itens = max ? agruparSeries(linhas, max) : linhas
   const subtitulo = doPeriodo
     ? `finalizados nos últimos ${meses} meses (${formatarCompetencia(competenciaDe(periodo.primeira))} a ${formatarCompetencia(competencia)}) × não finalizados, ${sub}`
+    : `finalizados no mês × não finalizados, ${sub}`
+  const contexto = doPeriodo
+    ? undefined
     : comBase
-      ? `finalizados no mês × não finalizados, ${sub} · ${mesRef} ao lado de ${rotuloBase}`
-      : `finalizados no mês × não finalizados, ${sub} · ${formatarCompetencia(competencia, "longo")}`
+      ? `${mesRef} ao lado de ${rotuloBase}`
+      : formatarCompetencia(competencia, "longo")
   const notas = [
     comBase && base.semFoto
       ? `${base.semFoto}: de ${rotuloBase} só os finalizados no mês, pelas datas.`
@@ -407,6 +377,7 @@ export function GraficoMes({
       id={dist.id}
       titulo={dist.titulo}
       subtitulo={subtitulo}
+      contexto={contexto}
       tabela={{
         colunas: ["Categoria", ...series.map((s) => s.rotulo)],
         linhas: itens.map((i) => [
@@ -419,15 +390,19 @@ export function GraficoMes({
       className={className}
       acoes={
         <>
-          <Toggle
-            variant="outline"
-            pressed={ligado}
-            onPressedChange={setLigado}
-            className="press gap-2"
-          >
-            <CalendarRangeIcon className="size-5" aria-hidden />
-            Comparar período
-          </Toggle>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toggle
+                pressed={ligado}
+                onPressedChange={setLigado}
+                aria-label="Comparar período"
+                className="press h-10 min-w-10 px-0 text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+              >
+                <CalendarRangeIcon className="size-5" aria-hidden />
+              </Toggle>
+            </TooltipTrigger>
+            <TooltipContent className="text-base">Comparar período</TooltipContent>
+          </Tooltip>
           {ligado && (
             <select
               aria-label="Período"
@@ -484,7 +459,8 @@ export function AtrasoMes({
     <GraficoCartao
       id="atrasoFaixas"
       titulo="Em atraso por meses desde a abertura"
-      subtitulo={`não finalizados abertos antes do mês do Mes Ref.${comBase ? ` · ${mesRef} ao lado de ${base.rotulo}` : ""}`}
+      subtitulo="não finalizados abertos antes do mês do Mes Ref."
+      contexto={comBase ? `${mesRef} ao lado de ${base.rotulo}` : undefined}
       nota={
         base?.semFoto
           ? `${base.semFoto}: o atraso depende da Situação e só mostra o Mes Ref.`

@@ -8,13 +8,13 @@ import { formatValue } from "@/components/app/motion/format"
 import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
-import { KpiCartao } from "./cartoes"
+import { KpiCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useMesDeChamados } from "./hooks"
-import { recorteTexto, temOutros, type SeloTipo } from "./logica"
+import { temOutros, type SeloTipo } from "./logica"
 import {
   AtrasoMes,
   coresDasSituacoes,
@@ -48,28 +48,6 @@ const COLUNAS: Record<number, string> = {
 const linha = (n: number) =>
   `grid items-stretch gap-5 ${COLUNAS[Math.min(Math.max(n, 1), 4)]}`
 
-function TituloBloco({
-  id,
-  titulo,
-  texto,
-}: {
-  id: string
-  titulo: string
-  texto: string
-}) {
-  return (
-    <header className="flex flex-col gap-0.5 border-b pb-2">
-      <h2
-        id={id}
-        className="font-display text-4xl leading-tight font-semibold text-primary"
-      >
-        {titulo}
-      </h2>
-      <p className="text-lg text-muted-foreground">{texto}</p>
-    </header>
-  )
-}
-
 /** Painel estratégico do mês (D31–D36): KPIs com delta e gráficos. Sem tabela de linhas soltas. */
 export function PainelChamados({
   carga,
@@ -101,16 +79,21 @@ export function PainelChamados({
     () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
     [carga.workbook, carga.arquivo]
   )
-  const recorte = recorteTexto(filtros)
-  const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
   const cabecalho = (
-    <header className="flex flex-col gap-1">
-      <h1 className="text-6xl leading-none text-primary">{titulo}</h1>
-      <p className="text-lg text-muted-foreground">
-        {carga.versao > 1 && `versão ${carga.versao} · `}carga de{" "}
-        {new Date(carga.importadaEm).toLocaleDateString("pt-BR")} ·{" "}
-        {carga.arquivo}
-        {anoPresumido && " · ano não consta na planilha"}
+    <header className="flex flex-col gap-2">
+      <h1 className="text-6xl leading-none text-primary">
+        Chamados{" "}
+        <span className="font-normal text-primary/65">
+          {formatarCompetencia(carga.competencia, "longo")}
+        </span>
+      </h1>
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-lg text-muted-foreground">
+        {carga.versao > 1 && <span>versão {carga.versao}</span>}
+        <span>
+          carga de {new Date(carga.importadaEm).toLocaleDateString("pt-BR")}
+        </span>
+        <span>{carga.arquivo}</span>
+        {anoPresumido && <span>ano não consta na planilha</span>}
       </p>
       <ChipsFiltrosChamados />
       <AvisoFiltroSemColuna
@@ -235,7 +218,7 @@ export function PainelChamados({
   return (
     <TooltipProvider>
       <motion.div
-        className="flex flex-col gap-8"
+        className="flex flex-col gap-10"
         variants={entradaRapida}
         initial={play ? "hidden" : false}
         data-entrada={play ? "" : undefined}
@@ -263,13 +246,15 @@ export function PainelChamados({
               </select>
             </label>
             <p>
-              Variação contra {rotuloAnterior}
-              {base?.semFoto
-                ? " (sem posição: só entradas e finalizados)"
-                : base
-                  ? " (carga própria)"
-                  : ": sem carga do mês anterior"}
-              . Vale para o topo, os indicadores e os gráficos.
+              {!base
+                ? "Sem variação: sem carga do mês anterior. Os cartões mostram só o valor do mês."
+                : `Variação contra ${rotuloAnterior}${
+                    base?.semFoto
+                      ? " (sem posição: só entradas e finalizados)"
+                      : base
+                        ? " (carga própria)"
+                        : ""
+                  }. Vale para o topo, os indicadores e os gráficos.`}
             </p>
           </div>
           {irPara && (

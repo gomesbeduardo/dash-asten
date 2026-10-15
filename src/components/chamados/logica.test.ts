@@ -61,7 +61,9 @@ describe("descreverDelta", () => {
       "ago/26"
     )
     expect(d).toMatchObject({
-      texto: "+18 vs ago/26",
+      texto: "+18",
+      periodo: "ago/26",
+      aria: "+18 em relação a ago/26, pior",
       sentido: "alta",
       tom: "ruim",
       rotuloTom: "pior",
@@ -80,7 +82,7 @@ describe("descreverDelta", () => {
         "ago/26"
       )
     ).toMatchObject({
-      texto: "-3,2 p.p. vs ago/26",
+      texto: "−3,2 p.p.",
       sentido: "queda",
       tom: "ruim",
     })
@@ -90,7 +92,7 @@ describe("descreverDelta", () => {
       { delta: -60, formato: "inteiro", melhorQuando: "menor" },
       "ago/26"
     )
-    expect(d).toMatchObject({ texto: "-60 vs ago/26", tom: "bom" })
+    expect(d).toMatchObject({ texto: "−60", tom: "bom" })
     expect(d?.texto).not.toMatch(/reconstru/)
   })
   it("neutro não ganha cor de bom/ruim; zero é 'sem variação'; nulo não tem delta", () => {
@@ -105,7 +107,7 @@ describe("descreverDelta", () => {
         { delta: 0, formato: "inteiro", melhorQuando: "menor" },
         "ago/26"
       )
-    ).toMatchObject({ sentido: "igual", tom: "neutro", texto: "0 vs ago/26" })
+    ).toMatchObject({ sentido: "igual", tom: "neutro", texto: "0", aria: "0 em relação a ago/26" })
     expect(
       descreverDelta(
         { delta: null, formato: "inteiro", melhorQuando: "menor" },

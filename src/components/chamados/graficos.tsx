@@ -31,7 +31,7 @@ export const COR = {
 
 const EIXO = { fontSize: "1.0000rem", fill: "#475565" }
 const EIXO_TV = { fontSize: "1.1250rem", fill: "#475565" }
-const GRADE = "#d8dee4"
+const GRADE = "#e8edf1"
 const inteiro = new Intl.NumberFormat("pt-BR")
 
 function curto(v: unknown, max = 26) {
@@ -175,7 +175,7 @@ export function BarrasRanking({
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
+        <Tooltip content={<Dica />} cursor={{ fill: "#f0f3f6" }} />
         <Bar
           dataKey="valor"
           name={nome}
@@ -224,7 +224,7 @@ export function BarrasFaixas({
         <CartesianGrid vertical={false} stroke={GRADE} />
         <XAxis dataKey="rotulo" tick={EIXO} tickMargin={8} tickLine={false} />
         <YAxis hide />
-        <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
+        <Tooltip content={<Dica />} cursor={{ fill: "#f0f3f6" }} />
         <Bar
           dataKey="valor"
           name="Chamados"
@@ -405,7 +405,7 @@ export function BarrasComparar({
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
+            <Tooltip content={<Dica />} cursor={{ fill: "#f0f3f6" }} />
             {coloridas
               .filter((s) => !ocultas.includes(s.id))
               .map((s) => (

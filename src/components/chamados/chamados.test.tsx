@@ -142,12 +142,16 @@ describe("PainelChamados", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Chamados · setembro de 2026",
+        name: "Chamados setembro de 2026",
       })
     ).toBeInTheDocument()
     expect(within(backlog).getByLabelText("7")).toBeInTheDocument()
-    expect(backlog).toHaveTextContent("+1 vs ago/26")
-    expect(backlog).toHaveTextContent("pior") // cor nunca sozinha
+    // selo com seta e valor; "pior"/"melhor" só no aria-label (cor e seta comunicam)
+    const selo = within(backlog).getByRole("group", {
+      name: "+1 em relação a ago/26, pior",
+    })
+    expect(selo).toHaveTextContent("+1")
+    expect(selo.textContent).not.toMatch(/vs|·|pior/)
     const sla = screen.getByRole("article", { name: "% no SLA" })
     expect(within(sla).getByLabelText("50,0%")).toBeInTheDocument()
   })
@@ -166,11 +170,12 @@ describe("PainelChamados", () => {
   it("sem carga do mês anterior não há Δ e nada é reconstruído", async () => {
     render(<PainelChamados {...await cenario(false)} />)
     const sla = await screen.findByRole("article", { name: "% no SLA" })
-    expect(sla).toHaveTextContent("— vs mês anterior")
-    expect(sla).toHaveTextContent("sem base no mês anterior")
+    // sem base: sem selo nem texto repetido no cartão; o aviso vem uma vez, junto de "Comparar com"
+    expect(within(sla).queryByRole("group")).toBeNull()
+    expect(sla).not.toHaveTextContent("sem base no mês anterior")
     const nao = screen.getByRole("article", { name: "Não finalizados" })
     expect(within(nao).getByLabelText("7")).toBeInTheDocument()
-    expect(nao).toHaveTextContent("— vs mês anterior")
+    expect(within(nao).queryByRole("group")).toBeNull()
     expect(screen.getByText(/sem carga do mês anterior/)).toBeInTheDocument()
     expect(screen.queryByText(/reconstru/i)).toBeNull()
   })
@@ -681,7 +686,7 @@ describe("filtros de Chamados", () => {
     const depois = await screen.findByRole("article", { name: "Não finalizados" })
     await waitFor(() => expect(within(depois).getByLabelText("2")).toBeInTheDocument())
     expect(
-      screen.getByRole("heading", { level: 1, name: "Chamados · setembro de 2026 · Cliente: Cli B" })
+      screen.getByRole("heading", { level: 1, name: "Chamados setembro de 2026" })
     ).toBeInTheDocument()
     const chips = screen.getByRole("list", { name: "Filtros ativos" })
     expect(chips).toHaveTextContent("Cliente: Cli B")

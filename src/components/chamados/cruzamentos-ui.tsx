@@ -121,7 +121,8 @@ export function ClienteSituacao(d: DadosCruzamento) {
     <GraficoCartao
       id="clienteSituacao"
       titulo="Cliente × Situação"
-      subtitulo={`não finalizados por cliente, divididos pela Situação · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="não finalizados por cliente, divididos pela Situação"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: ["Cliente", "Mês", ...situacoes],
@@ -212,7 +213,8 @@ export function OperadorAtraso(d: DadosCruzamento) {
     <GraficoCartao
       id="operadorAtraso"
       titulo="Operador × Atraso"
-      subtitulo={`não finalizados por operador, por tempo desde a abertura · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="não finalizados por operador, por tempo desde a abertura"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: ["Operador", "Mês", ...faixas],
@@ -304,7 +306,8 @@ export function AreaSla(d: DadosCruzamento) {
     <GraficoCartao
       id="areaSla"
       titulo="Área × SLA"
-      subtitulo={`finalizados dentro do SLA e SLA vencido, por área · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="finalizados dentro do SLA e SLA vencido, por área"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: [
@@ -382,7 +385,8 @@ export function ClienteTempo(d: DadosCruzamento) {
     <GraficoCartao
       id="clienteTempo"
       titulo="Cliente × Tempo médio"
-      subtitulo={`dias para resolver e até o aceite, por cliente · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="dias para resolver e até o aceite, por cliente"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: [
