@@ -275,7 +275,9 @@ function ComparacaoVisao({
       deltaReconstruido
     )
   const maxItens = n > 3 ? 6 : MAX_ITENS
-  const dists = cmp.distribuicoes.filter((d) => d.id !== "situacao")
+  const dists = cmp.distribuicoes.filter(
+    (d) => d.id !== "situacao" && d.id !== "operador"
+  )
   const series = ordenadas.map((o, i) => ({
     id: o.competencia,
     rotulo: nomes[i],

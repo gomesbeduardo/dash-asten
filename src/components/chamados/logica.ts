@@ -758,3 +758,17 @@ export function selosDaLeitura(
 export function temOutros<T extends { rotulo: string }>(itens: T[]) {
   return itens.some((i) => i.rotulo === "Outros")
 }
+
+/** Mantém os `max` maiores e soma o resto (inclusive um "Outros" já existente) em "Outros". */
+export function limitarItens<T extends { rotulo: string; valor: number }>(
+  itens: T[],
+  max: number
+): { rotulo: string; valor: number }[] {
+  const nomeados = itens.filter((i) => i.rotulo !== "Outros")
+  const outros = itens.find((i) => i.rotulo === "Outros")?.valor ?? 0
+  if (nomeados.length <= max && !outros) return itens
+  const resto =
+    nomeados.slice(max).reduce((s, i) => s + i.valor, 0) + outros
+  const topo = nomeados.slice(0, max)
+  return resto > 0 ? [...topo, { rotulo: "Outros", valor: resto }] : topo
+}
