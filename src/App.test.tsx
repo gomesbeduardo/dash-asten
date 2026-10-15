@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { configure, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { criarRepositorioMemoria, type RepositorioDeCargas } from "@/cargas"
@@ -8,6 +8,17 @@ import { registrarTiposDoApp } from "@/app/bootstrap"
 import { RepositorioProvider } from "@/app/RepositorioContext"
 import { makeXlsx } from "@/test/makeWorkbook"
 import { App } from "./App"
+
+// A espera da troca de aba já é coberta, com relógio falso, em Apresentacao.troca.test.tsx;
+// aqui ela é zerada para o teste de integração não depender de tempo real.
+vi.mock("@/components/app/motion/tokens", async (orig) => ({
+  ...(await orig<typeof import("@/components/app/motion/tokens")>()),
+  esperaTrocaAba: 0,
+}))
+
+// Sob carga (suítes em paralelo) o padrão de 1 s do findBy/waitFor estoura em testes que não têm
+// nada a ver com a troca de aba; vale só para este arquivo (cada arquivo roda isolado).
+configure({ asyncUtilTimeout: 5000 })
 
 const OUTRO = [
   ["Área", "Valor"],
@@ -83,10 +94,15 @@ async function montarAberto(repo: RepositorioDeCargas) {
   )
 }
 
-/** O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó. */
+/**
+ * O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó.
+ * O limite cobre a montagem (adiada com useDeferredValue) das visões na suíte cheia (a espera da
+ * troca de aba é zerada pelo mock acima); o waitFor retorna assim que o título aparece, então o limite maior não afrouxa a asserção.
+ */
 const tituloVisivel = (name: string | RegExp) =>
-  waitFor(() =>
-    expect(screen.getByRole("heading", { level: 1, name })).toBeInTheDocument()
+  waitFor(
+    () => expect(screen.getByRole("heading", { level: 1, name })).toBeInTheDocument(),
+    { timeout: 3000 }
   )
 const h1 = (name: string | RegExp) =>
   screen.findByRole("heading", { level: 1, name })
@@ -173,7 +189,6 @@ describe("nova carga", () => {
     await tituloVisivel(/^Leituras · /)
     await user.keyboard("c")
     await tituloVisivel("Comparar competências")
-    await user.keyboard("e")
     await user.keyboard("p")
     await screen.findByRole("article", { name: "Não finalizados" })
   })

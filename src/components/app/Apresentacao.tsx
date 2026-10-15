@@ -43,7 +43,7 @@ import { TopBar } from "./TopBar"
 import { useBarVisibility } from "./hooks/useBarVisibility"
 import { useShortcuts } from "./hooks/useShortcuts"
 import { useTelaCheia } from "./hooks/useTelaCheia"
-import { duration, saida, standard } from "./motion/tokens"
+import { duration, esperaTrocaAba, saida, standard } from "./motion/tokens"
 import { useEntrada } from "./motion/useEntrada"
 
 export type ApresentacaoProps = {
@@ -169,7 +169,37 @@ export function Apresentacao(p: ApresentacaoProps) {
     [visoes]
   )
   const visao = resolverVisao(visaoPedida, disponiveis)
-  const alvo = useMemo(() => ({ carga, visao }), [carga, visao])
+
+  // Troca de aba em duas fases: 1) o indicador anima sozinho, com o conteúdo
+  // antigo na tela; 2) quando assenta (ou no teto de tempo), o novo monta.
+  // Carga nova ou movimento reduzido não esperam. Cliques rápidos: vale o último.
+  const [pronta, setPronta] = useState({ cargaId: carga.id, visao })
+  const conteudoAtual =
+    pronta.cargaId === carga.id && disponiveis.includes(pronta.visao)
+  if (!conteudoAtual || reduce) {
+    if (pronta.cargaId !== carga.id || pronta.visao !== visao)
+      setPronta({ cargaId: carga.id, visao })
+  }
+  const visaoConteudo = conteudoAtual && !reduce ? pronta.visao : visao
+  const assentou = useCallback(
+    () =>
+      setPronta((p) =>
+        p.cargaId === carga.id && p.visao === visao
+          ? p
+          : { cargaId: carga.id, visao }
+      ),
+    [carga.id, visao]
+  )
+  useEffect(() => {
+    if (visao === pronta.visao) return
+    const t = setTimeout(assentou, esperaTrocaAba)
+    return () => clearTimeout(t)
+  }, [visao, pronta.visao, assentou])
+
+  const alvo = useMemo(
+    () => ({ carga, visao: visaoConteudo }),
+    [carga, visaoConteudo]
+  )
   const { carga: cargaVista, visao: visaoVista } = useDeferredValue(alvo)
 
   const overlay =
@@ -254,6 +284,7 @@ export function Apresentacao(p: ApresentacaoProps) {
           )}
           visoes={disponiveis}
           visao={visao}
+          onAssentou={assentou}
           onSlot={setSlot}
           dica={dica}
           onAbrir={p.onAbrir}
