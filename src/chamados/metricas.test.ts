@@ -82,7 +82,7 @@ describe("calcularMetricas (corte no fim da competência, D34)", () => {
     expect(m.linhasPosteriores).toBe(1)
     expect(m.linhasSemAbertura).toBe(1)
     expect(
-      m.linhasConsideradas + m.linhasPosteriores + m.linhasSemAbertura
+      m.linhasConsideradas! + m.linhasPosteriores! + m.linhasSemAbertura!
     ).toBe(LINHAS.length)
     expect(m.avisos).toContain(
       "1 chamado(s) abertos após o fim da competência — mostrados à parte"
@@ -314,5 +314,22 @@ describe("reabertos depois da solução (aviso informativo, sem mudar KPI)", () 
     expect(sem.avisos.join(" ")).not.toMatch(/reabertos depois/)
     // e os KPIs também não mudam com a reabertura presente
     expect(kpisDe(calcularMetricas(entrada(linhas)))).toEqual(kpisDe(com))
+  })
+})
+
+describe("filtro sem a coluna na carga (D61)", () => {
+  const m = calcularMetricas({
+    sheet: sheetChamados(LINHAS),
+    ...SET,
+    colunasSemFiltro: ["Autarquia"],
+  })
+
+  it("envelhecimento e situação na competência não trazem zero numérico", () => {
+    expect(m.envelhecimento).toEqual([])
+    expect(m.porSituacaoNaCompetencia).toEqual([])
+    expect(m.linhasConsideradas).toBeNull()
+    expect(m.linhasPosteriores).toBeNull()
+    expect(m.linhasSemAbertura).toBeNull()
+    expect(m.kpis.every((k) => k.valor === null)).toBe(true)
   })
 })

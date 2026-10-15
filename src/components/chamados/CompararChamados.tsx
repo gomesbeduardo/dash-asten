@@ -284,9 +284,11 @@ function ComparacaoVisao({
       ? (["outros"] as const)
       : []),
   ]
-  const tabelaSeries = (itens: { rotulo: string; valores: number[] }[]) => ({
+  const tabelaSeries = (
+    itens: { rotulo: string; valores: (number | null)[] }[]
+  ) => ({
     colunas: ["Categoria", ...nomes],
-    linhas: itens.map((i) => [i.rotulo, ...i.valores]),
+    linhas: itens.map((i) => [i.rotulo, ...i.valores.map((v) => v ?? "—")]),
   })
 
   return (
