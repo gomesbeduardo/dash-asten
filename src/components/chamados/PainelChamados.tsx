@@ -4,18 +4,34 @@ import { motion, useReducedMotion } from "motion/react"
 import { ArrowRightIcon } from "lucide-react"
 
 import { formatarCompetencia, inferirCompetencia } from "@/cargas"
-import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
-import { entryContainer } from "@/components/app/motion/variants"
+import {
+  avisoColunasSemFiltro,
+  calcularMetricas,
+  type Distribuicao,
+  type EntradaCompetencia,
+} from "@/chamados"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao, KpiCartao } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
-import { BarrasComparar, BarrasFaixas, BarrasRanking } from "./graficos"
+import { BarrasFaixas } from "./graficos"
 import { Carregando } from "./Carregando"
 import { useMesDeChamados } from "./hooks"
-import { agruparSeries, recorteTexto, temOutros, type SeloTipo } from "./logica"
+import {
+  colunasAusentes,
+  filtrarSheet,
+  recorteTexto,
+  temOutros,
+  type SeloTipo,
+} from "./logica"
+import { CartoesSituacao, GraficoFoto, type BaseAnterior } from "./painel-foto"
 import { LegendaSimbolos } from "./selos"
 
+/** Entrada do painel: mais curta que a padrão (são ~25 itens; ~110 ms cada deixaria a tela quase vazia). */
+const entradaRapida = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.03 } },
+}
 const DESTAQUES = ["naoFinalizados", "sla", "atraso", "finalizados"]
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
@@ -30,23 +46,6 @@ const tabelaDe = (
     ...(total ? [["Total", n(itens.reduce((s, i) => s + i.valor, 0))]] : []),
   ],
 })
-
-const SERIES_FOTO = [
-  { id: "finalizados", rotulo: "Finalizados no mês" },
-  { id: "naoFinalizados", rotulo: "Não finalizados" },
-]
-const tabelaFoto = (itens: Distribuicao["itens"]) => ({
-  colunas: ["Categoria", "Finalizados no mês", "Não finalizados"],
-  linhas: itens.map((i) => [i.rotulo, n(i.finalizados), n(i.naoFinalizados)]),
-})
-/** Itens com as duas séries da D64 (finalizados no mês × não finalizados), no formato do gráfico agrupado. */
-const itensFoto = (itens: Distribuicao["itens"], max?: number) => {
-  const base = itens.map((i) => ({
-    rotulo: i.rotulo,
-    valores: [i.finalizados, i.naoFinalizados] as (number | null)[],
-  }))
-  return max ? agruparSeries(base, max) : base
-}
 
 /** Painel estratégico do mês (D31–D36): KPIs com delta e gráficos. Sem tabela de linhas soltas. */
 export function PainelChamados({
@@ -65,6 +64,31 @@ export function PainelChamados({
     () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
     [carga.workbook, carga.arquivo]
   )
+  // mês da carga com o recorte dos filtros: base do cálculo por período dos gráficos
+  const entradaAtual = useMemo<EntradaCompetencia | null>(
+    () =>
+      sheet
+        ? {
+            sheet: filtrarSheet(sheet, filtros, carga.competencia),
+            competencia: carga.competencia,
+            colunasSemFiltro: colunasAusentes(sheet, filtros),
+          }
+        : null,
+    [sheet, filtros, carga.competencia]
+  )
+  // situações do mês anterior (carga própria) para o Δ de cada card; sem base, sem Δ
+  const baseAnterior = useMemo<BaseAnterior>(() => {
+    if (!anterior || (anterior.entrada.colunasSemFiltro ?? []).length > 0)
+      return null
+    const m = calcularMetricas(anterior.entrada)
+    return m.totalChamados === null
+      ? null
+      : {
+          situacoes: m.situacoes,
+          total: m.totalChamados,
+          rotulo: formatarCompetencia(anterior.entrada.competencia),
+        }
+  }, [anterior])
   const recorte = recorteTexto(filtros)
   const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
   const cabecalho = (
@@ -124,28 +148,11 @@ export function PainelChamados({
       Sem dados com este filtro nesta carga
     </p>
   )
-  const selosDe = (itens: { rotulo: string }[]): SeloTipo[] =>
-    temOutros(itens) ? ["outros"] : []
-
-  const rankings: {
-    id: Distribuicao["id"]
-    sub: string
-    max?: number
-  }[] = [
-    { id: "atividade", sub: "finalizados no mês × não finalizados, por atividade" },
-    {
-      id: "areaSuperior",
-      sub: "finalizados no mês × não finalizados, por área superior",
-    },
-    {
-      id: "area",
-      sub: "finalizados no mês × não finalizados, por área (módulo)",
-      max: 8,
-    },
-    {
-      id: "operador",
-      sub: "finalizados no mês × não finalizados, por operador",
-    },
+  const rankings: { id: Distribuicao["id"]; sub: string; max?: number }[] = [
+    { id: "operador", sub: "por operador" },
+    { id: "area", sub: "por área (módulo)", max: 8 },
+    { id: "atividade", sub: "por atividade" },
+    { id: "areaSuperior", sub: "por área superior" },
   ]
   const cliente = dist("cliente")
   // símbolos que aparecem nesta tela, para a legenda
@@ -161,13 +168,25 @@ export function PainelChamados({
     <TooltipProvider>
       <motion.div
         className="flex flex-col gap-8"
-        variants={entryContainer}
+        variants={entradaRapida}
         initial={play ? "hidden" : false}
         data-entrada={play ? "" : undefined}
         animate="show"
       >
         {cabecalho}
         <LegendaSimbolos tipos={tiposNaTela} />
+
+        {metricas.totalChamados === null ? (
+          <section aria-label="Chamados por situação">{vazio}</section>
+        ) : (
+          <CartoesSituacao
+            total={metricas.totalChamados}
+            situacoes={metricas.situacoes}
+            anterior={baseAnterior}
+            mes={mes}
+            entrada={play}
+          />
+        )}
 
         <section aria-label="Indicadores" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
@@ -199,7 +218,7 @@ export function PainelChamados({
               />
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-5 3xl:grid-cols-8 md:grid-cols-4">
             {demais.map((k) => (
               <KpiCartao
                 key={k.id}
@@ -220,20 +239,14 @@ export function PainelChamados({
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           {cliente && (
-            <GraficoCartao
-              id="cliente"
-              titulo="Por cliente"
-              subtitulo={`finalizados no mês × não finalizados · ${mes}`}
-              tabela={tabelaFoto(cliente.itens)}
-              selos={selosDe(cliente.itens)}
+            <GraficoFoto
+              dist={cliente}
+              entrada={entradaAtual}
+              competencia={carga.competencia}
+              sub="por cliente"
+              animar={play}
               className="xl:col-span-2"
-            >
-              <BarrasComparar
-                itens={itensFoto(cliente.itens)}
-                series={SERIES_FOTO}
-                animar={play}
-              />
-            </GraficoCartao>
+            />
           )}
           <GraficoCartao
             id="atrasoFaixas"
@@ -253,41 +266,18 @@ export function PainelChamados({
           {rankings.map((r) => {
             const d = dist(r.id)
             if (!d) return null
-            const itens = itensFoto(d.itens, r.max)
             return (
-              <GraficoCartao
+              <GraficoFoto
                 key={r.id}
-                id={r.id}
-                titulo={d.titulo}
-                subtitulo={r.sub}
-                tabela={tabelaFoto(d.itens)}
-                selos={selosDe(itens)}
-              >
-                <BarrasComparar itens={itens} series={SERIES_FOTO} animar={play} />
-              </GraficoCartao>
+                dist={d}
+                entrada={entradaAtual}
+                competencia={carga.competencia}
+                sub={r.sub}
+                max={r.max}
+                animar={play}
+              />
             )
           })}
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-          <GraficoCartao
-            id="situacoes"
-            titulo="Chamados por situação"
-            subtitulo={
-              semDados
-                ? "sem dados com este filtro nesta carga"
-                : `${n(metricas.totalChamados ?? 0)} chamados na foto de ${mes}`
-            }
-            nota="Cada situação aparece como vem na planilha. Os chamados abertos depois do Mes Ref. ficam só na nota abaixo, fora destes números."
-            tabela={tabelaDe(metricas.situacoes, true)}
-            className="xl:col-span-2"
-          >
-            {semDados ? (
-              vazio
-            ) : (
-              <BarrasRanking itens={metricas.situacoes} animar={play} />
-            )}
-          </GraficoCartao>
         </div>
 
         {avisosRodape.length > 0 && (
