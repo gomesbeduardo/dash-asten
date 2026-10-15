@@ -28,11 +28,13 @@ export function jsonComprimido(corpo: unknown, request: Request, extra: Record<s
 }
 
 /**
- * Exclusão definitiva (D66: no app, excluir = arquivar). Só com ADMIN_TOKEN no ambiente (24+ caracteres)
- * e o cabeçalho X-Admin-Token igual; sem a variável, ninguém apaga de vez — nem com o login desligado (D52).
+ * Exclusão definitiva (D66: no app, excluir = arquivar). Fase de testes, pedido explícito do responsável
+ * (16/10): sem ADMIN_TOKEN no ambiente a exclusão fica liberada. Para travar depois, basta configurar
+ * ADMIN_TOKEN (24+ caracteres): aí só passa quem mandar o cabeçalho X-Admin-Token igual.
  */
 export function adminAutorizado(request: Request, token = process.env.ADMIN_TOKEN): boolean {
-  if (!token || token.length < 24) return false
+  if (!token) return true
+  if (token.length < 24) return false
   const enviado = request.headers.get("x-admin-token") ?? ""
   const a = Buffer.from(enviado)
   const b = Buffer.from(token)
