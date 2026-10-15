@@ -25,14 +25,16 @@ describe("jsonComprimido (carga grande cabe no limite de resposta)", () => {
 
 describe("adminAutorizado (exclusão definitiva)", () => {
   const com = (token?: string) => new Request("https://x.test/", { headers: token ? { "X-Admin-Token": token } : {} })
-  it("sem ADMIN_TOKEN configurado ninguém passa; com ele, só o cabeçalho igual", () => {
-    expect(adminAutorizado(com("qualquer"), undefined)).toBe(false)
+  it("sem ADMIN_TOKEN configurado a exclusão fica liberada (fase de testes); com ele, só o cabeçalho igual", () => {
+    expect(adminAutorizado(com(), undefined)).toBe(true)
+    expect(adminAutorizado(com("qualquer"), "")).toBe(true)
     expect(adminAutorizado(com(), "segredo-32-caracteres-xxxxxxxxxxx")).toBe(false)
     expect(adminAutorizado(com("errado"), "segredo-32-caracteres-xxxxxxxxxxx")).toBe(false)
     expect(adminAutorizado(com("segredo-32-caracteres-xxxxxxxxxxx"), "segredo-32-caracteres-xxxxxxxxxxx")).toBe(true)
   })
-  it("token curto demais no ambiente é ignorado (exige 24+ caracteres)", () => {
+  it("token curto demais no ambiente não libera nada (fail-closed: exige 24+ caracteres)", () => {
     expect(adminAutorizado(com("curto"), "curto")).toBe(false)
+    expect(adminAutorizado(com(), "curto")).toBe(false)
   })
 })
 
