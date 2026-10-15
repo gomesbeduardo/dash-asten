@@ -21,3 +21,16 @@ export {
   rotuloCompetencia,
 } from "./fotos"
 export type { FotoCorrigida } from "./fotos"
+export {
+  clientePorSituacao,
+  operadorPorAtraso,
+  areaPorSla,
+  clientePorTempo,
+  MAX_ITENS_CRUZAMENTO,
+} from "./cruzamentos"
+export type {
+  ClienteSituacao,
+  OperadorAtraso,
+  AreaSla,
+  ClienteTempo,
+} from "./cruzamentos"
