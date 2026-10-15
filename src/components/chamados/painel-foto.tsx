@@ -134,7 +134,7 @@ export function CartoesSituacao({
   anterior,
   mes,
   entrada,
-  corrigidoPor = "",
+  corrigidoPor = [],
 }: {
   total: number
   situacoes: ItemDistribuicaoCorrigido[]
@@ -142,7 +142,7 @@ export function CartoesSituacao({
   mes: string
   entrada: boolean
   /** Fotos posteriores que corrigiram valores ("out/26"); vazio = nada corrigido. */
-  corrigidoPor?: string
+  corrigidoPor?: string[]
 }) {
   // situações que existiam no período-base e sumiram: card com 0 e a queda
   const sumidas: ItemDistribuicaoCorrigido[] = (anterior?.situacoes ?? [])
@@ -183,8 +183,8 @@ export function CartoesSituacao({
                 nova={!!anterior && !anterior.semFoto && !antes}
                 semFoto={anterior?.semFoto}
               />
-              {s.original !== undefined && corrigidoPor && (
-                <MarcaCorrigido por={corrigidoPor} era={n(s.original)} />
+              {s.original !== undefined && corrigidoPor.length > 0 && (
+                <MarcaCorrigido por={corrigidoPor} original={n(s.original)} />
               )}
             </CartaoContagem>
           )
@@ -228,7 +228,7 @@ export function GraficoFoto({
   max,
   className,
   animar,
-  corrigidoPor = "",
+  corrigidoPor = [],
 }: {
   dist: Distribuicao
   /** Mês da carga já com os filtros aplicados; base do cálculo por período. */
@@ -240,7 +240,7 @@ export function GraficoFoto({
   className?: string
   animar: boolean
   /** Fotos posteriores que corrigiram valores deste gráfico ("out/26"). */
-  corrigidoPor?: string
+  corrigidoPor?: string[]
 }) {
   const [ligado, setLigado] = useState(false)
   const [meses, setMeses] = useState<number>(6)
@@ -285,10 +285,10 @@ export function GraficoFoto({
       }}
       selos={temOutros(itens) ? ["outros"] : []}
       nota={
-        corrigidoPor &&
+        corrigidoPor.length > 0 &&
         !doPeriodo &&
         (dist.itens as { original?: unknown }[]).some((i) => i.original)
-          ? `Valores corrigidos pela foto de ${corrigidoPor}.`
+          ? `Valores corrigidos pela foto de ${corrigidoPor.join(" e ")}.`
           : undefined
       }
       className={className}

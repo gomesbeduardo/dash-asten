@@ -16,7 +16,7 @@ import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useMesDeChamados } from "./hooks"
 import { recorteTexto, temOutros, type SeloTipo } from "./logica"
 import { CartoesSituacao, GraficoFoto } from "./painel-foto"
-import { LEGENDA_CORRIGIDO, LegendaSimbolos, MarcaCorrigido } from "./selos"
+import { LegendaSimbolos, MarcaCorrigido } from "./selos"
 
 /** Entrada do painel: mais curta que a padrão (são ~25 itens; ~110 ms cada deixaria a tela quase vazia). */
 const entradaRapida = {
@@ -113,10 +113,10 @@ export function PainelChamados({
   )
   const rotuloAnterior = comparado.rotuloBase ?? "mês anterior"
   const marcaDe = (k: (typeof metricas.kpis)[number]) =>
-    k.original !== undefined && corrigidoPor ? (
+    k.original !== undefined && corrigidoPor.length ? (
       <MarcaCorrigido
         por={corrigidoPor}
-        era={formatValue(
+        original={formatValue(
           k.original,
           k.formato === "inteiro"
             ? "integer"
@@ -155,6 +155,7 @@ export function PainelChamados({
     )
       ? (["outros"] as const)
       : []),
+    ...(corrigidoPor.length ? (["corrigido"] as const) : []),
   ]
 
   return (
@@ -167,10 +168,7 @@ export function PainelChamados({
         animate="show"
       >
         {cabecalho}
-        <LegendaSimbolos
-          tipos={tiposNaTela}
-          extras={corrigidoPor ? [LEGENDA_CORRIGIDO] : []}
-        />
+        <LegendaSimbolos tipos={tiposNaTela} />
 
         {metricas.totalChamados === null ? (
           <section aria-label="Chamados por situação">{vazio}</section>

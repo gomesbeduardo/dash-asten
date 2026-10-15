@@ -42,8 +42,8 @@ export type PainelComparado = {
   base: BaseAnterior
   /** Rótulo do período-base nos Δ ("abr/26", "abr/26 · v1"); `null` sem base. */
   rotuloBase: string | null
-  /** "out/26" ou "mai/26, out/26": fotos que corrigiram a foto aberta; vazio se nada mudou. */
-  corrigidoPor: string
+  /** ["out/26"] ou ["mai/26", "out/26"]: fotos que corrigiram a foto aberta; vazio se nada mudou. */
+  corrigidoPor: string[]
   opcoes: OpcaoSeletor[]
 }
 
@@ -247,7 +247,7 @@ export function usePainelComparado({
       entradaAtual: corrigida.entrada,
       base,
       rotuloBase,
-      corrigidoPor: m.corrigidoPor.map(rotuloCompetencia).join(", "),
+      corrigidoPor: m.corrigidoPor.map(rotuloCompetencia),
       opcoes,
     }
   }, [sheet, fotos, cargaVersao, carga, historico, filtros, escolha])
