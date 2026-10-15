@@ -66,6 +66,7 @@ export function NovaCargaDialog({
     tipo: string
     competencia: string
     nome?: string
+    mesRef?: string
   }) => void | Promise<void>
   onCancel: () => void
 }) {
@@ -81,6 +82,7 @@ export function NovaCargaDialog({
       origem: comp.origem,
       anoPresumido: comp.anoPresumido,
       avisoMesRef: comp.avisoMesRef,
+      mesRef: comp.mesRef,
     }
   }, [workbook])
   const tipos = tiposRegistrados()
@@ -102,6 +104,7 @@ export function NovaCargaDialog({
         tipo,
         competencia,
         ...(versao > 1 ? { nome } : {}),
+        ...(inicial.mesRef ? { mesRef: inicial.mesRef } : {}),
       })
     } catch {
       // O erro é tratado por quem guarda (aviso na tela); aqui só destrava o botão.

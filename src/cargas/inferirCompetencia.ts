@@ -193,6 +193,8 @@ export type CompetenciaInferida = {
   anoPresumido: boolean
   /** Aviso sobre a coluna Mes Ref. (mais de um mês, ou vazia/ilegível). */
   avisoMesRef?: string
+  /** Mes Ref. lido da planilha (o mais frequente), para auditar edições da competência. */
+  mesRef?: Competencia
 }
 
 const NOMES_DOS_MESES = [
@@ -264,6 +266,7 @@ export function inferirCompetencia(
       competencia: mesRef.competencia,
       origem: "mesref",
       anoPresumido: false,
+      mesRef: mesRef.competencia,
       ...(mesRef.meses > 1
         ? {
             avisoMesRef: `A coluna Mes Ref. tem ${mesRef.meses} meses diferentes; usamos ${porExtenso(mesRef.competencia)}. Confira.`,

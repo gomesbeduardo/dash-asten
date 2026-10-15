@@ -39,9 +39,9 @@ function servidorFalso() {
       return c ? json(200, { ...c.meta, workbook: JSON.parse(c.workbook) }) : json(404, { erro: "não encontrada" })
     }
     if (method === "POST") {
-      const body = JSON.parse(corpo) as Pick<NovaCarga, "tipo" | "competencia" | "arquivo" | "nome"> & { workbook: unknown; originalBase64?: string }
+      const body = JSON.parse(corpo) as Pick<NovaCarga, "tipo" | "competencia" | "arquivo" | "nome" | "mesRef"> & { workbook: unknown; originalBase64?: string }
       const meta = montarMeta(
-        { tipo: body.tipo, competencia: body.competencia, arquivo: body.arquivo, nome: body.nome, workbook: { fileName: "", importedAt: new Date(), sheets: (body.workbook as { sheets: [] }).sheets } },
+        { tipo: body.tipo, competencia: body.competencia, arquivo: body.arquivo, nome: body.nome, mesRef: body.mesRef, workbook: { fileName: "", importedAt: new Date(), sheets: (body.workbook as { sheets: [] }).sheets } },
         [...cargas.values()].map((c) => c.meta),
       )
       cargas.set(meta.id, { meta, workbook: JSON.stringify(body.workbook), original: body.originalBase64 })
@@ -117,6 +117,15 @@ describe("repositório API", () => {
     expect(body).toMatchObject({ tipo: "chamados", competencia: "2026-09", arquivo: "f.xlsx", originalBase64: "AQID" })
     expect(body.workbook.sheets[0].rows[0].d).toBe("2026-09-03T00:00:00.000Z")
     expect(srv.cargas.get(meta.id)!.original).toBe("AQID")
+  })
+
+  it("o corpo do POST inclui mesRef quando informado e omite quando não", async () => {
+    const repo = criarRepositorioApi()
+    await repo.salvar(nova({ mesRef: "2026-10" }))
+    await repo.salvar(nova())
+    const posts = srv.chamadas.filter((c) => c.method === "POST").map((c) => JSON.parse(c.corpo))
+    expect(posts[0].mesRef).toBe("2026-10")
+    expect("mesRef" in posts[1]).toBe(false)
   })
 
   it("sem CompressionStream, envia JSON puro e sem o header", async () => {

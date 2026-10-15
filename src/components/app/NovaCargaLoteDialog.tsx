@@ -42,7 +42,12 @@ import { DICA_ORIGEM, MESES } from "./NovaCargaDialog"
 
 export type ItemLido = { workbook: Workbook; original: ArrayBuffer }
 export type FalhaDeLeitura = { nome: string; mensagem: string }
-export type Escolha = { tipo: string; competencia: string; nome?: string }
+export type Escolha = {
+  tipo: string
+  competencia: string
+  nome?: string
+  mesRef?: string
+}
 export type Guardada = { meta: CargaMeta; item: ItemLido }
 
 type Estado = "aguardando" | "enviando" | "guardada" | "erro"
@@ -57,6 +62,7 @@ type Linha = {
   origem: OrigemCompetencia
   anoPresumido: boolean
   avisoMesRef?: string
+  mesRef?: string
   nome: string
   linhas: number
   estado: Estado
@@ -78,6 +84,7 @@ function linhaInicial(item: ItemLido, chave: number): Linha {
     origem: comp.origem,
     anoPresumido: comp.anoPresumido,
     avisoMesRef: comp.avisoMesRef,
+    mesRef: comp.mesRef,
     nome: nomeSugerido(item.workbook.fileName),
     linhas: item.workbook.sheets.reduce((n, s) => n + s.rows.length, 0),
     estado: "aguardando",
@@ -167,6 +174,7 @@ export function NovaCargaLoteDialog({
           tipo: atual.tipo,
           competencia: competenciaDe(atual),
           ...(versao > 1 ? { nome: atual.nome } : {}),
+          ...(atual.mesRef ? { mesRef: atual.mesRef } : {}),
         })
         atualizar(l.chave, { estado: "guardada", meta })
       } catch {
