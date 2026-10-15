@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import { applyFilters, clearFilter, type SheetFilters } from "@/core"
 import type { VisaoTipoProps } from "@/panels/tipos"
-import { crossfade } from "@/components/app/motion/tokens"
+import { duration, saida, standard } from "@/components/app/motion/tokens"
 import { AutoPanel } from "@/components/app/auto/AutoPanel"
 import { AbasDaPlanilha } from "@/components/app/AbasDaPlanilha"
 import { useBarra } from "@/components/app/BarraContext"
@@ -129,9 +129,14 @@ export function PainelOutro({ carga }: VisaoTipoProps) {
           key={sheet.id}
           className="flex flex-col gap-6"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: reduce ? 0 : crossfade, ease: "linear" }}
+          animate={{
+            opacity: 1,
+            transition: { duration: reduce ? 0 : duration.fast, ease: standard },
+          }}
+          exit={{
+            opacity: 0,
+            transition: { duration: reduce ? 0 : saida, ease: standard },
+          }}
         >
           <div className="flex flex-col gap-1">
             <h1 className="text-6xl leading-none text-primary">{sheet.name}</h1>

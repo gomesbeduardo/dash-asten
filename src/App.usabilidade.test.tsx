@@ -174,7 +174,7 @@ describe("tela cheia", () => {
 })
 
 describe("a barra fixa não cobre o conteúdo", () => {
-  it("com a barra fixada (H) ou a gaveta de filtros aberta, o conteúdo ganha respiro igual à altura da barra", async () => {
+  it("com a barra fixada (H) o conteúdo ganha respiro igual à altura da barra; a gaveta de filtros não empurra", async () => {
     vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(96)
     const repo = criarRepositorioMemoria()
     await salvar(repo, "a.xlsx", "2026-07")
@@ -189,6 +189,8 @@ describe("a barra fixa não cobre o conteúdo", () => {
     await userEvent.keyboard("h")
     await waitFor(() => expect(conteudo().dataset.barraSegura).toBe("false"))
     await userEvent.keyboard("f")
-    await waitFor(() => expect(conteudo().dataset.barraSegura).toBe("true"))
+    await screen.findByRole("dialog")
+    expect(conteudo().dataset.barraSegura).toBe("false")
+    expect(conteudo().style.paddingTop).toBe("")
   })
 })

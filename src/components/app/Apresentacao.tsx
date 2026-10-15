@@ -33,7 +33,7 @@ import { TopBar } from "./TopBar"
 import { useBarVisibility } from "./hooks/useBarVisibility"
 import { useShortcuts } from "./hooks/useShortcuts"
 import { useTelaCheia } from "./hooks/useTelaCheia"
-import { crossfade } from "./motion/tokens"
+import { duration, saida, standard } from "./motion/tokens"
 
 export type ApresentacaoProps = {
   carga: Carga
@@ -124,9 +124,10 @@ export function Apresentacao(p: ApresentacaoProps) {
     onTelaCheia: telaCheia.suportado ? telaCheia.alternar : undefined,
   })
 
-  // Barra fixada (H) ou segurada pela gaveta de filtros: não flutua sobre o
-  // conteúdo, que ganha um respiro igual à altura dela (senão cobre os chips).
-  const barraSegura = bar.fixa || painelHold
+  // Só a barra fixada (H) reserva espaço: o conteúdo ganha um respiro igual à
+  // altura dela (senão cobre os chips). A gaveta de filtros segura a barra, mas
+  // ela fica sobreposta: empurrar o conteúdo aí causava salto de layout (CLS).
+  const barraSegura = bar.fixa
   const [alturaBarra, setAlturaBarra] = useState(0)
   useLayoutEffect(() => {
     const barra = barRef.current
@@ -188,19 +189,21 @@ export function Apresentacao(p: ApresentacaoProps) {
           telaCheiaAtiva={telaCheia.ativa}
         />
 
-        <main
-          data-barra-segura={barraSegura}
-          style={
-            barraSegura && alturaBarra > 0
-              ? { paddingTop: `calc(${alturaBarra}px + 1rem)` }
-              : undefined
-          }
-          className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16 transition-[padding-top] duration-200 motion-reduce:transition-none"
-        >
+        <AnimatePresence>
           {p.erro && (
-            <div
+            <motion.div
               role="alert"
-              className="flex items-center justify-between gap-4 border-l-4 border-destructive bg-card py-3 pl-4 text-lg"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                transition: { duration: reduce ? 0 : duration.fast, ease: standard },
+              }}
+              exit={{
+                opacity: 0,
+                transition: { duration: reduce ? 0 : saida, ease: standard },
+              }}
+              className="fixed inset-x-10 top-36 z-20 mx-auto flex max-w-[1760px] items-center justify-between gap-4 border-l-4 border-destructive bg-card py-3 pl-4 text-lg shadow-(--shadow-card)"
             >
               <span>
                 <span className="font-medium text-destructive">{p.erro}</span> A
@@ -209,17 +212,32 @@ export function Apresentacao(p: ApresentacaoProps) {
               <Button variant="ghost" size="lg" onClick={p.onDismissErro}>
                 Fechar
               </Button>
-            </div>
+            </motion.div>
           )}
+        </AnimatePresence>
 
+        <main
+          data-barra-segura={barraSegura}
+          style={
+            barraSegura && alturaBarra > 0
+              ? { paddingTop: `calc(${alturaBarra}px + 1rem)` }
+              : undefined
+          }
+          className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16"
+        >
           <Envoltorio carga={carga}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={chave}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: reduce ? 0 : crossfade, ease: "linear" }}
+              animate={{
+                opacity: 1,
+                transition: { duration: reduce ? 0 : duration.fast, ease: standard },
+              }}
+              exit={{
+                opacity: 0,
+                transition: { duration: reduce ? 0 : saida, ease: standard },
+              }}
             >
               <Visao
                 carga={carga}
