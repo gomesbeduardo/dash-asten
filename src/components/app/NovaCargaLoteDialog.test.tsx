@@ -72,6 +72,18 @@ describe("NovaCargaLoteDialog", () => {
     expect(p.guardar.mock.calls[0][1]).toEqual({ tipo: "chamados", competencia: "2026-03" })
   })
 
+  it("repassa o Mes Ref. lido de cada planilha, mesmo com a competência editada", async () => {
+    const comRef = item("a.xlsx", [["Área", "Mes Ref."], ["TI", "out/26"], ["RH", "out/26"]])
+    const p = montar({ itens: [comRef, item("projetos-agosto-2026.xlsx", OUTRO)] })
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole("combobox", { name: "Mês de a.xlsx" }))
+    await user.click(await screen.findByRole("option", { name: "Março" }))
+    await user.click(screen.getByRole("button", { name: "Confirmar 2 cargas" }))
+    await waitFor(() => expect(p.onConcluir).toHaveBeenCalled())
+    expect(p.guardar.mock.calls[0][1]).toMatchObject({ competencia: "2026-03", mesRef: "2026-10" })
+    expect("mesRef" in p.guardar.mock.calls[1][1]).toBe(false)
+  })
+
   it("repetida no lote avisa a versão, contando as já existentes e a ordem da lista", async () => {
     montar({
       itens: [item("chamados-setembro-2026.xlsx"), item("chamados-setembro-2026-v2.xlsx")],

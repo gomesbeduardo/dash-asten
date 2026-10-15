@@ -25,6 +25,7 @@ export function montarMeta(nova: NovaCarga, existentes: CargaMeta[]): CargaMeta 
     importadaEm: new Date().toISOString(),
     arquivo: nova.arquivo,
     nome: normalizarNome(nova.nome),
+    mesRef: nova.mesRef ?? null,
     arquivadaEm: null,
     linhas: nova.workbook.sheets.reduce((soma, s) => soma + s.rows.length, 0),
   }

@@ -128,7 +128,7 @@ describe("NovaCargaDialog: Mes Ref. (D63)", () => {
     await userEvent.clear(ano)
     await userEvent.type(ano, "2025")
     await userEvent.click(screen.getByRole("button", { name: "Confirmar carga" }))
-    expect(onConfirm).toHaveBeenCalledWith({ tipo: "outro", competencia: "2025-10" })
+    expect(onConfirm).toHaveBeenCalledWith({ tipo: "outro", competencia: "2025-10", mesRef: "2026-10" })
   })
 
   it("mais de um mês: mostra o aviso junto da competência", () => {
@@ -139,5 +139,18 @@ describe("NovaCargaDialog: Mes Ref. (D63)", () => {
   it("um mês só: sem aviso", () => {
     render(<NovaCargaDialog workbook={comMesRef("out/26")} metas={[]} onConfirm={() => {}} onCancel={() => {}} />)
     expect(screen.queryByText(/meses diferentes/)).toBeNull()
+  })
+})
+
+describe("NovaCargaDialog: Mes Ref. da planilha (D63)", () => {
+  it("repassa o Mes Ref. lido mesmo quando a competência é editada", async () => {
+    const onConfirm = vi.fn()
+    const wb = readWorkbook(makeXlsx({ Dados: [["Área", "Mes Ref."], ["TI", "out/26"], ["RH", "out/26"]] }), "x.xlsx")
+    render(<NovaCargaDialog workbook={wb} metas={[]} onConfirm={onConfirm} onCancel={() => {}} />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("combobox", { name: "Mês" }))
+    await user.click(await screen.findByRole("option", { name: "Março" }))
+    await user.click(screen.getByRole("button", { name: "Confirmar carga" }))
+    expect(onConfirm).toHaveBeenCalledWith({ tipo: "outro", competencia: "2026-03", mesRef: "2026-10" })
   })
 })

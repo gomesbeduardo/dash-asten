@@ -209,7 +209,7 @@ describe("inferirCompetencia", () => {
     })
     it("(a) coluna de competência dá o ano; o mês continua o da aba", () => {
       const w = planilha("chamados ciclo Setembro - RH", [col("r", "Referência", "date")], [{ r: utc(2025, 10, 1) }, { r: utc(2025, 10, 1) }])
-      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2025-10", origem: "mesref", anoPresumido: false })
+      expect(inferirCompetencia(w, "x.xlsx", hoje)).toEqual({ competencia: "2025-10", origem: "mesref", anoPresumido: false, mesRef: "2025-10" })
     })
     it("(a) coluna de competência em texto com ano", () => {
       const w = planilha("Setembro", [col("r", "Competência", "text")], [{ r: "09/2025" }])
@@ -243,7 +243,15 @@ describe("inferirCompetencia", () => {
 
     it("Date mmm/yy gravada no dia 26: vale o mês e o ano da data", () => {
       const [w, a] = planilha("Dados", "Mes Ref.", "date", [utc(2026, 10, 26), utc(2026, 10, 26)])
-      expect(inferirCompetencia(w, a, hoje)).toEqual({ competencia: "2026-10", origem: "mesref", anoPresumido: false })
+      expect(inferirCompetencia(w, a, hoje)).toEqual({ competencia: "2026-10", origem: "mesref", anoPresumido: false, mesRef: "2026-10" })
+    })
+    it("expõe o mesRef lido (mais frequente); sem a coluna ou ilegível, fica ausente", () => {
+      const [w, a] = planilha("Dados", "Mes Ref.", "text", ["out/26", "out/26", "set/26"])
+      expect(inferirCompetencia(w, a, hoje).mesRef).toBe("2026-10")
+      const [s1, a1] = planilha("Dados", "Outra", "text", ["out/26"], "chamados-setembro-2026.xlsx")
+      expect("mesRef" in inferirCompetencia(s1, a1, hoje)).toBe(false)
+      const [s2, a2] = planilha("Dados", "Mes Ref.", "text", ["", "abc"])
+      expect("mesRef" in inferirCompetencia(s2, a2, hoje)).toBe(false)
     })
     it("Date no dia 1 (abr/26)", () => {
       const [w, a] = planilha("Dados", "Mês Ref.", "date", [utc(2026, 4, 1)])
@@ -266,7 +274,7 @@ describe("inferirCompetencia", () => {
     it("mais de um mês: usa o mais frequente e avisa", () => {
       const [w, a] = planilha("Dados", "Mes Ref.", "date", [utc(2026, 9, 1), utc(2026, 10, 1), utc(2026, 10, 26), utc(2026, 10, 3)])
       expect(inferirCompetencia(w, a, hoje)).toEqual({
-        competencia: "2026-10", origem: "mesref", anoPresumido: false,
+        competencia: "2026-10", origem: "mesref", anoPresumido: false, mesRef: "2026-10",
         avisoMesRef: "A coluna Mes Ref. tem 2 meses diferentes; usamos Outubro de 2026. Confira.",
       })
     })

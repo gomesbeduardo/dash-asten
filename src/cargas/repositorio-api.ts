@@ -96,12 +96,13 @@ export function criarRepositorioApi(base = "/api"): RepositorioDeCargas {
       return { ...carga, workbook: reviver(carga.workbook) }
     },
     async salvar(nova: NovaCarga) {
-      const { tipo, competencia, arquivo, nome, workbook, original } = nova
+      const { tipo, competencia, arquivo, nome, mesRef, workbook, original } = nova
       const texto = JSON.stringify({
         tipo,
         competencia,
         arquivo,
         ...(nome ? { nome } : {}),
+        ...(mesRef ? { mesRef } : {}),
         workbook,
         ...(original ? { originalBase64: paraBase64(original) } : {}),
       })

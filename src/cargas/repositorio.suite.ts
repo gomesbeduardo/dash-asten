@@ -124,6 +124,14 @@ export function suiteDeRepositorio(criar: () => RepositorioDeCargas) {
       expect((await repo.listar()).find((m) => m.id === a.id)?.nome).toBe("Correção do Líder")
     })
 
+    it("mesRef opcional ao salvar: guarda o valor ou null", async () => {
+      const repo = criar()
+      const a = await repo.salvar({ ...nova(), mesRef: "2026-10" })
+      const b = await repo.salvar(nova())
+      expect([a.mesRef, b.mesRef]).toEqual(["2026-10", null])
+      expect((await repo.listar()).find((m) => m.id === a.id)?.mesRef).toBe("2026-10")
+    })
+
     it("alterar nome não muda versão nem dados; null limpa o nome", async () => {
       const repo = criar()
       const a = await repo.salvar(nova())

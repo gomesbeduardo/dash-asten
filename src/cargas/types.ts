@@ -1,8 +1,8 @@
 import type { Workbook } from "@/core"
 export type Competencia = string // "AAAA-MM"
-export type CargaMeta = { id: string; tipo: string; competencia: Competencia; versao: number; importadaEm: string /* ISO */; arquivo: string; linhas: number; /** Rótulo opcional dado pela pessoa (D58). */ nome: string | null; /** ISO de quando foi arquivada; null = ativa. */ arquivadaEm: string | null }
+export type CargaMeta = { id: string; tipo: string; competencia: Competencia; versao: number; importadaEm: string /* ISO */; arquivo: string; linhas: number; /** Rótulo opcional dado pela pessoa (D58). */ nome: string | null; /** ISO de quando foi arquivada; null = ativa. */ arquivadaEm: string | null; /** Mes Ref. lido da planilha no envio (D63); null = sem coluna legível. */ mesRef?: string | null }
 export type Carga = CargaMeta & { workbook: Workbook }
-export type NovaCarga = { tipo: string; competencia: Competencia; arquivo: string; nome?: string | null; workbook: Workbook; original?: ArrayBuffer /* bytes do .xlsx enviado, para reprocessar */ }
+export type NovaCarga = { tipo: string; competencia: Competencia; arquivo: string; nome?: string | null; mesRef?: Competencia | null; workbook: Workbook; original?: ArrayBuffer /* bytes do .xlsx enviado, para reprocessar */ }
 /** Mudar tipo ou competência move a carga para outro grupo: ela vira a versão max+1 do destino. */
 export type AlteracaoDeCarga = { nome?: string | null; tipo?: string; competencia?: Competencia; arquivada?: boolean }
 export interface RepositorioDeCargas {

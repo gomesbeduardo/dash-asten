@@ -224,6 +224,7 @@ export function App() {
           competencia: escolha.competencia,
           arquivo: item.workbook.fileName,
           ...(escolha.nome ? { nome: escolha.nome } : {}),
+          ...(escolha.mesRef ? { mesRef: escolha.mesRef } : {}),
           workbook: item.workbook,
           original: item.original,
         })
