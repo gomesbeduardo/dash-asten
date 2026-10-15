@@ -1,18 +1,18 @@
 /** Gráficos de Chamados (Recharts via shadcn chart). Cores só das fichas existentes; rótulo direto em cada barra. */
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   LabelList,
-  Line,
-  LineChart,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts"
 
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
 
 import type { ItemDistribuicao, FormatoKpi } from "@/chamados"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
@@ -443,7 +443,29 @@ export function BarrasComparar({
 
 export type SerieLinha = { id: string; rotulo: string; cor: string }
 
-/** Mini gráfico de linha: um ponto por foto (competência); sem dado (null) quebra a linha. */
+export type TipoPonto = "ultimo" | "corrigido" | "isolado" | null
+
+/**
+ * Quais pontos da série em área ganham marca: só o último mês (anel e valor), os meses corrigidos por
+ * posição posterior (anel vazado, tem significado) e o ponto isolado (sem vizinho com dado, senão sumiria).
+ */
+export function tipoDoPonto(
+  linhas: LinhaSerie[],
+  id: string,
+  i: number
+): TipoPonto {
+  const tem = (k: number) => {
+    const v = linhas[k]?.[id]
+    return v !== null && v !== undefined && Number.isFinite(v as number)
+  }
+  if (!tem(i)) return null
+  if (i === linhas.length - 1) return "ultimo"
+  if (linhas[i][`${id}__o`] !== undefined) return "corrigido"
+  if (!tem(i - 1) && !tem(i + 1)) return "isolado"
+  return null
+}
+
+/** Série em área: curva suave com degradê vertical (30% a 0) sob a linha; sem pontos em todos os meses. */
 export function LinhaMini({
   linhas,
   series,
@@ -458,13 +480,15 @@ export function LinhaMini({
   /** Altura CSS do gráfico; o padrão acompanha a viewport (legível na TV, D67). */
   altura?: string
 }) {
-  const ultimo = linhas.length - 1
   const rem = useRem()
   const { ocultas, alternar } = useSeriesOcultas(
     `${series.map((s) => s.id).join(",")}|${linhas.map((l) => l.rotulo).join(",")}`,
     series.map((s) => s.id)
   )
   const visiveis = series.filter((s) => !ocultas.includes(s.id))
+  const idGrad = useId().replace(/:/g, "")
+  // muitas séries sobrepostas: o degradê fica mais leve para não virar mancha
+  const opacidade = visiveis.length > 3 ? 0.12 : 0.3
   // Eixo Y se ajusta às séries visíveis (escala legível; valores não mudam).
   const tudo = linhas.flatMap((l) => visiveis.map((s) => l[s.id]))
   const nums = tudo.filter((v): v is number => typeof v === "number")
@@ -488,7 +512,7 @@ export function LinhaMini({
           )
           .join(". ")}
       >
-        <LineChart
+        <AreaChart
           data={linhas}
           margin={{
             top: 0.75 * rem,
@@ -497,7 +521,11 @@ export function LinhaMini({
             bottom: 0.25 * rem,
           }}
         >
-          <CartesianGrid vertical={false} stroke={GRADE} />
+          <CartesianGrid
+            vertical={false}
+            stroke={GRADE}
+            strokeDasharray="2 4"
+          />
           <XAxis
             dataKey="rotulo"
             tick={EIXO}
@@ -520,52 +548,109 @@ export function LinhaMini({
           <Tooltip
             content={<Dica formatar={(v) => formatarKpi(v, formato)} />}
           />
+          <defs>
+            {visiveis.map((s) => (
+              <linearGradient
+                key={s.id}
+                id={`${idGrad}-${s.id}`}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="0"
+                  style={{ stopColor: s.cor }}
+                  stopOpacity={opacidade}
+                />
+                <stop offset="1" style={{ stopColor: s.cor }} stopOpacity={0} />
+              </linearGradient>
+            ))}
+          </defs>
           {visiveis.map((s) => (
-            <Line
+            <Area
               key={s.id}
               dataKey={s.id}
               name={s.rotulo}
-              type="linear"
+              type="monotone"
               stroke={s.cor}
               strokeWidth={3}
+              fill={`url(#${idGrad}-${s.id})`}
               connectNulls={false}
               dot={(p: {
                 cx?: number
                 cy?: number
                 index?: number
                 payload?: LinhaSerie
-              }) =>
-                p.payload?.[s.id] !== null && Number.isFinite(p.cy) ? (
-                  p.payload?.[`${s.id}__o`] !== undefined ? (
-                    // Ponto corrigido pelas posições posteriores: anel vazado.
+              }) => {
+                const i = p.index ?? 0
+                const tipo = tipoDoPonto(linhas, s.id, i)
+                if (!tipo || !Number.isFinite(p.cy)) return <g key={`p${i}`} />
+                const corrigido = p.payload?.[`${s.id}__o`] !== undefined
+                if (tipo === "ultimo")
+                  return (
+                    <g key={`p${i}`}>
+                      <circle
+                        cx={p.cx}
+                        cy={p.cy}
+                        r={1.1 * rem}
+                        fill={s.cor}
+                        opacity={0.18}
+                      />
+                      <circle
+                        cx={p.cx}
+                        cy={p.cy}
+                        r={0.5 * rem}
+                        fill="var(--card)"
+                        stroke={s.cor}
+                        strokeWidth={corrigido ? 3 : 2.5}
+                        strokeDasharray={corrigido ? "2 2" : undefined}
+                      />
+                      {visiveis.length <= 2 && (
+                        <text
+                          x={(p.cx ?? 0) - 0.8 * rem}
+                          y={(p.cy ?? 0) - 0.9 * rem}
+                          textAnchor="end"
+                          className="num fill-foreground"
+                          style={{ fontSize: "1.125rem", fontWeight: 600 }}
+                        >
+                          {formatarKpi(
+                            p.payload?.[s.id] as number | null,
+                            formato
+                          )}
+                        </text>
+                      )}
+                    </g>
+                  )
+                if (tipo === "corrigido")
+                  // Ponto corrigido pelas posições posteriores: anel vazado (tem significado).
+                  return (
                     <circle
-                      key={`p${p.index}`}
+                      key={`p${i}`}
                       cx={p.cx}
                       cy={p.cy}
-                      r={p.index === ultimo ? 8 : 6}
+                      r={0.4 * rem}
                       fill="var(--card)"
                       stroke={s.cor}
                       strokeWidth={3}
                     />
-                  ) : (
-                    <circle
-                      key={`p${p.index}`}
-                      cx={p.cx}
-                      cy={p.cy}
-                      r={p.index === ultimo ? 8 : 5}
-                      fill={s.cor}
-                      stroke="var(--card)"
-                      strokeWidth={2}
-                    />
                   )
-                ) : (
-                  <g key={`p${p.index}`} />
+                return (
+                  <circle
+                    key={`p${i}`}
+                    cx={p.cx}
+                    cy={p.cy}
+                    r={0.3 * rem}
+                    fill={s.cor}
+                    stroke="var(--card)"
+                    strokeWidth={2}
+                  />
                 )
-              }
+              }}
               {...animacao(animar)}
             />
           ))}
-        </LineChart>
+        </AreaChart>
       </ChartContainer>
     </div>
   )

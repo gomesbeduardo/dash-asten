@@ -22,7 +22,7 @@ const curtoDoMes = (r: string) => r.replace(/\/\d{2}\b/, "")
 
 /** Teto "redondo" do eixo e o passo das linhas da grade (4 a 5 divisões). */
 function escala(maximo: number) {
-  const bruto = Math.max(maximo, 1) / 4
+  const bruto = Math.max(maximo / 4, 1)
   const pot = 10 ** Math.floor(Math.log10(bruto))
   const passo = [1, 2, 5, 10].map((f) => f * pot).find((p) => p >= bruto) ?? pot
   const topo = Math.max(passo, Math.ceil(maximo / passo) * passo)

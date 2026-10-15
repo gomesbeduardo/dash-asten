@@ -59,7 +59,9 @@ describe("BarrasRefinadas", () => {
     expect(container.querySelectorAll("[data-contorno]")).toHaveLength(0)
     expect(screen.queryByText(/^mai/)).toBeNull()
     expect(container.querySelectorAll("[data-barra]")).toHaveLength(4)
-    expect(screen.getByTitle("Cliente Alfa, Não finalizados: 30")).toHaveTextContent("30")
+    expect(
+      screen.getByTitle("Cliente Alfa, Não finalizados: 30")
+    ).toHaveTextContent("30")
   })
 
   it("a imagem descreve os valores em palavras para leitor de tela", () => {

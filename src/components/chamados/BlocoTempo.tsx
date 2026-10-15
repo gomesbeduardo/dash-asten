@@ -11,6 +11,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { Carregando } from "./Carregando"
 import { GraficoCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, useFiltrosChamados } from "./filtros"
+import { SERIE_FIN } from "./painel-foto"
 import { COR, LinhaMini, type SerieLinha } from "./graficos"
 import { useCargasDoTipo } from "./hooks"
 import {
@@ -53,7 +54,7 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
       tipo: "kpis",
       series: [
         { id: "entradas", rotulo: "Entradas", cor: COR.laranja },
-        { id: "finalizados", rotulo: "Finalizados", cor: COR.principal },
+        { id: "finalizados", rotulo: "Finalizados", cor: SERIE_FIN },
       ],
     },
   },
