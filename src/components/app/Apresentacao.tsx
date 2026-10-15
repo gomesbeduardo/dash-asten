@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Carregando } from "@/components/chamados/Carregando"
 import { BarraContext } from "./BarraContext"
 import { HistoricoSheet } from "./HistoricoSheet"
 import { NovoEnvioDialog } from "./NovoEnvioDialog"
@@ -50,6 +51,26 @@ export type ApresentacaoProps = {
   onFecharCarga: () => void
   erro: string | null
   onDismissErro: () => void
+}
+
+/**
+ * Mostra o esqueleto da aba por um quadro antes de montar a visão: a montagem
+ * dos painéis pesados trava a thread por ~300 ms, e sem isso a tela ficaria
+ * em branco (a saída já terminou) até o fim dela.
+ */
+function Diferida({ visao, children }: { visao: Visao; children: ReactNode }) {
+  const [pronto, setPronto] = useState(false)
+  useEffect(() => {
+    let t = 0
+    const r = requestAnimationFrame(() => {
+      t = window.setTimeout(() => setPronto(true), 0)
+    })
+    return () => {
+      cancelAnimationFrame(r)
+      clearTimeout(t)
+    }
+  }, [])
+  return pronto ? <>{children}</> : <Carregando forma={visao} />
 }
 
 const Fragmento = ({ children }: { carga: Carga; children: ReactNode }) => (
@@ -229,7 +250,7 @@ export function Apresentacao(p: ApresentacaoProps) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={chave}
-              initial={{ opacity: 0 }}
+              initial={{ opacity: reduce ? 1 : 0.3 }}
               animate={{
                 opacity: 1,
                 transition: { duration: reduce ? 0 : duration.fast, ease: standard },
@@ -239,13 +260,15 @@ export function Apresentacao(p: ApresentacaoProps) {
                 transition: { duration: reduce ? 0 : saida, ease: standard },
               }}
             >
-              <Visao
-                carga={carga}
-                historico={doTipo}
-                obterCarga={p.obterCarga}
-                entrada={entrada}
-                irPara={pedirVisao}
-              />
+              <Diferida visao={visao}>
+                <Visao
+                  carga={carga}
+                  historico={doTipo}
+                  obterCarga={p.obterCarga}
+                  entrada={entrada}
+                  irPara={pedirVisao}
+                />
+              </Diferida>
             </motion.div>
           </AnimatePresence>
           </Envoltorio>

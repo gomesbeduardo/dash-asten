@@ -60,7 +60,7 @@ afterEach(() => vi.restoreAllMocks())
 describe("Apresentacao: barra e erro não empurram o conteúdo", () => {
   it("gaveta segurando a barra não dá respiro ao conteúdo", async () => {
     const main = montar()
-    await userEvent.click(screen.getByRole("button", { name: "segurar barra" }))
+    await userEvent.click(await screen.findByRole("button", { name: "segurar barra" }))
     expect(main.style.paddingTop).toBe("")
   })
 

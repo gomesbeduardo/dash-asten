@@ -6,7 +6,7 @@ export const ease = {
 } as const satisfies Record<string, readonly [number, number, number, number]>
 export const stagger = 0.11
 export const crossfade = 0.2 // troca de aba
-export const saida = 0.1 // s, saída curta do fade cruzado (some rápido, sem tela vazia)
+export const saida = 0.08 // s, saída curta do fade cruzado (some rápido, sem tela vazia)
 export const countUp = 1 // contagem dos números
 export const chartGrow = 600 // ms, crescimento de barras e linhas
 export const rise = 10 // px, subida da entrada (8–12)

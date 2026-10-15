@@ -35,6 +35,7 @@
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
     --color-muted: var(--muted);
+    --color-skeleton: var(--skeleton);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
@@ -58,6 +59,8 @@
     --background: #dfe4ea;
     --foreground: #14202b;
     --card: #eef1f4;
+    /* Esqueleto de carregamento: foreground a ~14% sobre o fundo (visível na TV). */
+    --skeleton: color-mix(in srgb, var(--foreground) 14%, var(--background));
     --card-foreground: #14202b;
     --popover: #f3f5f7;
     --popover-foreground: #14202b;

@@ -72,23 +72,28 @@ function Forma({ forma }: { forma: FormaCarregando }) {
   }
 }
 
+const ENTRADA_ATRASADA =
+  "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 motion-safe:delay-[120ms] motion-safe:fill-mode-both"
+
 /**
- * Carregamento sem área vazia: esqueleto com o formato da aba. Entra com
- * atraso (~120 ms) para esperas curtas quase não o mostrarem; o pulso e o
- * fade só existem com movimento permitido.
+ * Carregamento sem área vazia: esqueleto com o formato da aba. Dentro da
+ * Apresentacao ele aparece na hora (o fade cruzado da aba já evita o pisca);
+ * `atraso` o faz entrar com ~120 ms de atraso, para telas sem fade cruzado.
  */
 export function Carregando({
   texto = "Carregando competências…",
   forma = "painel",
+  atraso = false,
 }: {
   texto?: string
   forma?: FormaCarregando
+  atraso?: boolean
 }) {
   return (
     <div
       role="status"
       aria-busy="true"
-      className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 motion-safe:delay-[120ms] motion-safe:fill-mode-both"
+      className={atraso ? ENTRADA_ATRASADA : undefined}
     >
       <p className="sr-only">{texto}</p>
       <div aria-hidden>

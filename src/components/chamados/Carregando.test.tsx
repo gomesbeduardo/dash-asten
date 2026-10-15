@@ -19,4 +19,14 @@ describe("Carregando", () => {
     render(<Carregando />)
     expect(screen.getByRole("status")).toHaveTextContent("Carregando competências…")
   })
+
+  it("por padrão aparece sem atraso (o fade cruzado da aba já evita o pisca)", () => {
+    render(<Carregando />)
+    expect(screen.getByRole("status").className).not.toMatch(/delay/)
+  })
+
+  it("com atraso=true entra com fade atrasado (telas sem fade cruzado)", () => {
+    render(<Carregando atraso />)
+    expect(screen.getByRole("status").className).toMatch(/delay-\[120ms\]/)
+  })
 })
