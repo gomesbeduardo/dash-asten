@@ -21,7 +21,6 @@ import {
   colunasAusentes,
   filtrarSheet,
   sentidoEntre,
-  textoDaTela,
   type ComparacaoN,
   type FiltrosChamados,
   type Sentido,
@@ -280,10 +279,8 @@ export function cartoesDeKpis(cmp: ComparacaoN, colunas: Coluna[]): Cartao[] {
     setas: k.setas,
     notas: k.valores.map((v, i) =>
       v === null
-        ? textoDaTela(
-            colunas[i].metricas.kpis.find((x) => x.id === k.id)?.detalhe ??
-              "sem dado"
-          )
+        ? (colunas[i].metricas.kpis.find((x) => x.id === k.id)?.detalhe ??
+          "sem dado")
         : null
     ),
     marcas: colunas.map((c) => {

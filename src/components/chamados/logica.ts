@@ -577,17 +577,9 @@ export function compararN(metricas: MetricasComparavel[]): ComparacaoN {
   }
 }
 
-/** Texto do motor na linguagem da tela: o responsável chama a foto do mês de "posição". */
-export const textoDaTela = (t: string) =>
-  t
-    .replace(/\bFotos\b/g, "Posições")
-    .replace(/\bFoto\b/g, "Posição")
-    .replace(/\bfotos\b/g, "posições")
-    .replace(/\bfoto\b/g, "posição")
-
 /** Por que o delta é "—": o detalhe do motor ou a falta de base no mês anterior. */
 export function motivoSemDelta(kpi: Pick<KpiChamados, "detalhe">): string {
-  return textoDaTela(kpi.detalhe ?? "sem base no mês anterior")
+  return kpi.detalhe ?? "sem base no mês anterior"
 }
 
 // ---------------------------------------------------------------- filtros

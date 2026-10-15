@@ -63,10 +63,10 @@ export function corrigirFoto(
   })
   const { mapa } = mapearColunas(foto.sheet)
   if (!mapa.codigo)
-    return sem(["Sem a coluna Código nesta foto: nenhuma correção aplicada"])
+    return sem(["Sem a coluna Código nesta posição do mês: nenhuma correção aplicada"])
   if (!mapa.situacao || !mapa.solucao)
     return sem([
-      "Sem as colunas Situação e Data de Solução nesta foto: nenhuma correção aplicada",
+      "Sem as colunas Situação e Data de Solução nesta posição do mês: nenhuma correção aplicada",
     ])
   const avisos: string[] = []
   const fim = limitesDaCompetencia(foto.competencia).fim
@@ -77,7 +77,7 @@ export function corrigirFoto(
     const m = mapearColunas(p.sheet).mapa
     if (!m.codigo || !m.situacao || !m.solucao) {
       avisos.push(
-        `Foto de ${rotuloCompetencia(p.competencia)} sem Código, Situação ou Data de Solução: não usada na correção`
+        `Posição de ${rotuloCompetencia(p.competencia)} sem Código, Situação ou Data de Solução: não usada na correção`
       )
       return []
     }
@@ -195,7 +195,7 @@ export function metricasDoMesSemFoto(
   competencia: Competencia,
   fotoMaisAtual: EntradaCompetencia
 ): MetricasParciais {
-  const motivo = `sem foto de ${rotuloCompetencia(competencia)}`
+  const motivo = `sem posição de ${rotuloCompetencia(competencia)}`
   const mes = limitesDaCompetencia(competencia)
   const noMes = (t: number | null) =>
     t !== null && t >= mes.inicio && t <= mes.fim

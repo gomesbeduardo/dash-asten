@@ -63,6 +63,7 @@ describe("corrigirFoto", () => {
     const r = corrigirFoto({ sheet, competencia: "2026-05" }, [outu])
     expect(r.corrigidos).toBe(0)
     expect(r.avisos.length).toBeGreaterThan(0)
+    expect(r.avisos.join(" ")).not.toMatch(/\bfoto\b/i)
   })
 })
 
@@ -122,7 +123,7 @@ describe("metricasDoMesSemFoto", () => {
       (k) => !["entradas", "finalizados"].includes(k.id)
     )) {
       expect(k.valor).toBeNull()
-      expect(k.detalhe).toBe("sem foto de jun/26")
+      expect(k.detalhe).toBe("sem posição de jun/26")
     }
     expect(m.situacoes).toEqual([])
     expect(m.atrasoFaixas).toEqual([])
