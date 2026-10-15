@@ -266,7 +266,7 @@ export function AutoChartCard({
     <motion.section
       variants={reduce ? undefined : entryItem}
       aria-label={chart.title}
-      className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-5 shadow-(--shadow-card)"
+      className="flex min-w-0 flex-col gap-3 rounded-lg bg-card p-5 shadow-(--shadow-card)"
     >
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">

@@ -24,12 +24,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
-import {
-  descreverDelta,
-  idAlvo,
-  motivoSemDelta,
-  type SeloTipo,
-} from "./logica"
+import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
 import { SeloSimbolo, Selos } from "./selos"
 
 const TOM = {
@@ -73,7 +68,7 @@ export function KpiCartao({
       variants={reduce ? undefined : entryItem}
       aria-label={kpi.rotulo}
       className={cn(
-        "flex min-w-0 flex-col gap-2 rounded-lg border border-t-4 border-t-brand bg-card shadow-(--shadow-card)",
+        "flex min-w-0 flex-col gap-2 rounded-lg bg-card shadow-(--shadow-card)",
         destaque ? "p-6" : "p-5"
       )}
     >
@@ -157,7 +152,12 @@ export function KpiCartao({
 
 const SEV: Record<
   Severidade,
-  { Icon: typeof OctagonAlertIcon; rotulo: string; texto: string; borda: string }
+  {
+    Icon: typeof OctagonAlertIcon
+    rotulo: string
+    texto: string
+    borda: string
+  }
 > = {
   critico: {
     Icon: OctagonAlertIcon,
@@ -328,7 +328,7 @@ export function GraficoCartao({
       variants={reduce ? undefined : entryItem}
       aria-label={titulo}
       className={cn(
-        "flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-5 shadow-(--shadow-card)",
+        "flex min-w-0 flex-col gap-3 rounded-lg bg-card p-5 shadow-(--shadow-card)",
         className
       )}
     >
