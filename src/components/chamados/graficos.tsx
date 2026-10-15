@@ -28,7 +28,7 @@ export const COR = {
   atraso: "var(--late)",
 } as const
 
-const EIXO = { fontSize: 16, fill: "#475565" }
+const EIXO = { fontSize: "1.0000rem", fill: "#475565" }
 const GRADE = "#d8dee4"
 const inteiro = new Intl.NumberFormat("pt-BR")
 
@@ -137,7 +137,7 @@ export function BarrasRanking({
             dataKey="valor"
             position="right"
             className="num fill-foreground"
-            style={{ fontSize: 16, fontWeight: 600 }}
+            style={{ fontSize: "1.0000rem", fontWeight: 600 }}
             formatter={(v) => inteiro.format(Number(v))}
           />
         </Bar>
@@ -204,7 +204,11 @@ export function BarrasFaixas({
                     y={Number(y) - (critica(item) ? 24 : 8)}
                     textAnchor="middle"
                     className="num"
-                    style={{ fontSize: 18, fontWeight: 700, fill: "#14202b" }}
+                    style={{
+                      fontSize: "1.1250rem",
+                      fontWeight: 700,
+                      fill: "#14202b",
+                    }}
                   >
                     {inteiro.format(Number(value))}
                   </text>
@@ -213,7 +217,11 @@ export function BarrasFaixas({
                       x={cx}
                       y={Number(y) - 6}
                       textAnchor="middle"
-                      style={{ fontSize: 14, fontWeight: 600, fill: "#b42318" }}
+                      style={{
+                        fontSize: ".8750rem",
+                        fontWeight: 600,
+                        fill: "#b42318",
+                      }}
                     >
                       crítico
                     </text>
@@ -348,7 +356,7 @@ export function BarrasComparar({
                   dataKey={s.id}
                   position="right"
                   className="num fill-foreground"
-                  style={{ fontSize: 15, fontWeight: 600 }}
+                  style={{ fontSize: ".9375rem", fontWeight: 600 }}
                   formatter={(v) =>
                     v == null ? "—" : inteiro.format(Number(v))
                   }

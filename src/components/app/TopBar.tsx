@@ -76,7 +76,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         !p.visible && "pointer-events-none"
       )}
     >
-      <div className="flex items-center gap-4 px-6 py-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-[clamp(1.5rem,3vw,6rem)] py-2">
         <img src={logo} alt="Asten" className="h-8 w-auto shrink-0" />
 
         <div className="flex shrink-0 items-center gap-3">
@@ -92,7 +92,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
           />
         </div>
 
-        <nav aria-label="Visões" className="min-w-0 flex-1">
+        <nav aria-label="Visões" className="min-w-fit flex-auto">
           <LayoutGroup id="topbar-abas">
             <div role="tablist" className="flex gap-1">
               {p.visoes.map((v) => {
@@ -128,7 +128,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
           </LayoutGroup>
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <Button variant="default" size="lg" onClick={p.onNovaCarga}>
             <FolderOpenIcon aria-hidden /> Nova carga
           </Button>
@@ -157,7 +157,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         </div>
       </div>
       <div ref={onSlot} />
-      <p className="border-t px-6 py-1 text-sm text-muted-foreground">
+      <p className="border-t px-[clamp(1.5rem,3vw,6rem)] py-1 text-sm text-muted-foreground">
         {p.dica && `${p.dica} · `}
         {p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
         {p.visoes.length > 1 &&

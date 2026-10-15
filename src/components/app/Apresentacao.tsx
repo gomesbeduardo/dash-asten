@@ -195,7 +195,7 @@ export function Apresentacao(p: ApresentacaoProps) {
               ? { paddingTop: `calc(${alturaBarra}px + 1rem)` }
               : undefined
           }
-          className="mx-auto flex w-full max-w-[1760px] flex-col gap-6 px-10 pt-[max(2rem,env(safe-area-inset-top))] pb-16 transition-[padding-top] duration-200 motion-reduce:transition-none"
+          className="mx-auto flex w-full max-w-[200rem] flex-col gap-6 px-[clamp(1.5rem,3vw,6rem)] pt-[max(2rem,env(safe-area-inset-top))] pb-16 transition-[padding-top] duration-200 motion-reduce:transition-none"
         >
           {p.erro && (
             <div

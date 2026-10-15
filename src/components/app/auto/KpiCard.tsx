@@ -27,7 +27,7 @@ export function KpiCard({ kpi, entry }: { kpi: AutoKpi; entry: boolean }) {
         format={kpi.format}
         display={kpi.display}
         fromZero={entry}
-        className="num font-display text-[44px] leading-none font-semibold [overflow-wrap:anywhere] text-primary"
+        className="num font-display text-[2.75rem] leading-none font-semibold [overflow-wrap:anywhere] text-primary"
       />
       {tone && (
         <p
