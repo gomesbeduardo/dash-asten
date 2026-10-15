@@ -1,11 +1,11 @@
-import { mapearColunas, type CampoChamado } from "./mapeamento"
-import { calcularMetricas, limitesDaCompetencia } from "./metricas"
-import { classificarLinha, tempo, texto } from "./situacao"
+import { mapearColunas, normalizar, type CampoChamado } from "./mapeamento"
+import { calcularMetricas } from "./metricas"
+import { classificarLinha, mesesAteCompetencia, tempo, texto } from "./situacao"
 import type { EntradaCompetencia } from "./tipos"
 
 export type Severidade = "critico" | "atencao" | "destaque"
 export type FiltroSugerido = {
-  campo: CampoChamado | "situacaoNaCompetencia" | "idade"
+  campo: CampoChamado | "idade"
   valores: string[]
 }
 export type Leitura = {
@@ -17,13 +17,15 @@ export type Leitura = {
   filtro?: FiltroSugerido
   acao?: string
 }
-const DIA = 86_400_000
 const ORDEM: Record<Severidade, number> = {
   critico: 0,
   atencao: 1,
   destaque: 2,
 }
 const MAX_LEITURAS = 4
+/** Faixa de atraso por ciclo (meses entre a abertura e o Mes Ref.) tratada como "muito antigo". */
+export const FAIXA_ANTIGA = "7+"
+const MESES_ANTIGO = 7
 
 const inteiro = (n: number) =>
   String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")
@@ -34,23 +36,23 @@ const sinal = (n: number) =>
 const plural = (n: number, um: string, varios: string) =>
   n === 1 ? um : varios
 
-/** Clientes do backlog (aberto no fim da competência) e quantos de cada têm mais de 180 dias. */
-function clientesDoBacklog(
+/** Clientes com não finalizados na foto e quantos de cada estão em atraso há 7 meses ou mais. */
+function clientesNaoFinalizados(
   entrada: EntradaCompetencia
 ): Map<string, { total: number; velhos: number }> {
   const { sheet, competencia } = entrada
   const { mapa } = mapearColunas(sheet)
-  const { fim } = limitesDaCompetencia(competencia)
   const out = new Map<string, { total: number; velhos: number }>()
-  if (!mapa.cliente || !mapa.abertura) return out
+  if (!mapa.cliente || !mapa.abertura || !mapa.situacao) return out
   for (const row of sheet.rows) {
-    if (classificarLinha(row, mapa, competencia) !== "aberto-no-fim") continue
+    if (classificarLinha(row, mapa, competencia) !== "na-foto") continue
+    if (normalizar(texto(row[mapa.situacao]) ?? "") === "finalizado") continue
     const cliente = texto(row[mapa.cliente])
     if (cliente === null) continue
     const abertura = tempo(row[mapa.abertura])!
     const e = out.get(cliente) ?? { total: 0, velhos: 0 }
     e.total++
-    if (Math.floor((fim - abertura) / DIA) > 180) e.velhos++
+    if (mesesAteCompetencia(abertura, competencia) >= MESES_ANTIGO) e.velhos++
     out.set(cliente, e)
   }
   return out
@@ -63,25 +65,25 @@ export function gerarLeituras(
 ): Leitura[] {
   const m = calcularMetricas(atual, anterior)
   const kpi = (id: string) => m.kpis.find((k) => k.id === id)
-  const backlog = kpi("backlog")?.valor ?? null
-  if (backlog === null || backlog <= 0) return []
+  const abertos = kpi("naoFinalizados")?.valor ?? null
+  if (abertos === null || abertos <= 0) return []
   const leituras: Leitura[] = []
 
   // fluxo
   const entradas = kpi("entradas")?.valor ?? null
-  const saidas = kpi("saidas")?.valor ?? null
-  const backlogAnt = kpi("backlog")?.anterior ?? null
+  const finalizados = kpi("finalizados")?.valor ?? null
+  const abertosAnt = kpi("naoFinalizados")?.anterior ?? null
   if (
     anterior &&
     entradas !== null &&
-    saidas !== null &&
-    backlogAnt !== null &&
-    saidas > 0 &&
-    saidas >= 1.5 * entradas &&
-    backlog < backlogAnt
+    finalizados !== null &&
+    abertosAnt !== null &&
+    finalizados > 0 &&
+    finalizados >= 1.5 * entradas &&
+    abertos < abertosAnt
   ) {
-    const delta = backlog - backlogAnt
-    let texto = `Saíram ${inteiro(saidas)} chamados e entraram ${inteiro(entradas)}. O backlog variou ${sinal(delta)} (${sinal(Math.round((delta / backlogAnt) * 100))}%) frente ao mês anterior.`
+    const delta = abertos - abertosAnt
+    let texto = `Foram finalizados ${inteiro(finalizados)} chamados e entraram ${inteiro(entradas)}. Os não finalizados variaram ${sinal(delta)} (${sinal(Math.round((delta / abertosAnt) * 100))}%) frente ao mês anterior.`
     const tm = kpi("tempoMedio")
     if (
       tm &&
@@ -95,63 +97,61 @@ export function gerarLeituras(
       severidade: "destaque",
       titulo: "Mês de redução de estoque",
       texto,
-      evidencia: ["backlog", "entradas", "saidas", "tempoMedio"],
+      evidencia: ["naoFinalizados", "entradas", "finalizados", "tempoMedio"],
     })
   }
 
   // concentração
-  const clientes = [...clientesDoBacklog(atual).entries()].sort(
+  const clientes = [...clientesNaoFinalizados(atual).entries()].sort(
     (a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0])
   )
   if (clientes.length > 0) {
     const [nome, { total, velhos }] = clientes[0]
-    if (total / backlog >= 0.4)
+    if (total / abertos >= 0.4)
       leituras.push({
         id: "concentracao",
         severidade: "atencao",
-        titulo: `${nome} concentra ${pct(total / backlog)} do backlog (${inteiro(total)} de ${inteiro(backlog)})`,
-        texto: `${velhos === 1 ? "1 deles tem" : `${inteiro(velhos)} deles têm`} mais de 180 dias de abertura.`,
-        evidencia: ["cliente", "backlog"],
+        titulo: `${nome} concentra ${pct(total / abertos)} dos não finalizados (${inteiro(total)} de ${inteiro(abertos)})`,
+        texto: `${velhos === 1 ? "1 deles está" : `${inteiro(velhos)} deles estão`} em atraso há ${MESES_ANTIGO} meses ou mais.`,
+        evidencia: ["cliente", "naoFinalizados"],
         filtro: { campo: "cliente", valores: [nome] },
       })
   }
 
-  // envelhecimento
+  // atraso antigo (ciclo): não finalizados abertos há 7 meses ou mais
   const velhos =
-    m.envelhecimento.find((f) => f.rotulo === "> 180 dias")?.valor ?? 0
-  if (velhos / backlog > 0.25)
+    m.atrasoFaixas.find((f) => f.rotulo === FAIXA_ANTIGA)?.valor ?? 0
+  if (velhos / abertos > 0.25)
     leituras.push({
       id: "envelhecimento",
-      severidade: velhos / backlog > 0.4 ? "critico" : "atencao",
-      titulo: `${inteiro(velhos)} ${plural(velhos, "chamado", "chamados")} (${pct(velhos / backlog)}) ${plural(velhos, "está", "estão")} abertos há mais de 180 dias`,
-      texto: `Do backlog de ${inteiro(backlog)} chamados, ${pct(velhos / backlog)} têm mais de 180 dias de abertura.`,
-      evidencia: ["envelhecimento", "backlog"],
-      filtro: { campo: "idade", valores: ["> 180 dias"] },
+      severidade: velhos / abertos > 0.4 ? "critico" : "atencao",
+      titulo: `${inteiro(velhos)} ${plural(velhos, "chamado", "chamados")} (${pct(velhos / abertos)}) ${plural(velhos, "está", "estão")} em atraso há ${MESES_ANTIGO} meses ou mais`,
+      texto: `Dos ${inteiro(abertos)} chamados não finalizados, ${pct(velhos / abertos)} foram abertos há ${MESES_ANTIGO} meses ou mais do Mes Ref.`,
+      evidencia: ["atrasoFaixas", "naoFinalizados"],
+      filtro: { campo: "idade", valores: [FAIXA_ANTIGA] },
     })
 
-  // gargalo no cliente (depende da Situação da exportação: exige carga própria)
+  // gargalo no cliente: aguardando aceite entre os não finalizados
   const aguardando = kpi("aguardandoAceite")?.valor ?? null
-  const base = m.baseAguardandoAceite
-  if (aguardando !== null && base !== null && base > 0 && aguardando / base >= 0.3)
+  if (aguardando !== null && aguardando / abertos >= 0.3)
     leituras.push({
       id: "gargaloCliente",
       severidade: "atencao",
-      titulo: `${pct(aguardando / base)} dos chamados em aberto ou aguardando aceite estão aguardando aceite do cliente`,
-      texto: `${inteiro(aguardando)} de ${inteiro(base)} chamados em aberto ou aguardando aceite estão aguardando aceite.`,
-      evidencia: ["aguardandoAceite", "backlog"],
+      titulo: `${pct(aguardando / abertos)} dos chamados não finalizados estão aguardando aceite do cliente`,
+      texto: `${inteiro(aguardando)} de ${inteiro(abertos)} chamados não finalizados estão aguardando aceite.`,
+      evidencia: ["aguardandoAceite", "naoFinalizados"],
       acao: "Cobrar aceite dos clientes com mais pendências",
     })
 
   // sem SLA
   const semSla = kpi("semSla")?.valor ?? null
-  if (semSla !== null && semSla / backlog >= 0.2)
+  if (semSla !== null && semSla / abertos >= 0.2)
     leituras.push({
       id: "semSla",
       severidade: "atencao",
-      titulo: `${pct(semSla / backlog)} do backlog está sem SLA`,
-      texto: `${inteiro(semSla)} de ${inteiro(backlog)} chamados do backlog não têm SLA previsto. Nota: o % no SLA é medido sobre uma base menor, então não representa todo o backlog.`,
-      evidencia: ["semSla", "backlog"],
-      filtro: { campo: "situacaoNaCompetencia", valores: ["aberto-no-fim"] },
+      titulo: `${pct(semSla / abertos)} dos não finalizados estão sem SLA`,
+      texto: `${inteiro(semSla)} de ${inteiro(abertos)} chamados não finalizados não têm SLA previsto. Nota: o % no SLA é medido sobre uma base menor, então não representa todos os não finalizados.`,
+      evidencia: ["semSla", "naoFinalizados"],
     })
 
   return leituras

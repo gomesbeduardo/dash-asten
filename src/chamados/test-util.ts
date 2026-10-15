@@ -58,7 +58,8 @@ export function linha(l: LinhaChamado, codigo: number): CellValue[] {
   const d = (s: string | null | undefined) => (s ? dia(s) : null)
   return [
     d(l.abertura),
-    l.situacao ?? "Em Análise",
+    // Com Data de Solução e sem Situação explícita, o chamado é Finalizado (D64).
+    l.situacao ?? (l.solucao ? "Finalizado" : "Em Análise"),
     d(l.solucao),
     d(l.sla),
     d(l.slaReneg),

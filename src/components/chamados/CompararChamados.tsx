@@ -33,7 +33,7 @@ import {
   ChipsFiltrosChamados,
   useFiltrosChamados,
 } from "./filtros"
-import { LegendaSimbolos, SeloSimbolo } from "./selos"
+import { LegendaSimbolos } from "./selos"
 import { Carregando } from "./Carregando"
 import { useCargasDoTipo } from "./hooks"
 import {
@@ -41,7 +41,6 @@ import {
   compararN,
   proximaParaAdicionar,
   type Sentido,
-  selosDaLeitura,
   temOutros,
   type SeloTipo,
   descreverDelta,
@@ -49,12 +48,9 @@ import {
   filtrarSheet,
   formatarKpi,
   opcoesDeCompetencia,
-  primeiraCompetencia,
   type OpcaoCompetencia,
 } from "./logica"
 
-// O rótulo da opção traz "(reconstruído)"; no seletor ele vira um rótulo secundário.
-const SUFIXO_RECONSTRUIDO = / \(reconstruído\)$/
 const TOM = {
   bom: "text-[#00694b]",
   ruim: "text-late",
@@ -83,12 +79,10 @@ export function CompararChamados({
     return m
   }, [cargas, sheetAtual, carga.competencia])
 
-  const opcoes = useMemo(() => {
-    if (!cargas || !sheetAtual) return []
-    const maisAntiga = cargas[0]?.meta.competencia
-    const base = (maisAntiga && sheets.get(maisAntiga)) || sheetAtual
-    return opcoesDeCompetencia(historico, primeiraCompetencia(base))
-  }, [cargas, historico, sheetAtual, sheets])
+  const opcoes = useMemo(
+    () => (cargas && sheetAtual ? opcoesDeCompetencia(historico) : []),
+    [cargas, historico, sheetAtual]
+  )
 
   const cabecalho = (
     <h1 className="text-6xl leading-none text-primary">
@@ -213,13 +207,10 @@ function ComparacaoVisao({
   const entradas = useMemo(
     () =>
       ordenadas.map((o): EntradaCompetencia => {
-        const bruta = o.propria
-          ? (sheets.get(o.competencia) ?? sheetAtual)
-          : ((o.deCarga ? sheets.get(o.deCarga) : undefined) ?? sheetAtual)
+        const bruta = sheets.get(o.competencia) ?? sheetAtual
         return {
           sheet: filtrarSheet(bruta, filtros, o.competencia),
           competencia: o.competencia,
-          cargaPropria: o.propria,
           colunasSemFiltro: colunasAusentes(bruta, filtros),
         }
       }),
@@ -238,13 +229,7 @@ function ComparacaoVisao({
   const cmp = useMemo(() => compararN(metricas), [metricas])
   const n = ordenadas.length
   const rotulos = ordenadas.map((o) => formatarCompetencia(o.competencia))
-  const nomes = ordenadas.map((o, i) =>
-    o.propria ? rotulos[i] : `${rotulos[i]} (reconstruído)`
-  )
-  const primeira = ordenadas[0]
-  const ultima = ordenadas[n - 1]
-  const algumReconstruido = ordenadas.some((o) => !o.propria)
-  const deltaReconstruido = !primeira.propria || !ultima.propria
+  const nomes = rotulos
 
   // Leituras: a competência mais recente contra a anterior a ela na seleção
   const entradaRecente = entradas[n - 1]
@@ -258,12 +243,9 @@ function ComparacaoVisao({
     () => calcularMetricas(entradaRecente, entradaAnterior),
     [entradaRecente, entradaAnterior]
   )
-  const anteriorPropria = ordenadas[n - 2]?.propria ?? false
 
-  const selosCmp = (itens: { rotulo: string }[]): SeloTipo[] => [
-    ...(algumReconstruido ? (["reconstruido"] as const) : []),
-    ...(temOutros(itens) ? (["outros"] as const) : []),
-  ]
+  const selosCmp = (itens: { rotulo: string }[]): SeloTipo[] =>
+    temOutros(itens) ? ["outros"] : []
   const fmt = (v: number | null, f: FormatoKpi) => formatarKpi(v, f)
   const [kpiAberto, setKpiAberto] = useState<string | null>(null)
   const ultimoKpi = useRef<string | null>(null)
@@ -271,28 +253,17 @@ function ComparacaoVisao({
   const deltaDe = (k: (typeof cmp.kpis)[number]) =>
     descreverDelta(
       { delta: k.delta, formato: k.formato, melhorQuando: k.melhorQuando },
-      "",
-      deltaReconstruido
+      ""
     )
   const maxItens = n > 3 ? 6 : MAX_ITENS
-  const dists = cmp.distribuicoes.filter(
-    (d) => d.id !== "situacao" && d.id !== "operador"
-  )
+  const dists = cmp.distribuicoes.filter((d) => d.id !== "operador")
   const series = ordenadas.map((o, i) => ({
     id: o.competencia,
     rotulo: nomes[i],
-    reconstruido: !o.propria,
   }))
   // símbolos que aparecem nesta tela, para a legenda
   const tiposNaTela: SeloTipo[] = [
-    ...(algumReconstruido ? (["reconstruido"] as const) : []),
-    ...(metricas[n - 1].kpis.some((k) => k.reconstruivel === false)
-      ? (["calculado"] as const)
-      : []),
-    ...leituras.flatMap((l) => selosDaLeitura(l, anteriorPropria)),
-    ...(dists.some(
-      (d) => d.id !== "situacao" && temOutros(agruparSeries(d.itens, maxItens))
-    )
+    ...(dists.some((d) => temOutros(agruparSeries(d.itens, maxItens)))
       ? (["outros"] as const)
       : []),
   ]
@@ -339,12 +310,7 @@ function ComparacaoVisao({
                             selecao.includes(o.competencia)
                           }
                         >
-                          {o.rotulo.replace(SUFIXO_RECONSTRUIDO, "")}
-                          {!o.propria && (
-                            <span className="text-sm font-normal text-muted-foreground">
-                              reconstruído
-                            </span>
-                          )}
+                          {o.rotulo}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -375,8 +341,8 @@ function ComparacaoVisao({
           <p className="text-base text-muted-foreground">
             De {MIN_COMPETENCIAS} a {MAX_COMPETENCIAS} competências, em ordem
             cronológica. Δ = {rotulos[n - 1]} menos {rotulos[0]}; a setinha de
-            cada valor compara com a coluna anterior. Meses “reconstruído” vêm
-            das datas da planilha mais recente.
+            cada valor compara com a coluna anterior. Só aparecem os meses com
+            carga (foto) própria.
           </p>
           <LegendaSimbolos tipos={tiposNaTela} />
         </header>
@@ -384,16 +350,11 @@ function ComparacaoVisao({
         <ModalKpi
           aberto={!!kpiModal}
           titulo={kpiModal?.rotulo ?? ""}
-          calculado={
-            metricas[n - 1].kpis.find((x) => x.id === kpiModal?.id)
-              ?.reconstruivel === false
-          }
           formato={kpiModal?.formato ?? "inteiro"}
           pontos={(kpiModal?.valores ?? []).map((v, i) => ({
             competencia: ordenadas[i].competencia,
             rotulo: rotulos[i],
             valor: v,
-            propria: ordenadas[i].propria,
             nota:
               v === null
                 ? (metricas[i].kpis.find((x) => x.id === kpiModal?.id)
@@ -422,12 +383,8 @@ function ComparacaoVisao({
                   formato: k.formato,
                   melhorQuando: k.melhorQuando,
                 },
-                "",
-                deltaReconstruido
+                ""
               )
-              const reconstruivel = metricas[n - 1].kpis.find(
-                (x) => x.id === k.id
-              )?.reconstruivel
               return (
                 <article
                   key={k.id}
@@ -445,9 +402,6 @@ function ComparacaoVisao({
                     }}
                   />
                   <h3 className="flex items-start gap-2 font-sans text-xl leading-tight font-medium text-muted-foreground">
-                    {reconstruivel === false && (
-                      <SeloSimbolo tipo="calculado" />
-                    )}
                     <span>{k.rotulo}</span>
                   </h3>
                   <ul className="flex flex-wrap items-end gap-x-6 gap-y-3">
@@ -467,9 +421,6 @@ function ComparacaoVisao({
                           )}
                         >
                           <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            {!ordenadas[i].propria && (
-                              <SeloSimbolo tipo="reconstruido" />
-                            )}
                             <span>{rotulos[i]}</span>
                           </span>
                           <span
@@ -538,7 +489,6 @@ function ComparacaoVisao({
                       className="px-3 py-3 text-right font-display"
                     >
                       <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
-                        {!o.propria && <SeloSimbolo tipo="reconstruido" />}
                         <span>{rotulos[i]}</span>
                       </span>
                     </th>
@@ -556,24 +506,12 @@ function ComparacaoVisao({
                       formato: k.formato,
                       melhorQuando: k.melhorQuando,
                     },
-                    "",
-                    deltaReconstruido
+                    ""
                   )
-                  const reconstruivel = metricas[n - 1].kpis.find(
-                    (x) => x.id === k.id
-                  )?.reconstruivel
                   return (
                     <tr key={k.id} className="border-b bg-card">
                       <th scope="row" className="px-3 py-3 font-medium">
-                        {/* regra (a): o texto de todas as linhas começa na mesma coluna; o espaço do símbolo é reservado onde ele não aparece */}
-                        <span className="flex items-start gap-2">
-                          <span className="flex size-6 shrink-0 items-center justify-center">
-                            {reconstruivel === false && (
-                              <SeloSimbolo tipo="calculado" />
-                            )}
-                          </span>
-                          <span>{k.rotulo}</span>
-                        </span>
+                        {k.rotulo}
                       </th>
                       {k.valores.map((v, i) => {
                         const nota =
@@ -634,11 +572,7 @@ function ComparacaoVisao({
               Leituras de {rotulos[n - 1]} contra {rotulos[n - 2]}
             </h2>
             {leituras.length > 0 ? (
-              <ListaLeituras
-                leituras={leituras}
-                metricas={metricasLeitura}
-                anteriorPropria={anteriorPropria}
-              />
+              <ListaLeituras leituras={leituras} metricas={metricasLeitura} />
             ) : (
               <p className="text-lg text-muted-foreground">
                 Nenhuma leitura automática para {rotulos[n - 1]}.
@@ -649,14 +583,14 @@ function ComparacaoVisao({
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           <GraficoCartao
-            id="cmp-envelhecimento"
-            titulo="Envelhecimento do backlog"
+            id="cmp-atrasoFaixas"
+            titulo="Em atraso por meses desde a abertura"
             subtitulo={nomes.join(" · ")}
-            tabela={tabelaSeries(cmp.envelhecimento)}
-            selos={selosCmp(cmp.envelhecimento)}
+            tabela={tabelaSeries(cmp.atrasoFaixas)}
+            selos={selosCmp(cmp.atrasoFaixas)}
           >
             <BarrasComparar
-              itens={cmp.envelhecimento}
+              itens={cmp.atrasoFaixas}
               series={series}
               animar={play}
             />
@@ -667,7 +601,7 @@ function ComparacaoVisao({
               <GraficoCartao
                 key={d.id}
                 id={`cmp-${d.id}`}
-                titulo={d.titulo}
+                titulo={`Não finalizados ${d.titulo.toLowerCase()}`}
                 subtitulo={nomes.join(" · ")}
                 tabela={tabelaSeries(d.itens)}
                 selos={selosCmp(itens)}

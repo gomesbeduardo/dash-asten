@@ -1,23 +1,9 @@
 import type { Competencia } from "@/cargas/types"
 import type { CellValue, Row, Sheet } from "@/core"
-import { mapearColunas, normalizar, type MapaColunas } from "./mapeamento"
+import { mapearColunas, type MapaColunas } from "./mapeamento"
 
-export type SituacaoNaCompetencia =
-  | "aberto-no-fim"
-  | "resolvido-no-mes"
-  | "resolvido-antes"
-  | "aberto-apos"
-  | "sem-abertura"
-export const ROTULO_SITUACAO_COMPETENCIA: Record<
-  SituacaoNaCompetencia,
-  string
-> = {
-  "aberto-no-fim": "Aberto no fim do mês",
-  "resolvido-no-mes": "Resolvido no mês",
-  "resolvido-antes": "Resolvido antes do mês",
-  "aberto-apos": "Aberto após a competência",
-  "sem-abertura": "Sem data de abertura",
-}
+/** Onde a linha cai em relação à foto (Mes Ref.): nenhuma linha é excluída, só separada (D34/D64). */
+export type PosicaoNaFoto = "na-foto" | "aberto-depois" | "sem-abertura"
 
 /** Limites do mês "AAAA-MM" em UTC: início = dia 1 00:00:00; fim = último dia 23:59:59.999. */
 export function limitesDaCompetencia(c: Competencia): {
@@ -28,6 +14,16 @@ export function limitesDaCompetencia(c: Competencia): {
   return { inicio: Date.UTC(ano, mes - 1, 1), fim: Date.UTC(ano, mes, 1) - 1 }
 }
 
+/** Meses de calendário entre o mês da abertura e o Mes Ref. (jan→abr = 3). */
+export function mesesAteCompetencia(
+  abertura: number,
+  competencia: Competencia
+): number {
+  const [ano, mes] = competencia.split("-").map(Number)
+  const d = new Date(abertura)
+  return (ano - d.getUTCFullYear()) * 12 + (mes - 1 - d.getUTCMonth())
+}
+
 export const tempo = (v: CellValue | undefined): number | null =>
   v instanceof Date && !Number.isNaN(v.getTime()) ? v.getTime() : null
 export const texto = (v: CellValue | undefined): string | null => {
@@ -36,38 +32,22 @@ export const texto = (v: CellValue | undefined): string | null => {
   return s === "" ? null : s
 }
 
-/**
- * Reaberto depois da solução e ainda não finalizado: Data Ultima Reabertura > Data de Solução
- * e Situação (da exportação) diferente de "finalizado". Só informativo: não muda a classificação (D34/D61).
- */
-export function reabertoPendente(row: Row, mapa: MapaColunas): boolean {
-  if (!mapa.ultimaReabertura || !mapa.solucao || !mapa.situacao) return false
-  const reabertura = tempo(row[mapa.ultimaReabertura])
-  const solucao = tempo(row[mapa.solucao])
-  if (reabertura === null || solucao === null || reabertura <= solucao)
-    return false
-  return normalizar(texto(row[mapa.situacao]) ?? "") !== "finalizado"
-}
-
-/** Situação do chamado no último dia da competência (reconstruída pelas datas). Nenhuma linha é excluída. */
+/** Linha dentro da foto (aberta até o fim do Mes Ref.), aberta depois dele ou sem Data de Abertura. */
 export function classificarLinha(
   row: Row,
   mapa: MapaColunas,
   competencia: Competencia
-): SituacaoNaCompetencia {
-  const { inicio, fim } = limitesDaCompetencia(competencia)
+): PosicaoNaFoto {
+  const { fim } = limitesDaCompetencia(competencia)
   const abertura = mapa.abertura ? tempo(row[mapa.abertura]) : null
   if (abertura === null) return "sem-abertura"
-  if (abertura > fim) return "aberto-apos"
-  const solucao = mapa.solucao ? tempo(row[mapa.solucao]) : null
-  if (solucao === null || solucao > fim) return "aberto-no-fim"
-  return solucao >= inicio ? "resolvido-no-mes" : "resolvido-antes"
+  return abertura > fim ? "aberto-depois" : "na-foto"
 }
 
 export function classificarLinhas(
   sheet: Sheet,
   competencia: Competencia
-): SituacaoNaCompetencia[] {
+): PosicaoNaFoto[] {
   const { mapa } = mapearColunas(sheet)
   return sheet.rows.map((r) => classificarLinha(r, mapa, competencia))
 }

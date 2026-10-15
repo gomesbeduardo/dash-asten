@@ -9,14 +9,11 @@ const comp = (n: number) => ({ ano: 2026, mes: n }) as never
 const linhas = [1, 2, 3].map((n) => ({
   competencia: comp(n),
   rotulo: `m${n}`,
-  propria: true,
-  a_p: n,
-  a_r: null,
-  b_p: n * 2,
-  b_r: null,
+  a: n,
+  b: n * 2,
 })) as LinhaSerie[]
 const duas: SerieLinha[] = [
-  { id: "a", rotulo: "Backlog", cor: "#111" },
+  { id: "a", rotulo: "Não finalizados", cor: "#111" },
   { id: "b", rotulo: "Em atraso", cor: "#222" },
 ]
 
@@ -30,7 +27,7 @@ describe("legenda de séries na Evolução", () => {
         animar={false}
       />
     )
-    expect(screen.getByRole("button", { name: "Backlog" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Não finalizados" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )
@@ -62,7 +59,7 @@ describe("legenda de séries na Evolução", () => {
         animar={false}
       />
     )
-    const a = screen.getByRole("button", { name: "Backlog" })
+    const a = screen.getByRole("button", { name: "Não finalizados" })
     const b = screen.getByRole("button", { name: "Em atraso" })
     await u.click(a)
     expect(a).toHaveAttribute("aria-pressed", "false")
@@ -77,7 +74,7 @@ describe("legenda de séries na Evolução", () => {
       "Em atraso"
     )
     expect(screen.getByRole("img").getAttribute("aria-label")).toContain(
-      "Backlog"
+      "Não finalizados"
     )
   })
 })

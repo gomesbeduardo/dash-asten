@@ -12,43 +12,40 @@ export type KpiChamados = {
   melhorQuando: "maior" | "menor" | "neutro"
   definicao: string
   detalhe?: string
-  /** false: depende de colunas da data da exportação (Situação, Qtd Reabertura, SLA Renegociado). */
-  reconstruivel: boolean
 }
 export type ItemDistribuicao = { rotulo: string; valor: number }
+/** Um valor da dimensão com as duas séries da D64: finalizados (no mês ou no período) × não finalizados. */
+export type ItemFoto = {
+  rotulo: string
+  finalizados: number
+  naoFinalizados: number
+}
 export type Distribuicao = {
-  id:
-    | "cliente"
-    | "area"
-    | "areaSuperior"
-    | "atividade"
-    | "operador"
-    | "situacao"
+  id: "cliente" | "area" | "areaSuperior" | "atividade" | "operador"
   titulo: string
-  itens: ItemDistribuicao[]
-  reconstruivel: boolean
+  itens: ItemFoto[]
 }
 export type MetricasChamados = {
   competencia: Competencia
   kpis: KpiChamados[]
   distribuicoes: Distribuicao[]
-  envelhecimento: ItemDistribuicao[]
-  /** Backlog + resolvidos até o fim ainda sem aceite: denominador coerente de "aguardando aceite". */
-  baseAguardandoAceite: number | null
-  linhasConsideradas: number | null
-  /** Abertos após o fim da competência (aberto-apos); mostrados à parte. */
-  linhasPosteriores: number | null
+  /** Cards por Situação: valor literal da coluna (vazio = "(sem informação)"), por frequência. */
+  situacoes: ItemDistribuicao[]
+  /** Chamados da foto (abertos até o fim do Mes Ref.). */
+  totalChamados: number | null
+  /** Não finalizados em atraso por ciclo, por meses entre a abertura e o Mes Ref.: "1", "2–3", "4–6", "7+". */
+  atrasoFaixas: ItemDistribuicao[]
+  /** Abertos depois do fim do Mes Ref. (nota; fora de todos os números do mês, sem excluir a linha). */
+  abertosDepois: number | null
   linhasSemAbertura: number | null
-  porSituacaoNaCompetencia: ItemDistribuicao[]
   avisos: string[]
   /** Filtros ativos sem a coluna nesta carga: nada é calculado (nunca zero). */
   colunasSemFiltro?: string[]
 }
-/** cargaPropria === false: a planilha é de outro mês; KPIs não reconstruíveis ficam null. Padrão true. */
+/** A planilha é a foto da empresa no Mes Ref. (`competencia`). */
 export type EntradaCompetencia = {
   sheet: Sheet
   competencia: Competencia
-  cargaPropria?: boolean
   /** Rótulos dos filtros ativos cuja coluna não existe nesta carga: KPIs ficam sem valor (nunca zero). */
   colunasSemFiltro?: string[]
 }
@@ -64,6 +61,7 @@ export type Comparacao = {
     delta: number | null
     melhorQuando: KpiChamados["melhorQuando"]
   }[]
+  /** Valores = não finalizados de cada foto. */
   distribuicoes: {
     id: Distribuicao["id"]
     titulo: string

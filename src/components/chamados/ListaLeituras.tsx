@@ -20,7 +20,6 @@ import {
   filtroDaLeitura,
   numerosDaLeitura,
   regraDaLeitura,
-  selosDaLeitura,
   temOutros,
   type SeloTipo,
 } from "./logica"
@@ -35,14 +34,12 @@ const SEV_ROTULO = { critico: "Crítico", atencao: "Atenção", destaque: "Desta
 export function ListaLeituras({
   leituras,
   metricas,
-  anteriorPropria,
   grande = false,
   className,
 }: {
   leituras: Leitura[]
   /** Métricas da competência das leituras (a mais recente), para os números e a evidência. */
   metricas: MetricasChamados
-  anteriorPropria: boolean
   grande?: boolean
   className?: string
 }) {
@@ -58,7 +55,6 @@ export function ListaLeituras({
   const filtro = leitura ? filtroDaLeitura(leitura) : null
   const selosGrafico: SeloTipo[] = leitura
     ? [
-        ...(leitura.id === "gargaloCliente" ? (["exportacao"] as const) : []),
         ...(evidencia && temOutros(evidencia.itens) ? (["outros"] as const) : []),
       ]
     : []
@@ -71,7 +67,6 @@ export function ListaLeituras({
             key={l.id}
             leitura={l}
             grande={grande}
-            selos={selosDaLeitura(l, anteriorPropria)}
             onAbrir={(x) => abrir(x.id)}
           />
         ))}
@@ -137,7 +132,7 @@ export function ListaLeituras({
                   itens={evidencia.itens}
                   corDoItem={(i) =>
                     evidencia.destaque.includes(i.rotulo)
-                      ? leitura.severidade === "critico" || i.rotulo.startsWith(">")
+                      ? leitura.severidade === "critico" || i.rotulo === "7+"
                         ? COR.atraso
                         : COR.laranja
                       : COR.cinza

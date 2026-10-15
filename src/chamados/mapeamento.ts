@@ -23,6 +23,7 @@ export type CampoChamado =
   | "autarquia"
   | "tipo"
   | "ultimaReabertura"
+  | "mesRef"
 export type MapaColunas = Partial<Record<CampoChamado, string /* Column.key */>>
 
 export function normalizar(s: string): string {
@@ -84,6 +85,7 @@ const SINONIMOS: Record<CampoChamado, string[]> = {
     "ultima reabertura",
     "data reabertura",
   ],
+  mesRef: ["mes ref", "mes referencia", "competencia", "referencia"],
 }
 
 const ESSENCIAIS: CampoChamado[] = ["abertura", "situacao"]

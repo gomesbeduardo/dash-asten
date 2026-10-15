@@ -1,6 +1,3 @@
-import { competenciaAnterior } from "@/cargas/competencia"
-import type { Competencia } from "@/cargas/types"
-import type { Sheet } from "@/core"
 import { calcularMetricas } from "./metricas"
 import type { Comparacao, EntradaCompetencia, Evolucao } from "./tipos"
 
@@ -28,8 +25,12 @@ export function compararCompetencias(
   const distribuicoes = ids.map((id) => {
     const da = ma.distribuicoes.find((d) => d.id === id)
     const db = mb.distribuicoes.find((d) => d.id === id)
-    const va = new Map((da?.itens ?? []).map((i) => [i.rotulo, i.valor]))
-    const vb = new Map((db?.itens ?? []).map((i) => [i.rotulo, i.valor]))
+    const va = new Map(
+      (da?.itens ?? []).map((i) => [i.rotulo, i.naoFinalizados])
+    )
+    const vb = new Map(
+      (db?.itens ?? []).map((i) => [i.rotulo, i.naoFinalizados])
+    )
     const rotulos = [...new Set([...vb.keys(), ...va.keys()])]
     const itens = rotulos
       .map((rotulo) => ({
@@ -57,22 +58,4 @@ export function evolucao(entradas: EntradaCompetencia[]): Evolucao {
     ),
   }))
   return { competencias: metricas.map((m) => m.competencia), series }
-}
-
-/**
- * As `quantas` competências anteriores (da mais antiga à mais recente) calculadas sobre a mesma planilha,
- * com cargaPropria=false: KPIs que dependem de colunas da data da exportação ficam null.
- */
-export function reconstruirAnteriores(
-  sheet: Sheet,
-  competencia: Competencia,
-  quantas: number
-): EntradaCompetencia[] {
-  const out: EntradaCompetencia[] = []
-  let c = competencia
-  for (let i = 0; i < quantas; i++) {
-    c = competenciaAnterior(c)
-    out.unshift({ sheet, competencia: c, cargaPropria: false })
-  }
-  return out
 }

@@ -5,7 +5,6 @@ import {
   calcularMetricas,
   escolherAba,
   gerarLeituras,
-  reconstruirAnteriores,
   type EntradaCompetencia,
 } from "@/chamados"
 import type { Sheet } from "@/core"
@@ -60,7 +59,7 @@ export function useCargasDoTipo(
 
 export type Anterior = { entrada: EntradaCompetencia; propria: boolean }
 
-/** Mês anterior: a carga própria (versão mais recente) se existir; senão reconstruído pelas datas. `undefined` enquanto carrega. */
+/** Mês anterior: a carga própria (versão mais recente) se existir; sem carga do mês anterior, `null` (sem Δ; nada é reconstruído). `undefined` enquanto carrega. */
 export function useAnterior(
   carga: Carga,
   historico: CargaMeta[],
@@ -83,21 +82,12 @@ export function useAnterior(
         const aba = anterior ? escolherAba(anterior.workbook) : null
         if (meta && aba)
           valor = {
-            entrada: {
-              sheet: aba,
-              competencia: meta.competencia,
-              cargaPropria: true,
-            },
+            entrada: { sheet: aba, competencia: meta.competencia },
             propria: true,
           }
       } catch {
         valor = null
       }
-      if (!valor && sheet)
-        valor = {
-          entrada: reconstruirAnteriores(sheet, carga.competencia, 1)[0],
-          propria: false,
-        }
       if (!cancelado) setPronto({ chave, valor })
     })()
     return () => {
@@ -150,7 +140,6 @@ export function useMesDeChamados(
         ? {
             sheet: sheetFiltrada,
             competencia: carga.competencia,
-            cargaPropria: true,
             colunasSemFiltro: sheet ? colunasAusentes(sheet, filtros) : [],
           }
         : null,

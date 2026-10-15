@@ -25,7 +25,7 @@ import {
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
 import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
-import { SeloSimbolo, Selos } from "./selos"
+import { Selos } from "./selos"
 
 const TOM = {
   bom: "text-[#00694b]",
@@ -37,19 +37,17 @@ export function KpiCartao({
   kpi,
   destaque = false,
   rotuloAnterior,
-  anteriorPropria,
   entrada,
   extra,
 }: {
   kpi: KpiChamados
   destaque?: boolean
   rotuloAnterior: string
-  anteriorPropria: boolean
   entrada: boolean
   extra?: string
 }) {
   const reduce = useReducedMotion()
-  const delta = descreverDelta(kpi, rotuloAnterior, !anteriorPropria)
+  const delta = descreverDelta(kpi, rotuloAnterior)
   const Seta =
     delta?.sentido === "alta"
       ? ArrowUpIcon
@@ -79,15 +77,7 @@ export function KpiCartao({
             destaque ? "text-xl" : "text-lg"
           )}
         >
-          {kpi.reconstruivel ? (
-            kpi.rotulo
-          ) : (
-            /* símbolo antes do texto; o texto quebra à parte, então a 2ª linha fica alinhada ao texto (D41) */
-            <span className="flex items-start gap-1.5">
-              <SeloSimbolo tipo="calculado" className="-my-px" />
-              <span>{kpi.rotulo}</span>
-            </span>
-          )}
+          {kpi.rotulo}
         </h3>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -120,9 +110,7 @@ export function KpiCartao({
         )}
       </div>
       {kpi.valor === null ? (
-        <p className="text-base text-muted-foreground">
-          {motivoSemDelta(kpi, true)}
-        </p>
+        <p className="text-base text-muted-foreground">{motivoSemDelta(kpi)}</p>
       ) : delta ? (
         <p
           className={cn(
@@ -142,7 +130,7 @@ export function KpiCartao({
       ) : (
         <p className="text-base text-muted-foreground">
           <span aria-hidden>—</span> vs {rotuloAnterior}
-          <span className="block">{motivoSemDelta(kpi, anteriorPropria)}</span>
+          <span className="block">{motivoSemDelta(kpi)}</span>
         </p>
       )}
       {extra && <p className="text-base text-muted-foreground">{extra}</p>}

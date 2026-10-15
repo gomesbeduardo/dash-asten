@@ -15,7 +15,6 @@ import {
   evidenciaDaLeitura,
   numerosDaLeitura,
   regraDaLeitura,
-  selosDaLeitura,
   temOutros,
   definirFiltro,
   filtrarSheet,
@@ -31,7 +30,6 @@ import {
   opcoesDeCompetencia,
   pontosDaEvolucao,
   seriesPorDimensao,
-  primeiraCompetencia,
   ultimasVersoes,
 } from "./logica"
 
@@ -55,7 +53,7 @@ describe("formatarKpi", () => {
 })
 
 describe("descreverDelta", () => {
-  it("backlog (menor é melhor): subir é ruim", () => {
+  it("não finalizados (menor é melhor): subir é ruim", () => {
     const d = descreverDelta(
       { delta: 18, formato: "inteiro", melhorQuando: "menor" },
       "ago/26"
@@ -85,14 +83,13 @@ describe("descreverDelta", () => {
       tom: "ruim",
     })
   })
-  it("contra mês reconstruído o texto diz '(reconstruído)'", () => {
-    expect(
-      descreverDelta(
-        { delta: -60, formato: "inteiro", melhorQuando: "menor" },
-        "ago/26",
-        true
-      )
-    ).toMatchObject({ texto: "-60 vs ago/26 (reconstruído)", tom: "bom" })
+  it("o texto nunca fala em reconstrução (o conceito acabou)", () => {
+    const d = descreverDelta(
+      { delta: -60, formato: "inteiro", melhorQuando: "menor" },
+      "ago/26"
+    )
+    expect(d).toMatchObject({ texto: "-60 vs ago/26", tom: "bom" })
+    expect(d?.texto).not.toMatch(/reconstru/)
   })
   it("neutro não ganha cor de bom/ruim; zero é 'sem variação'; nulo não tem delta", () => {
     expect(
@@ -118,7 +115,7 @@ describe("descreverDelta", () => {
 
 describe("evidência", () => {
   it("o id do alvo é estável por indicador/gráfico", () => {
-    expect(idAlvo("backlog")).toBe("ev-backlog")
+    expect(idAlvo("naoFinalizados")).toBe("ev-naoFinalizados")
   })
 })
 
@@ -142,260 +139,117 @@ describe("versões e anterior", () => {
   })
 })
 
-describe("primeiraCompetencia", () => {
-  it("mês da menor data de abertura", () => {
-    const s = sheetChamados([
-      { abertura: "2026-07-20" },
-      { abertura: "2026-05-02" },
-      { abertura: null },
-    ])
-    expect(primeiraCompetencia(s)).toBe("2026-05")
-  })
-})
-
 describe("opcoesDeCompetencia", () => {
-  it("com várias cargas lista só as cargas (mais recente primeiro)", () => {
-    const o = opcoesDeCompetencia([meta("2026-08"), meta("2026-09")], "2026-01")
-    expect(o.map((x) => [x.competencia, x.propria])).toEqual([
-      ["2026-09", true],
-      ["2026-08", true],
-    ])
+  it("lista só as cargas (fotos), da mais recente à mais antiga", () => {
+    const o = opcoesDeCompetencia([meta("2026-08"), meta("2026-09")])
+    expect(o.map((x) => x.competencia)).toEqual(["2026-09", "2026-08"])
+    expect(o[0].rotulo).toBe("Setembro de 2026")
   })
-  it("com uma carga oferece meses reconstruídos anteriores (até onde há dados)", () => {
-    const o = opcoesDeCompetencia([meta("2026-09")], "2026-07")
-    expect(o.map((x) => [x.competencia, x.propria])).toEqual([
-      ["2026-09", true],
-      ["2026-08", false],
-      ["2026-07", false],
-    ])
-    expect(o[1].rotulo).toBe("Agosto de 2026 (reconstruído)")
+  it("com uma só carga não oferece meses reconstruídos", () => {
+    const o = opcoesDeCompetencia([meta("2026-09")])
+    expect(o.map((x) => x.competencia)).toEqual(["2026-09"])
   })
-})
-
-describe("opcoesDeCompetencia com mês faltando no meio", () => {
-  it("oferece o mês faltante como reconstruído pela carga seguinte", () => {
-    const o = opcoesDeCompetencia([meta("2026-07"), meta("2026-09")], "2026-01")
-    expect(o.map((x) => [x.competencia, x.propria, x.deCarga])).toEqual([
-      ["2026-09", true, undefined],
-      ["2026-08", false, "2026-09"],
-      ["2026-07", true, undefined],
+  it("mês sem carga no meio não vira opção; usa a versão mais recente de cada mês", () => {
+    const o = opcoesDeCompetencia([
+      meta("2026-07"),
+      meta("2026-09", 1),
+      meta("2026-09", 2),
     ])
-    expect(o[1].rotulo).toBe("Agosto de 2026 (reconstruído)")
-  })
-  it("só oferece buracos dentro da janela de 6 meses", () => {
-    const o = opcoesDeCompetencia(
-      [meta("2026-01"), meta("2026-08"), meta("2026-09")],
-      "2026-01"
-    )
-    expect(o.map((x) => [x.competencia, x.propria])).toEqual([
-      ["2026-09", true],
-      ["2026-08", true],
-      ["2026-07", false],
-      ["2026-06", false],
-      ["2026-05", false],
-      ["2026-04", false],
-      ["2026-01", true],
+    expect(o.map((x) => [x.competencia, x.meta.versao])).toEqual([
+      ["2026-09", 2],
+      ["2026-07", 1],
     ])
+    expect(o.map((x) => x.rotulo).join()).not.toMatch(/reconstru/)
   })
 })
 
 describe("pontosDaEvolucao", () => {
-  describe("mês faltando no meio", () => {
-    const longa = sheetChamados(
-      ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m) => ({
-        abertura: `2026-${m}-05`,
-      }))
-    )
-    const proprias = (...cs: string[]) =>
-      cs.map((c) => ({ meta: meta(c), sheet: longa }))
-    it("jul+set: ago vem reconstruído pela carga de set", () => {
-      const { pontos } = pontosDaEvolucao(proprias("2026-07", "2026-09"), 6)
-      expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
-        ["2026-04", false],
-        ["2026-05", false],
-        ["2026-06", false],
-        ["2026-07", true],
-        ["2026-08", false],
-        ["2026-09", true],
-      ])
-    })
-    it("mai+set: abr pela de mai; jun, jul e ago pela de set", () => {
-      const a = sheetChamados([{ abertura: "2026-04-05" }])
-      const b = sheetChamados([
-        { abertura: "2026-04-05" },
-        { abertura: "2026-06-05" },
-      ])
-      const { pontos } = pontosDaEvolucao(
-        [
-          { meta: meta("2026-05"), sheet: a },
-          { meta: meta("2026-09"), sheet: b },
-        ],
-        6
-      )
-      expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
-        ["2026-04", false],
-        ["2026-05", true],
-        ["2026-06", false],
-        ["2026-07", false],
-        ["2026-08", false],
-        ["2026-09", true],
-      ])
-      // jun foi montado pela planilha de set (tem chamado aberto em jun); abr pela de mai
-      expect(pontos[2].valores.backlog).toBe(2)
-      expect(pontos[0].valores.backlog).toBe(1)
-    })
-  })
   const a = sheetChamados([
     { abertura: "2026-07-05", solucao: "2026-07-20" },
     { abertura: "2026-08-03", solucao: "2026-09-10", situacao: "Finalizado" },
     { abertura: "2026-08-10" },
     { abertura: "2026-09-02" },
   ])
-  it("kpis dizem quais dependem da carga do mês (reconstruivel)", () => {
-    const { kpis } = pontosDaEvolucao([{ meta: meta("2026-09"), sheet: a }], 6)
-    expect(kpis.find((k) => k.id === "backlog")?.reconstruivel).toBe(true)
-    expect(kpis.find((k) => k.id === "sla")?.reconstruivel).toBe(false)
+  const longa = sheetChamados(
+    ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m) => ({
+      abertura: `2026-${m}-05`,
+    }))
+  )
+  const proprias = (...cs: string[]) =>
+    cs.map((c) => ({ meta: meta(c), sheet: longa }))
+
+  it("um ponto por foto: mês sem carga não é reconstruído", () => {
+    const { pontos } = pontosDaEvolucao(proprias("2026-07", "2026-09"), 6)
+    expect(pontos.map((p) => p.competencia)).toEqual(["2026-07", "2026-09"])
   })
-  it("junta cargas próprias (versão mais recente) e meses reconstruídos marcados", () => {
+  it("cada ponto é a foto do próprio Mes Ref.", () => {
     const { pontos, kpis } = pontosDaEvolucao(
       [{ meta: meta("2026-09"), sheet: a }],
       6
     )
-    expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
-      ["2026-07", false],
-      ["2026-08", false],
-      ["2026-09", true],
-    ])
-    expect(kpis.map((k) => k.id)).toContain("backlog")
-    const ago = pontos[1]
-    expect(ago.valores.backlog).toBe(2) // 08-03 (solução só em setembro) e 08-10
-    // KPIs que exigem a carga do mês ficam nulos nos reconstruídos
-    expect(ago.valores.sla).toBeNull()
+    expect(pontos.map((p) => p.competencia)).toEqual(["2026-09"])
+    expect(kpis.map((k) => k.id)).toContain("naoFinalizados")
+    expect(kpis.map((k) => k.id)).not.toContain("backlog")
+    // 08-10 e 09-02 estão abertos; 08-03 está Finalizado
+    expect(pontos[0].valores.naoFinalizados).toBe(2)
+    expect(pontos[0].valores.entradas).toBe(1)
+    expect(kpis.every((k) => !("reconstruivel" in k))).toBe(true)
   })
-  it("limita o total de pontos ao máximo informado", () => {
-    const { pontos } = pontosDaEvolucao([{ meta: meta("2026-09"), sheet: a }], 2)
+  it("limita o total de pontos ao máximo informado (os mais recentes)", () => {
+    const { pontos } = pontosDaEvolucao(
+      proprias("2026-07", "2026-08", "2026-09"),
+      2
+    )
     expect(pontos.map((p) => p.competencia)).toEqual(["2026-08", "2026-09"])
   })
-  describe("exatamente as 6 competências mais recentes", () => {
-    const longa = sheetChamados(
-      ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m) => ({
-        abertura: `2026-${m}-05`,
-      }))
+  it("7 cargas: só as 6 mais recentes", () => {
+    const { pontos } = pontosDaEvolucao(
+      proprias(
+        "2026-03", "2026-04", "2026-05", "2026-06",
+        "2026-07", "2026-08", "2026-09"
+      ),
+      6
     )
-    const proprias = (...cs: string[]) =>
-      cs.map((c) => ({ meta: meta(c), sheet: longa }))
-    it("3 próprias + 3 reconstruídos", () => {
-      const { pontos } = pontosDaEvolucao(
-        proprias("2026-07", "2026-08", "2026-09"),
-        6
-      )
-      expect(pontos.map((p) => [p.competencia, p.propria])).toEqual([
-        ["2026-04", false],
-        ["2026-05", false],
-        ["2026-06", false],
-        ["2026-07", true],
-        ["2026-08", true],
-        ["2026-09", true],
-      ])
-    })
-    it("7 próprias: só as 6 mais recentes", () => {
-      const { pontos } = pontosDaEvolucao(
-        proprias(
-          "2026-03", "2026-04", "2026-05", "2026-06",
-          "2026-07", "2026-08", "2026-09"
-        ),
-        6
-      )
-      expect(pontos.map((p) => p.competencia)).toEqual([
-        "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09",
-      ])
-      expect(pontos.every((p) => p.propria)).toBe(true)
-    })
-    it("1 própria: 5 reconstruídos + 1", () => {
-      const { pontos } = pontosDaEvolucao(proprias("2026-09"), 6)
-      expect(pontos.map((p) => p.propria)).toEqual([
-        false, false, false, false, false, true,
-      ])
-      expect(pontos[0].competencia).toBe("2026-04")
-    })
-    it("sem cargas: vazio", () => {
-      expect(pontosDaEvolucao([], 6)).toMatchObject({ pontos: [], kpis: [], avisosFiltro: [] })
-    })
+    expect(pontos.map((p) => p.competencia)).toEqual([
+      "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09",
+    ])
+  })
+  it("usa a versão mais recente da competência", () => {
+    const v1 = sheetChamados([{ abertura: "2026-09-02" }])
+    const v2 = sheetChamados([
+      { abertura: "2026-09-02" },
+      { abertura: "2026-09-03" },
+    ])
+    const { pontos } = pontosDaEvolucao(
+      [
+        { meta: meta("2026-09", 1), sheet: v1 },
+        { meta: meta("2026-09", 2), sheet: v2 },
+      ],
+      6
+    )
+    expect(pontos[0].valores.naoFinalizados).toBe(2)
+  })
+  it("sem cargas: vazio", () => {
+    expect(pontosDaEvolucao([], 6)).toMatchObject({ pontos: [], kpis: [], avisosFiltro: [] })
   })
 })
 
 describe("linhasDeSerie", () => {
-  const pt = (c: string, propria: boolean, v: number | null) => ({
+  const pt = (c: string, v: number | null) => ({
     competencia: `2026-${c}`,
     rotulo: c,
-    propria,
     valores: { x: v },
   })
-  const r = (pontos: ReturnType<typeof pt>[]) =>
-    linhasDeSerie(pontos, ["x"]).map((l) => [l.x_p, l.x_r])
-
-  it("separa o trecho próprio do reconstruído, ligando os dois", () => {
-    expect(r([pt("08", false, 3), pt("09", true, 5)])).toEqual([
-      [null, 3],
-      [5, 5],
-    ])
-  })
-  it("reconstruído no meio: tracejado liga os dois vizinhos próprios", () => {
+  it("uma chave por série; sem dado (null) quebra a linha", () => {
     expect(
-      r([
-        pt("07", true, 1),
-        pt("08", true, 2),
-        pt("09", false, 3),
-        pt("10", true, 4),
-      ])
-    ).toEqual([
-      [1, null],
-      [2, 2],
-      [null, 3],
-      [4, 4],
-    ])
+      linhasDeSerie([pt("07", 1), pt("08", null), pt("09", 3)], ["x"]).map(
+        (l) => l.x
+      )
+    ).toEqual([1, null, 3])
   })
-  it("reconstruído no fim: liga ao próprio anterior", () => {
-    expect(
-      r([pt("07", true, 1), pt("08", true, 2), pt("09", false, 3)])
-    ).toEqual([
-      [1, null],
-      [2, 2],
-      [null, 3],
-    ])
-  })
-  it("vários reconstruídos seguidos: tudo tracejado, próprios só nas pontas", () => {
-    expect(
-      r([
-        pt("07", true, 1),
-        pt("08", false, 2),
-        pt("09", false, 3),
-        pt("10", true, 4),
-      ])
-    ).toEqual([
-      [1, 1],
-      [null, 2],
-      [null, 3],
-      [4, 4],
-    ])
-  })
-  it("sem dado no reconstruído: não liga por cima", () => {
-    expect(
-      r([pt("07", true, 1), pt("08", false, null), pt("09", true, 4)])
-    ).toEqual([
-      [1, null],
-      [null, null],
-      [4, null],
-    ])
-  })
-  it("sem dado num próprio: quebra a linha cheia", () => {
-    expect(
-      r([pt("07", true, 1), pt("08", true, null), pt("09", true, 3)])
-    ).toEqual([
-      [1, null],
-      [null, null],
-      [3, null],
-    ])
+  it("mantém competência e rótulo, sem marcas de reconstrução", () => {
+    const [l] = linhasDeSerie([pt("07", 1)], ["x"])
+    expect(l).toEqual({ competencia: "2026-07", rotulo: "07", x: 1 })
   })
 })
 
@@ -440,24 +294,24 @@ describe("proximaParaAdicionar", () => {
 })
 
 describe("compararN", () => {
-  const m = (competencia: string, backlog: number | null, sla: number | null, itens: [string, number][]) =>
+  const m = (competencia: string, nao: number | null, sla: number | null, itens: [string, number, number][]) =>
     ({
       competencia,
       kpis: [
-        { id: "backlog", rotulo: "Backlog aberto", formato: "inteiro", valor: backlog, melhorQuando: "menor" },
+        { id: "naoFinalizados", rotulo: "Não finalizados", formato: "inteiro", valor: nao, melhorQuando: "menor" },
         { id: "sla", rotulo: "% no SLA", formato: "percentual", valor: sla, melhorQuando: "maior", detalhe: "sem dado" },
       ],
-      distribuicoes: [{ id: "cliente", titulo: "Backlog por cliente", itens: itens.map(([rotulo, valor]) => ({ rotulo, valor })) }],
-      envelhecimento: [{ rotulo: "0–30 dias", valor: backlog ?? 0 }],
+      distribuicoes: [{ id: "cliente", titulo: "Por cliente", itens: itens.map(([rotulo, finalizados, naoFinalizados]) => ({ rotulo, finalizados, naoFinalizados })) }],
+      atrasoFaixas: [{ rotulo: "1", valor: nao ?? 0 }],
     }) as unknown as MetricasChamados
   const r = compararN([
-    m("2026-07", 4, null, [["Cli A", 4]]),
-    m("2026-08", 6, 50, [["Cli A", 4], ["Cli B", 2]]),
-    m("2026-09", 6, 40, [["Cli B", 5], ["Cli A", 1]]),
+    m("2026-07", 4, null, [["Cli A", 9, 4]]),
+    m("2026-08", 6, 50, [["Cli A", 9, 4], ["Cli B", 9, 2]]),
+    m("2026-09", 6, 40, [["Cli B", 9, 5], ["Cli A", 9, 1]]),
   ])
   it("uma coluna por competência; Δ = última − primeira; setas contra a coluna anterior", () => {
     expect(r.competencias).toEqual(["2026-07", "2026-08", "2026-09"])
-    const b = r.kpis.find((k) => k.id === "backlog")!
+    const b = r.kpis.find((k) => k.id === "naoFinalizados")!
     expect(b.valores).toEqual([4, 6, 6])
     expect(b.delta).toBe(2)
     expect(b.setas).toEqual([null, "alta", "igual"])
@@ -466,23 +320,21 @@ describe("compararN", () => {
     expect(s.delta).toBeNull() // primeira sem dado
     expect(s.setas).toEqual([null, null, "queda"])
   })
-  it("distribuições unem os rótulos e ordenam pelo total", () => {
+  it("distribuições comparam os não finalizados, unem os rótulos e ordenam pelo total", () => {
     expect(r.distribuicoes[0].itens).toEqual([
       { rotulo: "Cli A", valores: [4, 4, 1] },
       { rotulo: "Cli B", valores: [0, 2, 5] },
     ])
-    expect(r.envelhecimento).toEqual([{ rotulo: "0–30 dias", valores: [4, 6, 6] }])
+    expect(r.atrasoFaixas).toEqual([{ rotulo: "1", valores: [4, 6, 6] }])
   })
 })
 
 describe("motivoSemDelta", () => {
-  it("usa o detalhe do motor; senão explica pela origem do mês anterior", () => {
-    const base = { detalhe: undefined, reconstruivel: false }
-    expect(
-      motivoSemDelta({ ...base, detalhe: "exige a carga daquele mês" }, true)
-    ).toBe("exige a carga daquele mês")
-    expect(motivoSemDelta(base, false)).toBe("exige a carga daquele mês")
-    expect(motivoSemDelta({ ...base, reconstruivel: true }, true)).toBe(
+  it("usa o detalhe do motor; senão diz que falta base no mês anterior", () => {
+    expect(motivoSemDelta({ detalhe: "filtro sem a coluna nesta carga" })).toBe(
+      "filtro sem a coluna nesta carga"
+    )
+    expect(motivoSemDelta({ detalhe: undefined })).toBe(
       "sem base no mês anterior"
     )
   })
@@ -504,23 +356,22 @@ describe("filtros de Chamados", () => {
     ).toHaveLength(1)
     expect(filtrarSheet(s, {}, "2026-08")).toBe(s)
   })
-  it("sem informação é um valor filtrável e a situação na competência usa a competência dada", () => {
+  it("sem informação é um valor filtrável e a Situação filtra pelo valor literal da coluna", () => {
     expect(filtrarSheet(s, { cliente: ["(sem informação)"] }, "2026-08").rows).toHaveLength(1)
+    expect(filtrarSheet(s, { situacao: ["Finalizado"] }, "2026-08").rows).toHaveLength(1)
+    expect(filtrarSheet(s, { situacao: ["Em Análise"] }, "2026-08").rows).toHaveLength(3)
     expect(
-      filtrarSheet(s, { situacaoNaCompetencia: ["Resolvido no mês"] }, "2026-08").rows
-    ).toHaveLength(1)
-    expect(
-      filtrarSheet(s, { situacaoNaCompetencia: ["Aberto após a competência"] }, "2026-08").rows
-    ).toHaveLength(1)
+      filtrarSheet(s, { situacao: ["Finalizado", "Em Análise"] }, "2026-08").rows
+    ).toHaveLength(4)
   })
   it("coluna ausente na planilha não casa com nenhuma linha", () => {
     const sem = sheetChamados([{ abertura: "2026-08-02" }])
     const semOperador = { ...sem, rows: sem.rows }
     expect(filtrarSheet(semOperador, { operador: ["X"] }, "2026-08").rows).toHaveLength(0)
   })
-  it("opcoesDoFiltro lista valores distintos ordenados; situação lista as 5 classes", () => {
+  it("opcoesDoFiltro lista valores distintos ordenados; situação lista os valores literais", () => {
     expect(opcoesDoFiltro(s, "cliente")).toEqual(["(sem informação)", "Ouro", "PMC"])
-    expect(opcoesDoFiltro(s, "situacaoNaCompetencia")).toHaveLength(5)
+    expect(opcoesDoFiltro(s, "situacao")).toEqual(["Em Análise", "Finalizado"])
   })
   it("chips, recorte e definirFiltro", () => {
     const f = definirFiltro(definirFiltro({}, "cliente", ["PMC", "Ouro"]), "atividade", ["Suporte"])
@@ -532,16 +383,13 @@ describe("filtros de Chamados", () => {
     expect(definirFiltro(f, "cliente", [])).toEqual({ atividade: ["Suporte"] })
     expect(recorteTexto({})).toBe("")
   })
-  it("filtroDaLeitura: cliente vira filtro; situação traduz o código; idade não filtra", () => {
+  it("filtroDaLeitura: cliente vira filtro; idade não filtra", () => {
     const l = (filtro: unknown) => ({ filtro }) as never
     expect(filtroDaLeitura(l({ campo: "cliente", valores: ["PMC"] }))).toEqual({
       campo: "cliente",
       valores: ["PMC"],
     })
-    expect(
-      filtroDaLeitura(l({ campo: "situacaoNaCompetencia", valores: ["aberto-no-fim"] }))
-    ).toEqual({ campo: "situacaoNaCompetencia", valores: ["Aberto no fim do mês"] })
-    expect(filtroDaLeitura(l({ campo: "idade", valores: ["> 180 dias"] }))).toBeNull()
+    expect(filtroDaLeitura(l({ campo: "idade", valores: ["7+"] }))).toBeNull()
     expect(filtroDaLeitura(l(undefined))).toBeNull()
   })
 })
@@ -549,15 +397,15 @@ describe("filtros de Chamados", () => {
 const kpi = (id: string, rotulo: string, valor: number | null, anterior: number | null = null) => ({
   id, rotulo, valor, anterior, formato: "inteiro" as const,
   delta: valor !== null && anterior !== null ? valor - anterior : null,
-  melhorQuando: "menor" as const, definicao: "", reconstruivel: true,
+  melhorQuando: "menor" as const, definicao: "",
 })
 const metricas = {
-  kpis: [kpi("backlog", "Backlog aberto", 100, 90), kpi("entradas", "Entradas no mês", 50), kpi("saidas", "Saídas no mês", 90), kpi("semSla", "Sem SLA", 30)],
+  kpis: [kpi("naoFinalizados", "Não finalizados", 100, 90), kpi("entradas", "Entradas no mês", 50), kpi("finalizados", "Finalizados no mês", 90), kpi("semSla", "Sem SLA", 30)],
   distribuicoes: [
-    { id: "cliente", titulo: "Backlog por cliente", reconstruivel: true, itens: [{ rotulo: "PMC", valor: 67 }, { rotulo: "Ouro", valor: 33 }] },
-    { id: "situacao", titulo: "Backlog por situação atual (na exportação)", reconstruivel: false, itens: [{ rotulo: "Aguardando aceite", valor: 30 }, { rotulo: "Em análise", valor: 70 }] },
+    { id: "cliente", titulo: "Por cliente", itens: [{ rotulo: "PMC", finalizados: 5, naoFinalizados: 67 }, { rotulo: "Ouro", finalizados: 2, naoFinalizados: 33 }] },
   ],
-  envelhecimento: [{ rotulo: "0–30 dias", valor: 10 }, { rotulo: "> 180 dias", valor: 38 }],
+  situacoes: [{ rotulo: "Em análise", valor: 70 }, { rotulo: "Aguardando aceite", valor: 30 }],
+  atrasoFaixas: [{ rotulo: "1", valor: 10 }, { rotulo: "7+", valor: 38 }],
 } as unknown as MetricasChamados
 const leitura = (id: Leitura["id"], extra: Partial<Leitura> = {}): Leitura => ({
   id, severidade: "atencao", titulo: "t", texto: "x", evidencia: [], ...extra,
@@ -566,28 +414,34 @@ const leitura = (id: Leitura["id"], extra: Partial<Leitura> = {}): Leitura => ({
 describe("leituras: regra, números, evidência e selos", () => {
   it("regraDaLeitura traz o limite que disparou", () => {
     expect(regraDaLeitura("concentracao")).toMatch(/40%/)
-    expect(regraDaLeitura("envelhecimento")).toMatch(/180 dias/)
+    expect(regraDaLeitura("envelhecimento")).toMatch(/7 meses/)
+    for (const id of ["fluxo", "concentracao", "envelhecimento", "gargaloCliente", "semSla"] as const)
+      expect(regraDaLeitura(id).toLowerCase()).not.toContain("backlog")
     expect(regraDaLeitura("semSla")).toMatch(/20%/)
   })
   it("numerosDaLeitura: específicos primeiro, depois os indicadores da evidência", () => {
     const n = numerosDaLeitura(
-      leitura("concentracao", { evidencia: ["cliente", "backlog"], filtro: { campo: "cliente", valores: ["PMC"] } }),
+      leitura("concentracao", { evidencia: ["cliente", "naoFinalizados"], filtro: { campo: "cliente", valores: ["PMC"] } }),
       metricas
     )
-    expect(n[0]).toEqual({ rotulo: "Chamados de PMC no backlog", valor: "67" })
-    expect(n[1]).toEqual({ rotulo: "Participação no backlog", valor: "67%" })
-    expect(n.find((x) => x.rotulo === "Backlog aberto")).toMatchObject({ valor: "100" })
-    const e = numerosDaLeitura(leitura("envelhecimento", { evidencia: ["envelhecimento", "backlog"] }), metricas)
-    expect(e[0]).toEqual({ rotulo: "Abertos há mais de 180 dias", valor: "38" })
-    expect(e[1]).toEqual({ rotulo: "Participação no backlog", valor: "38%" })
+    expect(n[0]).toEqual({ rotulo: "Não finalizados de PMC", valor: "67" })
+    expect(n[1]).toEqual({ rotulo: "Participação nos não finalizados", valor: "67%" })
+    expect(n.find((x) => x.rotulo === "Não finalizados")).toMatchObject({ valor: "100" })
+    const e = numerosDaLeitura(leitura("envelhecimento", { evidencia: ["atrasoFaixas", "naoFinalizados"] }), metricas)
+    expect(e[0]).toEqual({ rotulo: "Abertos há 7 meses ou mais", valor: "38" })
+    expect(e[1]).toEqual({ rotulo: "Participação nos não finalizados", valor: "38%" })
   })
   it("evidenciaDaLeitura escolhe o gráfico e o item destacado", () => {
     expect(
       evidenciaDaLeitura(leitura("concentracao", { filtro: { campo: "cliente", valores: ["PMC"] } }), metricas)
-    ).toMatchObject({ titulo: "Backlog por cliente", destaque: ["PMC"] })
+    ).toMatchObject({
+      titulo: "Não finalizados por cliente",
+      itens: [{ rotulo: "PMC", valor: 67 }, { rotulo: "Ouro", valor: 33 }],
+      destaque: ["PMC"],
+    })
     expect(evidenciaDaLeitura(leitura("envelhecimento"), metricas)).toMatchObject({
-      titulo: "Envelhecimento do backlog",
-      destaque: ["> 180 dias"],
+      titulo: "Em atraso por meses desde a abertura",
+      destaque: ["7+"],
     })
     expect(evidenciaDaLeitura(leitura("gargaloCliente"), metricas)).toMatchObject({
       destaque: ["Aguardando aceite"],
@@ -601,14 +455,8 @@ describe("leituras: regra, números, evidência e selos", () => {
     })
     expect(evidenciaDaLeitura(leitura("fluxo"), metricas)?.itens).toEqual([
       { rotulo: "Entradas", valor: 50 },
-      { rotulo: "Saídas", valor: 90 },
+      { rotulo: "Finalizados", valor: 90 },
     ])
-  })
-  it("selosDaLeitura: situação da exportação e mês anterior reconstruído", () => {
-    expect(selosDaLeitura(leitura("gargaloCliente"), true)).toEqual(["exportacao"])
-    expect(selosDaLeitura(leitura("fluxo"), false)).toEqual(["reconstruido"])
-    expect(selosDaLeitura(leitura("fluxo"), true)).toEqual([])
-    expect(selosDaLeitura(leitura("concentracao"), false)).toEqual([])
   })
   it("temOutros", () => {
     expect(temOutros([{ rotulo: "A", valor: 1 }, { rotulo: "Outros", valor: 3 }])).toBe(true)
@@ -635,7 +483,7 @@ describe("filtros Autarquia e Tipo", () => {
       "Tipo",
       "Severidade",
       "Operador",
-      "Situação na competência",
+      "Situação",
     ])
   })
   it("filtra por autarquia e por tipo; vazio é (sem informação)", () => {
@@ -655,7 +503,7 @@ describe("filtro ativo em carga sem a coluna", () => {
   it("colunasAusentes lista os rótulos dos filtros ativos sem coluna na carga", () => {
     expect(colunasAusentes(antigo, { autarquia: ["X"], tipo: ["Y"], cliente: ["Cli A"] })).toEqual(["Autarquia", "Tipo"])
     expect(colunasAusentes(antigo, {})).toEqual([])
-    expect(colunasAusentes(antigo, { cliente: ["Cli A"], situacaoNaCompetencia: ["Resolvido no mês"] })).toEqual([])
+    expect(colunasAusentes(antigo, { cliente: ["Cli A"], situacao: ["Finalizado"] })).toEqual([])
   })
   it("o motor devolve KPIs sem valor (não zero) e um aviso curto", () => {
     const m = calcularMetricas({
@@ -681,15 +529,15 @@ describe("filtro ativo em carga sem a coluna", () => {
       2,
       { autarquia: ["SPPrev"] }
     )
-    expect(pontos[0].valores.backlog).toBeNull()
-    expect(pontos[1].valores.backlog).toBe(1)
+    expect(pontos[0].valores.naoFinalizados).toBeNull()
+    expect(pontos[1].valores.naoFinalizados).toBe(1)
     expect(avisosFiltro).toEqual([
       "Sem a coluna Autarquia nesta carga: filtro não se aplica",
     ])
   })
 })
 
-describe("seriesPorDimensao (backlog por valor da coluna)", () => {
+describe("seriesPorDimensao (não finalizados por valor da coluna)", () => {
   const COM_OP = [...ROTULOS_PADRAO, "Operador"]
   const sheetOp = (linhas: { abertura: string; solucao?: string; op: string | null; cliente?: string }[]) =>
     montarSheet(
@@ -702,7 +550,6 @@ describe("seriesPorDimensao (backlog por valor da coluna)", () => {
   const ent = (competencia: string, sheet: Sheet, extra = {}) => ({
     sheet,
     competencia,
-    cargaPropria: true,
     ...extra,
   })
   const sh = sheetOp([
@@ -715,9 +562,9 @@ describe("seriesPorDimensao (backlog por valor da coluna)", () => {
     { abertura: "2026-09-04", op: "Cris" },
   ])
 
-  it("conta o backlog (aberto no fim) por operador em cada competência", () => {
+  it("conta os não finalizados (Situação ≠ Finalizado, abertos até o fim do Mes Ref.) por operador em cada competência", () => {
     const r = seriesPorDimensao(
-      [ent("2026-08", sh, { cargaPropria: false }), ent("2026-09", sh)],
+      [ent("2026-08", sh), ent("2026-09", sh)],
       "operador",
       8
     )
@@ -727,10 +574,9 @@ describe("seriesPorDimensao (backlog por valor da coluna)", () => {
     expect(val("Ana")).toEqual([2, 2])
     expect(val("Bia")).toEqual([0, 2])
     expect(val("(sem informação)")).toEqual([0, 1])
-    expect(r.pontos.map((p) => p.propria)).toEqual([false, true])
   })
 
-  it("limita às N linhas de maior backlog na competência mais recente", () => {
+  it("limita às N linhas com mais não finalizados na competência mais recente", () => {
     const r = seriesPorDimensao([ent("2026-09", sh)], "operador", 2)
     expect(r.series.map((s) => s.rotulo)).toEqual(["Ana", "Bia"])
     expect(r.total).toBe(4)
@@ -739,7 +585,7 @@ describe("seriesPorDimensao (backlog por valor da coluna)", () => {
   it("carga sem a coluna fica null (linha quebra), não zero", () => {
     const semOp = sheetChamados([{ abertura: "2026-08-02" }])
     const r = seriesPorDimensao(
-      [ent("2026-08", semOp, { cargaPropria: false }), ent("2026-09", sh)],
+      [ent("2026-08", semOp), ent("2026-09", sh)],
       "operador",
       8
     )
