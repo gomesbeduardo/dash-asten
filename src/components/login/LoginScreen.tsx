@@ -54,7 +54,7 @@ export function LoginScreen({ entrar, aviso, sobreposta = false }: Props) {
         <form
           onSubmit={enviar}
           aria-labelledby="login-titulo"
-          className="animate-[login-entrada_320ms_ease-out_both] rounded-xl border border-border border-t-4 border-t-brand bg-card p-8 motion-reduce:animate-none"
+          className="animate-[login-entrada_320ms_ease-out_both] rounded-xl bg-card p-8 shadow-(--shadow-card) motion-reduce:animate-none"
         >
           <h1 id="login-titulo" className="mb-6 text-2xl text-brand-ink">
             Entrar

@@ -17,7 +17,7 @@ export function KpiCard({ kpi, entry }: { kpi: AutoKpi; entry: boolean }) {
     <motion.article
       variants={reduce ? undefined : entryItem}
       aria-label={kpi.label}
-      className="flex min-w-0 flex-col gap-2 rounded-lg border border-t-4 border-t-brand bg-card p-5 shadow-(--shadow-card)"
+      className="flex min-w-0 flex-col gap-2 rounded-lg bg-card p-5 shadow-(--shadow-card)"
     >
       <h3 className="font-sans text-lg leading-tight font-medium text-muted-foreground">
         {kpi.label}
