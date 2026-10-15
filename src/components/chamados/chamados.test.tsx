@@ -578,15 +578,15 @@ describe("CompararChamados", () => {
     await waitFor(() => expect(cartao).toHaveFocus())
   })
 
-  it("com uma só carga a única foto é a própria; os outros meses aparecem marcados '(sem foto)' e nada é reconstruído", async () => {
+  it("com uma só carga a única foto é a própria; os outros meses aparecem marcados '(sem posição)' e nada é reconstruído", async () => {
     render(<CompararChamados {...await cenario(false)} />)
     const user = userEvent.setup()
     const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await user.click(um)
     const opcoes = await screen.findAllByRole("option")
-    expect(opcoes.filter((o) => !/\(sem foto\)/.test(o.textContent ?? ""))).toHaveLength(1)
+    expect(opcoes.filter((o) => !/\(sem posição\)/.test(o.textContent ?? ""))).toHaveLength(1)
     expect(screen.getByRole("option", { name: "Setembro de 2026" })).toBeInTheDocument()
-    expect(screen.getByRole("option", { name: "Agosto de 2026 (sem foto)" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "Agosto de 2026 (sem posição)" })).toBeInTheDocument()
     await user.keyboard("{Escape}")
     expect(screen.queryByText(/reconstru|backlog/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
@@ -605,7 +605,7 @@ describe("EvolucaoChamados", () => {
     )
     expect(within(sla).getByRole("row", { name: /^set\/26 / })).toBeInTheDocument()
     // jul/26 não tem foto: entra na janela, sem valor e com a dica
-    expect(within(sla).getByRole("row", { name: /^jul\/26 / })).toHaveTextContent("sem foto de jul/26")
+    expect(within(sla).getByRole("row", { name: /^jul\/26 / })).toHaveTextContent("sem posição de jul/26")
     expect(screen.queryByText(/reconstru/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
     expect(within(sla).getByRole("row", { name: /^ago\/26 / })).toHaveTextContent("—") // agosto não tem finalizados com SLA
@@ -690,7 +690,7 @@ describe("filtros de Chamados", () => {
     expect(
       within(within(topo).getByRole("article", { name: "Total de chamados" })).getByLabelText("3")
     ).toBeInTheDocument()
-    expect(topo).toHaveTextContent("na foto de setembro de 2026")
+    expect(topo).toHaveTextContent("na posição de setembro de 2026")
 
     await user.click(within(chips).getByRole("button", { name: "Remover filtro Cliente" }))
     await waitFor(() =>

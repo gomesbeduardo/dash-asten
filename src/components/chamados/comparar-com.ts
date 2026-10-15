@@ -1,4 +1,4 @@
-/** "Comparar com" do Painel (D65): período-base escolhido, foto corrigida e mês sem foto. */
+/** "Comparar com" do Painel (D65): período-base escolhido, foto corrigida e mês sem posição. */
 import { useEffect, useMemo, useState } from "react"
 
 import { formatarCompetencia, type Carga, type CargaMeta } from "@/cargas"
@@ -40,7 +40,7 @@ export type PainelComparado = {
   /** Mês aberto, filtrado e corrigido (base do cálculo por período dos gráficos). */
   entradaAtual: EntradaCompetencia
   base: BaseAnterior
-  /** Foto do período-base (filtrada e corrigida), para os cruzamentos; `null` sem foto ou sem base usável. */
+  /** Foto do período-base (filtrada e corrigida), para os cruzamentos; `null` sem posição ou sem base usável. */
   entradaBase: EntradaCompetencia | null
   /** Rótulo do período-base nos Δ ("abr/26", "abr/26 · v1"); `null` sem base. */
   rotuloBase: string | null
@@ -92,7 +92,7 @@ function useCargaDaMeta(
 
 /**
  * Métricas do mês aberto com Δ contra o período escolhido (D65). A foto aberta e o período-base
- * (se tem foto) são corrigidos pelas fotos de Mes Ref. posterior; mês sem foto só dá entradas e
+ * (se tem foto) são corrigidos pelas posições de Mes Ref. posterior; mês sem posição só dá entradas e
  * finalizados; outra versão do mesmo mês entra crua. `null` enquanto as fotos carregam.
  */
 export function usePainelComparado({
@@ -170,13 +170,14 @@ export function usePainelComparado({
         baseEntrada = corrigirFoto(bruta, posterioresA(competenciaBase)).entrada
         rotuloBase = formatarCompetencia(competenciaBase)
       } else if (escolha.startsWith("mes:")) {
-        // mês sem foto: só o que as datas dão, da foto mais atual
+        // mês sem posição: só o que as datas dão, da posição mais atual
         const maisAtual = meses[meses.length - 1]
         parcial = metricasDoMesSemFoto(
           competenciaBase,
           entradaFiltrada(porMes.get(maisAtual)!, maisAtual, filtros)
         )
-        semFoto = parcial.motivo
+        // texto da tela (o motor ainda diz "foto"): "posição" é o termo do responsável
+        semFoto = `sem posição de ${rotuloCompetencia(competenciaBase)}`
         rotuloBase = formatarCompetencia(competenciaBase)
       }
     }
@@ -244,7 +245,7 @@ export function usePainelComparado({
           valor: valorMes(o.competencia),
           rotulo: o.temFoto
             ? formatarCompetencia(o.competencia)
-            : `${rotuloCompetencia(o.competencia)} (sem foto)`,
+            : `${rotuloCompetencia(o.competencia)} (sem posição)`,
         })),
       ...opcoesM.outrasVersoes.map((v) => ({
         valor: valorVersao(v),

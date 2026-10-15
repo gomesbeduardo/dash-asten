@@ -14,7 +14,7 @@ import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useMesDeChamados } from "./hooks"
-import { recorteTexto, temOutros, type SeloTipo } from "./logica"
+import { recorteTexto, temOutros, textoDaTela, type SeloTipo } from "./logica"
 import {
   AtrasoMes,
   coresDasSituacoes,
@@ -265,7 +265,7 @@ export function PainelChamados({
             <p>
               Variação contra {rotuloAnterior}
               {base?.semFoto
-                ? " (sem foto: só entradas e finalizados)"
+                ? " (sem posição: só entradas e finalizados)"
                 : base
                   ? " (carga própria)"
                   : ": sem carga do mês anterior"}
@@ -384,7 +384,7 @@ export function PainelChamados({
           >
             <ul className="flex flex-col gap-1">
               {avisosRodape.map((a) => (
-                <li key={a}>{a}</li>
+                <li key={a}>{textoDaTela(a)}</li>
               ))}
             </ul>
           </footer>

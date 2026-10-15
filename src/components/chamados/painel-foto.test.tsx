@@ -28,7 +28,7 @@ const CAB = [
 ]
 // [abertura, código, cliente, situação, solução]
 type L = [string, number, string, string, string | null]
-// Foto de teste abr v1 (mesmos dados de docs/exemplos/gerar-teste-foto.cjs)
+// Posição de teste abr v1 (mesmos dados de docs/exemplos/gerar-teste-foto.cjs)
 const ABR: L[] = [
   ["2026-04-03", 5000, "Cliente Ômega", "Em Atendimento", null],
   ["2026-01-18", 5003, "Cliente Ômega", "Em Análise", null],
@@ -36,7 +36,7 @@ const ABR: L[] = [
   ["2026-04-02", 5007, "Cliente Delta", "Finalizado", "2026-04-12"],
   ["2025-12-05", 5010, "Cliente Ômega", "Aguardando aceite", "2026-04-25"],
 ]
-// Foto de teste out: salto de meses, situação nova e um aberto depois do Mes Ref.
+// Posição de teste out: salto de meses, situação nova e um aberto depois do Mes Ref.
 const OUT: L[] = [
   ["2026-04-03", 5000, "Cliente Ômega", "Finalizado", "2026-04-28"],
   ["2026-01-18", 5003, "Cliente Ômega", "Finalizado", "2026-06-20"],
@@ -153,7 +153,7 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
       within(topo).getByRole("listitem", { name: `Situação: ${n}` })
     expect(item("Aguardando cliente")).toHaveTextContent("nova")
     expect(within(item("Finalizado")).getByLabelText("8")).toBeInTheDocument()
-    // set/26 é corrigido pela foto de out (D65): 5000, 5003 e 5010 já estavam finalizados lá
+    // set/26 é corrigido pela posição de out (D65): 5000, 5003 e 5010 já estavam finalizados lá
     expect(item("Finalizado")).toHaveTextContent("+3 vs set/26")
     expect(item("Em Análise")).toHaveTextContent("nova")
     const total = within(topo).getByRole("article", {

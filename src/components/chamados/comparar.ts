@@ -1,5 +1,5 @@
 /**
- * Lógica pura do Comparar com fotos (D65/D66): colunas por versão ou mês sem foto, métricas
+ * Lógica pura do Comparar com fotos (D65/D66): colunas por versão ou mês sem posição, métricas
  * corrigidas por coluna e os cartões (KPIs e Situações) com a marca de corrigido.
  */
 import { formatarCompetencia, type CargaMeta, type Competencia } from "@/cargas"
@@ -21,22 +21,23 @@ import {
   colunasAusentes,
   filtrarSheet,
   sentidoEntre,
+  textoDaTela,
   type ComparacaoN,
   type FiltrosChamados,
   type Sentido,
 } from "./logica"
 
-/** Uma opção do seletor de coluna: um mês sem foto ou uma versão de um mês com foto. */
+/** Uma opção do seletor de coluna: um mês sem posição ou uma versão de um mês com foto. */
 export type ColunaOpcao = {
-  /** `2026-04@2` (versão de um mês com foto) ou `2026-06` (mês sem foto). */
+  /** `2026-04@2` (versão de um mês com foto) ou `2026-06` (mês sem posição). */
   chave: string
   competencia: Competencia
-  /** `null` = mês sem foto. */
+  /** `null` = mês sem posição. */
   versao: number | null
   temFoto: boolean
   /** A versão mais atual do mês (a de maior número). */
   maisAtual: boolean
-  /** Texto do seletor: "Setembro de 2026 · v2 (atual)", "Junho de 2026 (sem foto)". */
+  /** Texto do seletor: "Setembro de 2026 · v2 (atual)", "Junho de 2026 (sem posição)". */
   rotulo: string
   /** Rótulo da coluna: "abr/26", ou "abr/26 · v1" quando o mês tem 2+ versões. */
   curto: string
@@ -52,9 +53,9 @@ const longo = (c: Competencia) => {
 }
 
 /**
- * Opções do seletor: do mês da foto mais recente para trás, com e sem foto (D66). Mês com 2+
+ * Opções do seletor: do mês da foto mais recente para trás, com e sem posição (D66). Mês com 2+
  * versões desdobra as versões, da mais nova à mais antiga. `metas` são só as versões ativas
- * cuja planilha está carregada; `fotoMaisAtual` limita até onde os meses sem foto aparecem.
+ * cuja planilha está carregada; `fotoMaisAtual` limita até onde os meses sem posição aparecem.
  */
 export function opcoesDeColuna(
   metas: Pick<CargaMeta, "competencia" | "versao" | "arquivadaEm">[],
@@ -98,7 +99,7 @@ export function opcoesDeColuna(
             versao: null,
             temFoto: false,
             maisAtual: false,
-            rotulo: `${longo(c)} (sem foto)`,
+            rotulo: `${longo(c)} (sem posição)`,
             curto,
           },
         ]
@@ -182,14 +183,14 @@ export function selecaoDoPedido(
 export type Coluna = {
   opcao: ColunaOpcao
   metricas: MetricasCorrigidas | MetricasParciais
-  /** A foto (com o recorte dos filtros) desta coluna; `null` no mês sem foto. */
+  /** A foto (com o recorte dos filtros) desta coluna; `null` no mês sem posição. */
   entrada: EntradaCompetencia | null
 }
 
 /**
  * Valores de uma coluna (D65). Com foto: a foto daquela versão corrigida pela versão atual de
- * cada mês POSTERIOR (versões do mesmo mês nunca se corrigem). Sem foto: só entradas e
- * finalizados, pelas datas da foto mais atual. Os filtros valem para a foto da coluna; as fotos
+ * cada mês POSTERIOR (versões do mesmo mês nunca se corrigem). Sem posição: só entradas e
+ * finalizados, pelas datas da posição mais atual. Os filtros valem para a foto da coluna; as fotos
  * que corrigem entram inteiras, para o chamado ser achado pelo Código.
  */
 export function calcularColuna(
@@ -253,7 +254,7 @@ export type Cartao = {
   /** última − primeira; null se qualquer das duas não tiver dado. */
   delta: number | null
   setas: (Sentido | null)[]
-  /** Por coluna, por que não há valor ("sem foto de jun/26"). */
+  /** Por coluna, por que não há valor ("sem posição de jun/26"). */
   notas: (string | null)[]
   marcas: (Marca | null)[]
 }
@@ -279,8 +280,10 @@ export function cartoesDeKpis(cmp: ComparacaoN, colunas: Coluna[]): Cartao[] {
     setas: k.setas,
     notas: k.valores.map((v, i) =>
       v === null
-        ? (colunas[i].metricas.kpis.find((x) => x.id === k.id)?.detalhe ??
-          "sem dado")
+        ? textoDaTela(
+            colunas[i].metricas.kpis.find((x) => x.id === k.id)?.detalhe ??
+              "sem dado"
+          )
         : null
     ),
     marcas: colunas.map((c) => {

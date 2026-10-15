@@ -348,7 +348,7 @@ function LinhaDoCartao({
             )}
             {marca && (
               <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
-                corrigido pela foto de {marca.por.join(" e ")} · era{" "}
+                corrigido pela posição de {marca.por.join(" e ")} · era{" "}
                 {formatarKpi(marca.original, cartao.formato)}
               </span>
             )}
@@ -593,7 +593,7 @@ function ComparacaoVisao({
             cronológica. Δ = {rotulos[n - 1]} menos {rotulos[0]}; a setinha de
             cada valor compara com a coluna anterior.
             {semFotoNaTela &&
-              " Mês sem foto mostra só entradas e finalizados, pelas datas da foto mais atual; o resto fica “—”."}
+              " Mês sem posição mostra só entradas e finalizados, pelas datas da posição mais atual; o resto fica “—”."}
           </p>
           <LegendaSimbolos tipos={tiposNaTela} />
         </header>

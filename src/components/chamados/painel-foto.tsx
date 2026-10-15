@@ -38,7 +38,7 @@ export type BaseAnterior = {
   total: number
   rotulo: string
   semFoto?: string
-  /** Distribuições do período-base; `naoFinalizados` é null no mês sem foto (só as datas). */
+  /** Distribuições do período-base; `naoFinalizados` é null no mês sem posição (só as datas). */
   distribuicoes: {
     id: Distribuicao["id"]
     itens: {
@@ -177,7 +177,7 @@ export function FaixaSituacao({
             fromZero={entrada}
             className="num font-display text-[5.5rem] leading-none font-semibold text-primary"
           />
-          <p className="text-base text-muted-foreground">na foto de {mes}</p>
+          <p className="text-base text-muted-foreground">na posição de {mes}</p>
           <Variacao
             atual={total}
             anterior={anterior ? anterior.total : null}
@@ -398,7 +398,7 @@ export function GraficoMes({
       ? `${base.semFoto}: de ${rotuloBase} só os finalizados no mês, pelas datas.`
       : null,
     corrigidoPor.length > 0 && !doPeriodo && dist.itens.some((i) => i.original)
-      ? `Valores corrigidos pela foto de ${corrigidoPor.join(" e ")}.`
+      ? `Valores corrigidos pela posição de ${corrigidoPor.join(" e ")}.`
       : null,
   ].filter((x) => x !== null)
 
@@ -450,7 +450,7 @@ export function GraficoMes({
   )
 }
 
-/** Em atraso por meses desde a abertura: faixas do Mes Ref. ao lado das do mês escolhido (sem foto dele, só o Mes Ref.). */
+/** Em atraso por meses desde a abertura: faixas do Mes Ref. ao lado das do mês escolhido (sem posição dele, só o Mes Ref.). */
 export function AtrasoMes({
   faixas,
   base,

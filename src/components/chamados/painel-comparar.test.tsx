@@ -88,7 +88,7 @@ beforeEach(() => {
 const kpi = (nome: string) => screen.findByRole("article", { name: nome })
 
 describe("Painel: comparar com (D65)", () => {
-  it("(a) out contra mai/26: Δ contra maio corrigido pela foto de out", async () => {
+  it("(a) out contra mai/26: Δ contra maio corrigido pela posição de out", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
     await screen.findByLabelText("Comparar com")
@@ -99,32 +99,32 @@ describe("Painel: comparar com (D65)", () => {
     expect(await kpi("Entradas no mês")).toHaveTextContent("+1 vs mai/26")
   })
 
-  it("(b) out contra jun/26 (sem foto): Δ só em entradas e finalizados", async () => {
+  it("(b) out contra jun/26 (sem posição): Δ só em entradas e finalizados", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
     await screen.findByLabelText("Comparar com")
     await user.selectOptions(
       screen.getByLabelText("Comparar com"),
-      "jun/26 (sem foto)"
+      "jun/26 (sem posição)"
     )
     expect(await kpi("Entradas no mês")).toHaveTextContent("+2 vs jun/26")
     expect(await kpi("Finalizados no mês")).toHaveTextContent("vs jun/26")
     const atraso = await kpi("Em atraso")
     expect(atraso).toHaveTextContent("— vs jun/26")
-    expect(atraso).toHaveTextContent("sem foto de jun/26")
+    expect(atraso).toHaveTextContent("sem posição de jun/26")
     const card = screen.getByRole("listitem", { name: "Situação: Finalizado" })
-    expect(card).toHaveTextContent("sem foto de jun/26")
+    expect(card).toHaveTextContent("sem posição de jun/26")
   })
 
   it("(c) mai com out carregado: valores corrigidos com a marca 'era 1'", async () => {
     await abrir("2026-05", 1)
     const fin = await kpi("Finalizados no mês")
     expect(within(fin).getByLabelText("2")).toBeInTheDocument()
-    expect(fin).toHaveTextContent("corrigido pela foto de out/26 · era 1")
+    expect(fin).toHaveTextContent("corrigido pela posição de out/26 · era 1")
     // o que não mudou fica sem marca
     expect(await kpi("Entradas no mês")).not.toHaveTextContent("corrigido")
     const card = screen.getByRole("listitem", { name: "Situação: Finalizado" })
-    expect(card).toHaveTextContent("corrigido pela foto de out/26 · era 5")
+    expect(card).toHaveTextContent("corrigido pela posição de out/26 · era 5")
   })
 
   it("(d) abr v2 contra 'Abril de 2026 · v1': Δ crus, sem correção entre versões", async () => {
@@ -160,26 +160,26 @@ describe("Painel: comparar com (D65)", () => {
     // [finalizados mai, finalizados out, não finalizados mai, não finalizados out]
     expect(grafico()).toMatch(/Cliente Ômega 1, 0, 1, 1/)
     expect(grafico()).toMatch(/Cliente Delta 1, 1, 0, 1/)
-    expect(card).not.toHaveTextContent("sem foto")
+    expect(card).not.toHaveTextContent("sem posição")
   })
 
-  it("(f) mês sem foto: o gráfico mostra só o Mes Ref., com a nota e os finalizados vindos das datas", async () => {
+  it("(f) mês sem posição: o gráfico mostra só o Mes Ref., com a nota e os finalizados vindos das datas", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
     await screen.findByLabelText("Comparar com")
     await user.selectOptions(
       screen.getByLabelText("Comparar com"),
-      "jun/26 (sem foto)"
+      "jun/26 (sem posição)"
     )
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const rotulo = within(card).getByRole("img").getAttribute("aria-label")!
     expect(rotulo).toMatch(/Finalizados · jun\/26/)
     expect(rotulo).not.toMatch(/Não finalizados · jun\/26/)
     expect(rotulo).toMatch(/Cliente Ômega 1, 0, 1/)
-    expect(card).toHaveTextContent("sem foto de jun/26")
+    expect(card).toHaveTextContent("sem posição de jun/26")
     // cruzamentos dependem da Situação: só o Mes Ref., com a nota
     const cruz = screen.getByRole("region", { name: "Cliente × Situação" })
-    expect(cruz).toHaveTextContent("sem foto de jun/26")
+    expect(cruz).toHaveTextContent("sem posição de jun/26")
   })
 
   it("(g) cruzamentos: Cliente × Situação mostra o Mes Ref. e o mês escolhido", async () => {

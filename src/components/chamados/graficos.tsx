@@ -124,7 +124,7 @@ function Dica({ active, label, payload, formatar }: TipProps) {
             key={`o-${String(p.dataKey)}`}
             className="mt-1 text-muted-foreground"
           >
-            {`Corrigido (${p.name}): na foto estava ${formatar ? formatar(o) : inteiro.format(o)}`}
+            {`Corrigido (${p.name}): na posição estava ${formatar ? formatar(o) : inteiro.format(o)}`}
           </p>
         ) : null
       })}
@@ -537,7 +537,7 @@ export function LinhaMini({
               }) =>
                 p.payload?.[s.id] !== null && Number.isFinite(p.cy) ? (
                   p.payload?.[`${s.id}__o`] !== undefined ? (
-                    // Ponto corrigido pelas fotos posteriores: anel vazado.
+                    // Ponto corrigido pelas posições posteriores: anel vazado.
                     <circle
                       key={`p${p.index}`}
                       cx={p.cx}

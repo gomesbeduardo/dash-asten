@@ -24,7 +24,13 @@ import {
 } from "@/components/ui/tooltip"
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
-import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
+import {
+  descreverDelta,
+  idAlvo,
+  motivoSemDelta,
+  textoDaTela,
+  type SeloTipo,
+} from "./logica"
 import { Selos } from "./selos"
 
 const TOM = {
@@ -96,7 +102,7 @@ export function KpiCartao({
             </button>
           </TooltipTrigger>
           <TooltipContent className="max-w-md text-base">
-            {kpi.definicao}
+            {textoDaTela(kpi.definicao)}
           </TooltipContent>
         </Tooltip>
       </div>
