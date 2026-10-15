@@ -205,6 +205,9 @@ export function opcoesDeCompetencia(
   return opcoes
 }
 
+export const MAX_OPERADORES = 8
+export const MAX_CLIENTES = 5
+
 export type PontoEvolucao = {
   competencia: Competencia
   rotulo: string
@@ -227,6 +230,8 @@ export function pontosDaEvolucao(
   }[]
   /** Filtros ativos sem coluna em alguma carga da janela: os pontos dela ficam vazios. */
   avisosFiltro: string[]
+  /** Backlog por operador (8 maiores) e por cliente (5 maiores) ao longo da janela. */
+  dimensoes: { operador: SeriesDimensao; cliente: SeriesDimensao }
 } {
   const maisRecentes = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>()
   for (const p of proprias) {
@@ -237,7 +242,15 @@ export function pontosDaEvolucao(
   const n = Math.max(maxPontos, 0)
   const comps = [...maisRecentes.keys()].sort((a, b) => a.localeCompare(b))
   if (comps.length === 0 || n === 0)
-    return { pontos: [], kpis: [], avisosFiltro: [] }
+    return {
+      pontos: [],
+      kpis: [],
+      avisosFiltro: [],
+      dimensoes: {
+        operador: seriesPorDimensao([], "operador", MAX_OPERADORES),
+        cliente: seriesPorDimensao([], "cliente", MAX_CLIENTES),
+      },
+    }
   // As `n` competências de calendário terminando na carga própria mais recente, sem buracos.
   const janela = janelaDe(comps[comps.length - 1], n).reverse()
   const primeira = primeiraCompetencia(maisRecentes.get(comps[0])!.sheet)
@@ -285,6 +298,10 @@ export function pontosDaEvolucao(
   return {
     pontos,
     avisosFiltro: semColuna.length ? [avisoColunasSemFiltro(semColuna)] : [],
+    dimensoes: {
+      operador: seriesPorDimensao(todas, "operador", MAX_OPERADORES),
+      cliente: seriesPorDimensao(todas, "cliente", MAX_CLIENTES),
+    },
     kpis: ev.series.map(({ id, rotulo, formato }) => ({
       id,
       rotulo,
@@ -293,6 +310,76 @@ export function pontosDaEvolucao(
         calcularMetricas(todas[0]).kpis.find((k) => k.id === id)
           ?.reconstruivel ?? true,
     })),
+  }
+}
+
+export type SeriesDimensao = {
+  /** Uma por valor da coluna (já limitado a `maxLinhas`); `id` seguro para dataKey. */
+  series: { id: string; rotulo: string }[]
+  pontos: PontoEvolucao[]
+  /** Quantos valores distintos tinham backlog na competência mais recente. */
+  total: number
+  /** Alguma carga da janela tem a coluna. */
+  temColuna: boolean
+  /** Competência usada no ranking (a mais recente com a coluna). */
+  competenciaRanking: Competencia | null
+}
+
+/**
+ * Backlog (abertos no fim da competência, mesma regra do motor) por valor de uma coluna,
+ * para cada competência da janela. Mantém os `maxLinhas` valores de maior backlog na
+ * competência mais recente. Sem a coluna na carga, ou filtro sem coluna (D61): null (a linha
+ * quebra), nunca zero. Valor vazio vira "(sem informação)" (D34).
+ */
+export function seriesPorDimensao(
+  todas: EntradaCompetencia[],
+  campo: CampoChamado,
+  maxLinhas: number
+): SeriesDimensao {
+  const ordenadas = [...todas].sort((a, b) =>
+    a.competencia.localeCompare(b.competencia)
+  )
+  const contagens = ordenadas.map((e) => {
+    const { mapa } = mapearColunas(e.sheet)
+    const chave = mapa[campo as CampoChamado]
+    if (!chave || !mapa.solucao || (e.colunasSemFiltro ?? []).length > 0)
+      return null
+    const m = new Map<string, number>()
+    for (const row of e.sheet.rows) {
+      if (classificarLinha(row, mapa, e.competencia) !== "aberto-no-fim")
+        continue
+      const t = textoDe(row[chave])
+      m.set(t, (m.get(t) ?? 0) + 1)
+    }
+    return m
+  })
+  const temColuna = ordenadas.some((e) => {
+    const { mapa } = mapearColunas(e.sheet)
+    return !!mapa[campo as CampoChamado]
+  })
+  let ref = -1
+  contagens.forEach((c, i) => {
+    if (c) ref = i
+  })
+  const rank = ref >= 0 ? [...contagens[ref]!.entries()] : []
+  rank.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  const series = rank
+    .slice(0, Math.max(maxLinhas, 0))
+    .map(([rotulo], i) => ({ id: `d${i}`, rotulo }))
+  const pontos = ordenadas.map((e, i) => ({
+    competencia: e.competencia,
+    rotulo: formatarCompetencia(e.competencia),
+    propria: e.cargaPropria !== false,
+    valores: Object.fromEntries(
+      series.map((s) => [s.id, contagens[i] ? (contagens[i]!.get(s.rotulo) ?? 0) : null])
+    ),
+  }))
+  return {
+    series,
+    pontos,
+    total: rank.length,
+    temColuna,
+    competenciaRanking: ref >= 0 ? ordenadas[ref].competencia : null,
   }
 }
 

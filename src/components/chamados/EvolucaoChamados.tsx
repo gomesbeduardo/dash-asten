@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { formatarCompetencia } from "@/cargas"
 import { motion, useReducedMotion } from "motion/react"
 
 import { entryContainer } from "@/components/app/motion/variants"
@@ -18,8 +19,11 @@ import { LegendaSimbolos, type ItemLegenda } from "./selos"
 import {
   formatarKpi,
   linhasDeSerie,
+  MAX_CLIENTES,
+  MAX_OPERADORES,
   pontosDaEvolucao,
   type PontoEvolucao,
+  type SeriesDimensao,
   type SeloTipo,
 } from "./logica"
 
@@ -64,6 +68,16 @@ const CARTOES: Cartao[] = [
     titulo: "Abertos após a competência",
     series: [{ id: "abertosApos", rotulo: "Abertos após", cor: COR.cinza }],
   },
+  {
+    id: "tempoAceite",
+    titulo: "Tempo até o aceite",
+    series: [{ id: "tempoAceite", rotulo: "Tempo até o aceite", cor: COR.laranja }],
+  },
+  {
+    id: "slaRenegociado",
+    titulo: "SLA renegociado",
+    series: [{ id: "slaRenegociado", rotulo: "SLA renegociado", cor: COR.verde }],
+  },
 ]
 
 export function EvolucaoChamados({
@@ -88,7 +102,7 @@ export function EvolucaoChamados({
         <Carregando />
       </div>
     )
-  const { pontos, kpis, avisosFiltro } = dados
+  const { pontos, kpis, avisosFiltro, dimensoes } = dados
   const play = entrada && !reduce
   const formatoDe = (id: string): FormatoKpi =>
     kpis.find((k) => k.id === id)?.formato ?? "inteiro"
@@ -131,6 +145,39 @@ export function EvolucaoChamados({
             />
           ))}
         </div>
+
+        {(dimensoes.operador.temColuna || dimensoes.cliente.temColuna) && (
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {dimensoes.operador.temColuna && (
+              <CartaoDimensao
+                id="operador"
+                titulo="Backlog por operador"
+                dim={dimensoes.operador}
+                max={MAX_OPERADORES}
+                aviso={(d) =>
+                  d.total > MAX_OPERADORES
+                    ? `${MAX_OPERADORES} maiores operadores no backlog de ${mesRanking(d)}. Carga de trabalho: operador é o responsável na data da exportação; nos meses reconstruídos vale o operador atual.`
+                    : "Carga de trabalho: operador é o responsável na data da exportação; nos meses reconstruídos vale o operador atual."
+                }
+                selosFixos={["exportacao"]}
+                play={play}
+              />
+            )}
+            {dimensoes.cliente.temColuna && (
+              <CartaoDimensao
+                id="cliente"
+                titulo="Backlog por cliente"
+                dim={dimensoes.cliente}
+                max={MAX_CLIENTES}
+                aviso={(d) =>
+                  `${MAX_CLIENTES} maiores clientes no backlog de ${mesRanking(d)}`
+                }
+                selosFixos={[]}
+                play={play}
+              />
+            )}
+          </div>
+        )}
       </motion.div>
     </TooltipProvider>
   )
@@ -218,6 +265,78 @@ function CartaoEvolucao({
       selos={selos}
     >
       <LinhaMini linhas={linhas} series={cartao.series} formato={formato} animar={play} />
+    </GraficoCartao>
+  )
+}
+
+/** Paleta categórica (até 8 linhas), distinguível entre si e sobre o fundo claro do cartão. */
+const PALETA = [
+  "#1f5fa8",
+  "#b45f06",
+  "#2e7d32",
+  "#7b3fa0",
+  "#c2185b",
+  "#00838f",
+  "#6d4c41",
+  "#546e7a",
+]
+
+const mesRanking = (d: SeriesDimensao) =>
+  d.competenciaRanking ? formatarCompetencia(d.competenciaRanking) : "—"
+
+function CartaoDimensao({
+  id,
+  titulo,
+  dim,
+  max,
+  aviso,
+  selosFixos,
+  play,
+}: {
+  id: string
+  titulo: string
+  dim: SeriesDimensao
+  max: number
+  aviso: (d: SeriesDimensao) => string
+  selosFixos: SeloTipo[]
+  play: boolean
+}) {
+  const series: SerieLinha[] = dim.series
+    .slice(0, max)
+    .map((s, i) => ({ id: s.id, rotulo: s.rotulo, cor: PALETA[i % PALETA.length] }))
+  const { pontos } = dim
+  const linhas = useMemo(
+    () => linhasDeSerie(pontos, series.map((s) => s.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dim]
+  )
+  const reconstruido = pontos.some(
+    (p) => !p.propria && series.some((s) => p.valores[s.id] !== null)
+  )
+  const selos: SeloTipo[] = [
+    ...selosFixos,
+    ...(reconstruido ? (["reconstruido"] as const) : []),
+  ]
+  const tabela = {
+    colunas: ["Mês", ...series.map((s) => s.rotulo)],
+    linhas: pontos.map((p) => [
+      p.propria ? p.rotulo : `${p.rotulo} (reconstruído)`,
+      ...series.map((s) => formatarKpi(p.valores[s.id] ?? null, "inteiro")),
+    ]),
+  }
+  return (
+    <GraficoCartao
+      id={`evo-${id}`}
+      titulo={titulo}
+      subtitulo={<span>{aviso(dim)}</span>}
+      tabela={tabela}
+      selos={selos}
+    >
+      {series.length === 0 ? (
+        <p className="text-lg text-muted-foreground">Sem chamados no backlog.</p>
+      ) : (
+        <LinhaMini linhas={linhas} series={series} formato="inteiro" animar={play} />
+      )}
     </GraficoCartao>
   )
 }

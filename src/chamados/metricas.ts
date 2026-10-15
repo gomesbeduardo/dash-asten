@@ -39,6 +39,8 @@ type Chamado = {
   aceite: number | null
   sla: number | null
   slaPrevisto: number | null
+  /** SLA Renegociado isolado (o `sla` vigente mistura com o previsto). */
+  slaReneg: number | null
   situacao: string
   reabertura: number | null
   /** Decisão única de backlog: a classificação "aberto-no-fim" (situacao.ts). */
@@ -71,6 +73,10 @@ const DEFINICOES = {
   reabertos: "Entre os solucionados no mês, % com ao menos uma reabertura.",
   aguardandoAceite:
     'Chamados abertos até o fim do mês, com Situação contendo "aceite" e sem Data de Aceite até o fim do mês (a Situação é a da data da exportação).',
+  tempoAceite:
+    "Média, em dias corridos, entre a Data de Solução e a Data de Aceite dos chamados aceitos no mês (mede quanto o cliente demora para aceitar; diferenças negativas são ignoradas).",
+  slaRenegociado:
+    "Chamados do backlog com SLA Renegociado preenchido (o campo é da data da exportação).",
 }
 
 /** KPIs que dependem de colunas da data da exportação (Situação, Qtd Reabertura, SLA Renegociado). */
@@ -79,6 +85,7 @@ const NAO_RECONSTRUIVEIS = new Set([
   "reabertos",
   "sla",
   "atraso",
+  "slaRenegociado",
 ])
 
 function distribuir(
@@ -173,6 +180,7 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
       aceite: tempo(col("aceite", row)),
       sla: reneg ?? tempo(col("slaPrevisto", row)),
       slaPrevisto: tempo(col("slaPrevisto", row)),
+      slaReneg: reneg,
       situacao: normalizar(texto(col("situacao", row)) ?? ""),
       reabertura: numero(col("qtdReabertura", row)),
       aberto: situacaoCompetencia === "aberto-no-fim",
@@ -218,6 +226,19 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
     .filter((d): d is number => d !== null)
   const tempoMedio = dias.length
     ? Math.round((dias.reduce((a, b) => a + b, 0) / dias.length) * 10) / 10
+    : null
+
+  const diasAceite =
+    mapa.aceite && temSolucao
+      ? chamados
+          .filter((c) => noMes(c.aceite) && c.solucao !== null)
+          .map((c) => (c.aceite! - c.solucao!) / DIA)
+          .filter((d) => d >= 0)
+      : []
+  const tempoAceite = diasAceite.length
+    ? Math.round(
+        (diasAceite.reduce((a, b) => a + b, 0) / diasAceite.length) * 10
+      ) / 10
     : null
 
   const reabertos =
@@ -305,6 +326,16 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
     k("tempoMedio", "Tempo médio de resolução", tempoMedio, "dias", "menor"),
     k("reabertos", "% reabertos", reabertos, "percentual", "menor"),
     k("aguardandoAceite", "Aguardando aceite", aguardando, "inteiro", "neutro"),
+    k("tempoAceite", "Tempo até o aceite", tempoAceite, "dias", "menor"),
+    k(
+      "slaRenegociado",
+      "SLA renegociado",
+      temSolucao && mapa.slaRenegociado
+        ? backlog.filter((c) => c.slaReneg !== null).length
+        : null,
+      "inteiro",
+      "neutro"
+    ),
   ]
 
   const defs: [Distribuicao["id"], string, CampoChamado][] = [
