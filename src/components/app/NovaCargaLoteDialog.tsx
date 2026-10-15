@@ -56,6 +56,7 @@ type Linha = {
   ano: string
   origem: OrigemCompetencia
   anoPresumido: boolean
+  avisoMesRef?: string
   nome: string
   linhas: number
   estado: Estado
@@ -76,6 +77,7 @@ function linhaInicial(item: ItemLido, chave: number): Linha {
     ano: String(ano),
     origem: comp.origem,
     anoPresumido: comp.anoPresumido,
+    avisoMesRef: comp.avisoMesRef,
     nome: nomeSugerido(item.workbook.fileName),
     linhas: item.workbook.sheets.reduce((n, s) => n + s.rows.length, 0),
     estado: "aguardando",
@@ -350,6 +352,11 @@ export function NovaCargaLoteDialog({
                       <p className="mt-1 text-sm text-muted-foreground">
                         {DICA_ORIGEM[l.origem]}
                       </p>
+                      {l.avisoMesRef && (
+                        <p className="mt-1 text-sm font-medium text-amber-700 dark:text-amber-400">
+                          {l.avisoMesRef}
+                        </p>
+                      )}
                       {l.anoPresumido && (
                         <p className="mt-1 text-sm font-medium text-amber-700 dark:text-amber-400">
                           Ano não encontrado na planilha — confira
