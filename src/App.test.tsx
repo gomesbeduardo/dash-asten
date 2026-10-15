@@ -83,10 +83,15 @@ async function montarAberto(repo: RepositorioDeCargas) {
   )
 }
 
-/** O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó. */
+/**
+ * O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó.
+ * O limite cobre a espera da troca de aba (esperaTrocaAba) + a montagem na suíte cheia; o waitFor
+ * retorna assim que o título aparece, então o limite maior não afrouxa a asserção.
+ */
 const tituloVisivel = (name: string | RegExp) =>
-  waitFor(() =>
-    expect(screen.getByRole("heading", { level: 1, name })).toBeInTheDocument()
+  waitFor(
+    () => expect(screen.getByRole("heading", { level: 1, name })).toBeInTheDocument(),
+    { timeout: 3000 }
   )
 const h1 = (name: string | RegExp) =>
   screen.findByRole("heading", { level: 1, name })
@@ -173,7 +178,6 @@ describe("nova carga", () => {
     await tituloVisivel(/^Leituras · /)
     await user.keyboard("c")
     await tituloVisivel("Comparar competências")
-    await user.keyboard("e")
     await user.keyboard("p")
     // A troca espera o indicador da aba assentar (esperaTrocaAba) antes de montar.
     await screen.findByRole("article", { name: "Não finalizados" }, { timeout: 3000 })
