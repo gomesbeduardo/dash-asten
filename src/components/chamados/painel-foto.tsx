@@ -1,6 +1,5 @@
 /** Peças do Painel da foto (D64): cards por Situação e gráficos com "comparar período". */
 import { useMemo, useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -13,17 +12,18 @@ import { formatarCompetencia } from "@/cargas"
 import {
   distribuicoesFinalizadosNoPeriodo,
   type Distribuicao,
+  type DistribuicaoCorrigida,
   type EntradaCompetencia,
   type ItemDistribuicao,
   type ItemDistribuicaoCorrigido,
 } from "@/chamados"
+import { motion, useReducedMotion } from "motion/react"
 import { AnimatedNumber } from "@/components/app/motion/AnimatedNumber"
-import { entryItem } from "@/components/app/motion/variants"
+import { entryItemPagina } from "@/components/app/motion/variants"
 import { Toggle } from "@/components/ui/toggle"
-import { cn } from "@/lib/utils"
 import { GraficoCartao } from "./cartoes"
-import { BarrasComparar } from "./graficos"
-import { agruparSeries, temOutros } from "./logica"
+import { BarrasComparar, COR } from "./graficos"
+import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
@@ -38,6 +38,16 @@ export type BaseAnterior = {
   total: number
   rotulo: string
   semFoto?: string
+  /** Distribuições do período-base; `naoFinalizados` é null no mês sem foto (só as datas). */
+  distribuicoes: {
+    id: Distribuicao["id"]
+    itens: {
+      rotulo: string
+      finalizados: number
+      naoFinalizados: number | null
+    }[]
+  }[]
+  atrasoFaixas: ItemDistribuicao[]
 } | null
 
 function Variacao({
@@ -88,76 +98,85 @@ function Variacao({
   )
 }
 
-function CartaoContagem({
-  rotulo,
-  nome,
-  valor,
-  destaque = false,
-  entrada,
-  children,
-}: {
-  rotulo: string
-  nome: string
-  valor: number
-  destaque?: boolean
-  entrada: boolean
-  children: React.ReactNode
-}) {
-  const reduce = useReducedMotion()
-  return (
-    <motion.article
-      aria-label={nome}
-      variants={reduce ? undefined : entryItem}
-      className={cn(
-        "flex max-w-sm min-w-0 grow basis-56 flex-col justify-between gap-2 rounded-lg p-5 shadow-(--shadow-card) 3xl:max-w-md 4xl:max-w-lg",
-        destaque ? "bg-brand-soft" : "bg-card"
-      )}
-    >
-      <h3 className="font-sans text-lg leading-tight font-medium text-muted-foreground">
-        {rotulo}
-      </h3>
-      <AnimatedNumber
-        value={valor}
-        format="integer"
-        fromZero={entrada}
-        className="num font-display text-5xl leading-none font-semibold text-primary"
-      />
-      {children}
-    </motion.article>
-  )
+const normalizar = (r: string) =>
+  r.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim()
+
+const VERDE = "var(--chart-3)"
+const AZUL = "var(--chart-1)"
+/** Cores das situações que não são "Finalizado" (verde), na ordem de frequência. */
+const CORES_SITUACAO = [
+  AZUL,
+  COR.laranja,
+  "var(--chart-4)",
+  "#00778b",
+  "var(--chart-2)",
+  "#8a6d00",
+  "var(--chart-5)",
+  "#a0506b",
+] as const
+
+/** Uma cor por situação, a mesma em toda a página (faixa do topo e cruzamento por situação). */
+export function coresDasSituacoes(rotulos: string[]): Map<string, string> {
+  const cores = new Map<string, string>()
+  let i = 0
+  for (const r of rotulos) {
+    if (cores.has(r)) continue
+    cores.set(
+      r,
+      normalizar(r).startsWith("finaliz")
+        ? VERDE
+        : CORES_SITUACAO[i++ % CORES_SITUACAO.length]
+    )
+  }
+  return cores
 }
 
-/** Linha do topo: total da foto e um card por Situação (valor literal, por frequência). */
-export function CartoesSituacao({
+/** Faixa única do topo (decisão 26): total à esquerda; à direita, barra empilhada por Situação e a legenda com contagem e Δ. */
+export function FaixaSituacao({
   total,
   situacoes,
   anterior,
   mes,
   entrada,
   corrigidoPor = [],
+  cores,
 }: {
   total: number
   situacoes: ItemDistribuicaoCorrigido[]
   anterior: BaseAnterior
   mes: string
   entrada: boolean
-  /** Fotos posteriores que corrigiram valores ("out/26"); vazio = nada corrigido. */
+  /** Fotos posteriores que corrigiram valores (["out/26"]); vazio = nada corrigido. */
   corrigidoPor?: string[]
+  cores: Map<string, string>
 }) {
-  // situações que existiam no período-base e sumiram: card com 0 e a queda
+  // situações que existiam no período-base e sumiram: item com 0 e a queda
   const sumidas: ItemDistribuicaoCorrigido[] = (anterior?.situacoes ?? [])
     .filter((b) => !situacoes.some((s) => s.rotulo === b.rotulo))
     .map((b) => ({ rotulo: b.rotulo, valor: 0 }))
+  const reduce = useReducedMotion()
+  const soma = situacoes.reduce((acc, s) => acc + s.valor, 0)
+  const cor = (r: string) => cores.get(r) ?? COR.cinza
   return (
-    <section aria-label="Chamados por situação" className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-4">
-        <CartaoContagem
-          rotulo="Total de chamados"
-          nome="Total de chamados"
-          valor={total}
-          destaque
-          entrada={entrada}
+    <motion.section
+      aria-label="Chamados por situação"
+      variants={reduce ? undefined : entryItemPagina}
+      className="rounded-lg bg-card p-6 shadow-(--shadow-card)"
+    >
+      <div className="flex flex-col gap-6 min-[1100px]:flex-row min-[1100px]:items-stretch min-[1100px]:gap-10">
+        <article
+          aria-label="Total de chamados"
+          className="flex shrink-0 flex-col justify-center gap-1 min-[1100px]:min-w-60 min-[1100px]:border-r min-[1100px]:pr-10"
         >
+          <h3 className="font-sans text-xl leading-tight font-medium text-muted-foreground">
+            Total de chamados
+          </h3>
+          <AnimatedNumber
+            value={total}
+            format="integer"
+            fromZero={entrada}
+            className="num font-display text-[5.5rem] leading-none font-semibold text-primary"
+          />
           <p className="text-base text-muted-foreground">na foto de {mes}</p>
           <Variacao
             atual={total}
@@ -165,46 +184,94 @@ export function CartoesSituacao({
             rotulo={anterior?.rotulo ?? ""}
             semFoto={anterior?.semFoto}
           />
-        </CartaoContagem>
-        {[...situacoes, ...sumidas].map((s) => {
-          const antes = anterior?.situacoes.find((x) => x.rotulo === s.rotulo)
-          return (
-            <CartaoContagem
-              key={s.rotulo}
-              rotulo={s.rotulo}
-              nome={`Situação: ${s.rotulo}`}
-              valor={s.valor}
-              entrada={entrada}
-            >
-              <Variacao
-                atual={s.valor}
-                anterior={antes?.valor ?? null}
-                rotulo={anterior?.rotulo ?? ""}
-                nova={!!anterior && !anterior.semFoto && !antes}
-                semFoto={anterior?.semFoto}
-              />
-              {s.original !== undefined && corrigidoPor.length > 0 && (
-                <MarcaCorrigido por={corrigidoPor} original={n(s.original)} />
-              )}
-            </CartaoContagem>
-          )
-        })}
+        </article>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-5">
+          <div
+            role="img"
+            aria-label={`Situações: ${situacoes.map((s) => `${s.rotulo} ${s.valor}`).join("; ")}`}
+            className="flex h-14 w-full gap-0.5 overflow-hidden rounded-md bg-muted"
+          >
+            {situacoes.map((s) => (
+              <div
+                key={s.rotulo}
+                data-situacao={s.rotulo}
+                title={`${s.rotulo}: ${n(s.valor)}`}
+                className="num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-white"
+                style={{
+                  flexGrow: s.valor,
+                  flexBasis: 0,
+                  backgroundColor: cor(s.rotulo),
+                }}
+              >
+                {soma > 0 && s.valor / soma >= 0.06 && (
+                  <span aria-hidden>{n(s.valor)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <ul className="grid grid-cols-[repeat(auto-fit,minmax(13.5rem,1fr))] gap-x-6 gap-y-4">
+            {[...situacoes, ...sumidas].map((s) => {
+              const antes = anterior?.situacoes.find(
+                (x) => x.rotulo === s.rotulo
+              )
+              return (
+                <li
+                  key={s.rotulo}
+                  aria-label={`Situação: ${s.rotulo}`}
+                  className="flex min-w-0 flex-col gap-0.5"
+                >
+                  <span className="flex items-center gap-2 text-lg text-muted-foreground">
+                    <span
+                      aria-hidden
+                      className="size-3.5 shrink-0 rounded-sm"
+                      style={{ backgroundColor: cor(s.rotulo) }}
+                    />
+                    <span className="truncate" title={s.rotulo}>
+                      {s.rotulo}
+                    </span>
+                  </span>
+                  <AnimatedNumber
+                    value={s.valor}
+                    format="integer"
+                    fromZero={entrada}
+                    className="num font-display text-4xl leading-none font-semibold text-primary"
+                  />
+                  <Variacao
+                    atual={s.valor}
+                    anterior={antes?.valor ?? null}
+                    rotulo={anterior?.rotulo ?? ""}
+                    nova={!!anterior && !anterior.semFoto && !antes}
+                    semFoto={anterior?.semFoto}
+                  />
+                  {s.original !== undefined && corrigidoPor.length > 0 && (
+                    <MarcaCorrigido
+                      por={corrigidoPor}
+                      original={n(s.original)}
+                    />
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          <p className="text-base text-muted-foreground">
+            Cada situação aparece como vem na planilha.
+          </p>
+        </div>
       </div>
-      <p className="text-base text-muted-foreground">
-        Cada situação aparece como vem na planilha.
-      </p>
-    </section>
+    </motion.section>
   )
 }
 
 const SERIES_MES = [
-  { id: "finalizados", rotulo: "Finalizados no mês" },
-  { id: "naoFinalizados", rotulo: "Não finalizados" },
+  { id: "finalizados", rotulo: "Finalizados no mês", cor: VERDE },
+  { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
 ]
 const SERIES_PERIODO = [
-  { id: "finalizadosPeriodo", rotulo: "Finalizados no período" },
-  { id: "naoFinalizados", rotulo: "Não finalizados" },
+  { id: "finalizadosPeriodo", rotulo: "Finalizados no período", cor: VERDE },
+  { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
 ]
+/** Mês escolhido em tom claro, o Mes Ref. no tom cheio (mesma cor = mesma medida). */
+const claro = (cor: string) => `color-mix(in srgb, ${cor} 38%, white)`
 export const PERIODOS = [3, 6, 12] as const
 
 /** Início (UTC) do período de `meses` meses que termina no mês `competencia` ("AAAA-MM"). */
@@ -219,9 +286,10 @@ function periodoAte(competencia: string, meses: number) {
 const competenciaDe = (dt: Date) =>
   `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`
 
-/** Gráfico por dimensão: finalizados (no mês ou no período) × não finalizados, com o toggle no próprio card. */
-export function GraficoFoto({
+/** Gráfico por dimensão: Mes Ref. ao lado do mês escolhido (finalizados no mês × não finalizados); "Comparar período" troca por finalizados nos últimos N meses. */
+export function GraficoMes({
   dist,
+  base,
   entrada,
   competencia,
   sub,
@@ -230,7 +298,9 @@ export function GraficoFoto({
   animar,
   corrigidoPor = [],
 }: {
-  dist: Distribuicao
+  dist: DistribuicaoCorrigida
+  /** Período-base escolhido (seletor da página); `null` sem base. */
+  base: BaseAnterior
   /** Mês da carga já com os filtros aplicados; base do cálculo por período. */
   entrada: EntradaCompetencia | null
   competencia: string
@@ -239,7 +309,7 @@ export function GraficoFoto({
   max?: number
   className?: string
   animar: boolean
-  /** Fotos posteriores que corrigiram valores deste gráfico ("out/26"). */
+  /** Fotos posteriores que corrigiram valores deste gráfico (["out/26"]). */
   corrigidoPor?: string[]
 }) {
   const [ligado, setLigado] = useState(false)
@@ -258,17 +328,79 @@ export function GraficoFoto({
   }, [ligado, entrada, periodo, dist.id])
 
   const fonte = doPeriodo ?? dist
-  const series = doPeriodo ? SERIES_PERIODO : SERIES_MES
-  const rotuloFin = series[0].rotulo
-  const base = fonte.itens.map((i) => ({
-    rotulo: i.rotulo,
-    valores: [i.finalizados, i.naoFinalizados] as (number | null)[],
-  }))
-  const itens = max ? agruparSeries(base, max) : base
-  const mesRef = formatarCompetencia(competencia, "longo")
+  const mesRef = formatarCompetencia(competencia)
+  // com o "comparar período" ligado o gráfico mostra só o Mes Ref. (o mês escolhido não entra)
+  const baseItens =
+    !doPeriodo && base
+      ? base.distribuicoes.find((d) => d.id === dist.id)?.itens
+      : undefined
+  const comBase = baseItens !== undefined && base !== null
+  const rotuloBase = base?.rotulo ?? ""
+
+  const atual = new Map(fonte.itens.map((i) => [i.rotulo, i]))
+  const doMesBase = new Map((baseItens ?? []).map((i) => [i.rotulo, i]))
+  const rotulos = [
+    ...fonte.itens.map((i) => i.rotulo),
+    ...(baseItens ?? [])
+      .filter((i) => !atual.has(i.rotulo))
+      .map((i) => i.rotulo),
+  ]
+
+  let series: { id: string; rotulo: string; cor: string }[]
+  let linhas: ItemSerie[]
+  if (!comBase) {
+    series = doPeriodo ? SERIES_PERIODO : SERIES_MES
+    linhas = rotulos.map((r) => ({
+      rotulo: r,
+      valores: [
+        atual.get(r)?.finalizados ?? 0,
+        atual.get(r)?.naoFinalizados ?? 0,
+      ],
+    }))
+  } else {
+    const semFoto = base.semFoto !== undefined
+    series = [
+      {
+        id: "finBase",
+        rotulo: `Finalizados · ${rotuloBase}`,
+        cor: claro(VERDE),
+      },
+      { id: "finAtual", rotulo: `Finalizados · ${mesRef}`, cor: VERDE },
+      ...(semFoto
+        ? []
+        : [
+            {
+              id: "naoBase",
+              rotulo: `Não finalizados · ${rotuloBase}`,
+              cor: claro(AZUL),
+            },
+          ]),
+      { id: "naoAtual", rotulo: `Não finalizados · ${mesRef}`, cor: AZUL },
+    ]
+    linhas = rotulos.map((r) => ({
+      rotulo: r,
+      valores: [
+        doMesBase.get(r)?.finalizados ?? 0,
+        atual.get(r)?.finalizados ?? 0,
+        ...(semFoto ? [] : [doMesBase.get(r)?.naoFinalizados ?? 0]),
+        atual.get(r)?.naoFinalizados ?? 0,
+      ],
+    }))
+  }
+  const itens = max ? agruparSeries(linhas, max) : linhas
   const subtitulo = doPeriodo
     ? `finalizados nos últimos ${meses} meses (${formatarCompetencia(competenciaDe(periodo.primeira))} a ${formatarCompetencia(competencia)}) × não finalizados, ${sub}`
-    : `finalizados no mês × não finalizados, ${sub} · ${mesRef}`
+    : comBase
+      ? `finalizados no mês × não finalizados, ${sub} · ${mesRef} ao lado de ${rotuloBase}`
+      : `finalizados no mês × não finalizados, ${sub} · ${formatarCompetencia(competencia, "longo")}`
+  const notas = [
+    comBase && base.semFoto
+      ? `${base.semFoto}: de ${rotuloBase} só os finalizados no mês, pelas datas.`
+      : null,
+    corrigidoPor.length > 0 && !doPeriodo && dist.itens.some((i) => i.original)
+      ? `Valores corrigidos pela foto de ${corrigidoPor.join(" e ")}.`
+      : null,
+  ].filter((x) => x !== null)
 
   return (
     <GraficoCartao
@@ -276,21 +408,14 @@ export function GraficoFoto({
       titulo={dist.titulo}
       subtitulo={subtitulo}
       tabela={{
-        colunas: ["Categoria", rotuloFin, "Não finalizados"],
-        linhas: fonte.itens.map((i) => [
+        colunas: ["Categoria", ...series.map((s) => s.rotulo)],
+        linhas: itens.map((i) => [
           i.rotulo,
-          n(i.finalizados),
-          n(i.naoFinalizados),
+          ...i.valores.map((v) => (v === null ? "—" : n(v))),
         ]),
       }}
       selos={temOutros(itens) ? ["outros"] : []}
-      nota={
-        corrigidoPor.length > 0 &&
-        !doPeriodo &&
-        (dist.itens as { original?: unknown }[]).some((i) => i.original)
-          ? `Valores corrigidos pela foto de ${corrigidoPor.join(" e ")}.`
-          : undefined
-      }
+      nota={notas.length ? notas.join(" ") : undefined}
       className={className}
       acoes={
         <>
@@ -321,6 +446,66 @@ export function GraficoFoto({
       }
     >
       <BarrasComparar itens={itens} series={series} animar={animar} tv />
+    </GraficoCartao>
+  )
+}
+
+/** Em atraso por meses desde a abertura: faixas do Mes Ref. ao lado das do mês escolhido (sem foto dele, só o Mes Ref.). */
+export function AtrasoMes({
+  faixas,
+  base,
+  competencia,
+  animar,
+  tabelaVazia,
+  className,
+}: {
+  faixas: ItemDistribuicao[]
+  base: BaseAnterior
+  competencia: string
+  animar: boolean
+  /** Mostrado no lugar do gráfico quando o filtro deixa o mês sem dados. */
+  tabelaVazia?: boolean
+  className?: string
+}) {
+  const mesRef = formatarCompetencia(competencia)
+  const comBase = !!base && !base.semFoto && base.atrasoFaixas.length > 0
+  const mapaBase = new Map(base?.atrasoFaixas.map((f) => [f.rotulo, f.valor]))
+  const series = comBase
+    ? [
+        { id: "base", rotulo: base.rotulo, cor: claro(AZUL) },
+        { id: "atual", rotulo: mesRef, cor: AZUL },
+      ]
+    : [{ id: "atual", rotulo: "Chamados", cor: AZUL }]
+  const itens: ItemSerie[] = faixas.map((f) => ({
+    rotulo: f.rotulo,
+    valores: comBase ? [mapaBase.get(f.rotulo) ?? 0, f.valor] : [f.valor],
+  }))
+  return (
+    <GraficoCartao
+      id="atrasoFaixas"
+      titulo="Em atraso por meses desde a abertura"
+      subtitulo={`não finalizados abertos antes do mês do Mes Ref.${comBase ? ` · ${mesRef} ao lado de ${base.rotulo}` : ""}`}
+      nota={
+        base?.semFoto
+          ? `${base.semFoto}: o atraso depende da Situação e só mostra o Mes Ref.`
+          : undefined
+      }
+      tabela={{
+        colunas: ["Categoria", ...series.map((s) => s.rotulo)],
+        linhas: itens.map((i) => [
+          i.rotulo,
+          ...i.valores.map((v) => n(v ?? 0)),
+        ]),
+      }}
+      className={className}
+    >
+      {tabelaVazia ? (
+        <p className="py-10 text-center text-lg text-muted-foreground">
+          Sem dados com este filtro nesta carga
+        </p>
+      ) : (
+        <BarrasComparar itens={itens} series={series} animar={animar} tv />
+      )}
     </GraficoCartao>
   )
 }

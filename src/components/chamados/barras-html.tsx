@@ -1,0 +1,156 @@
+/** Barras de cruzamento (empilhadas ou simples) em HTML/CSS: acompanham a tipografia fluida e o Mes Ref. ao lado do mês escolhido. */
+import { cn } from "@/lib/utils"
+
+export type Segmento = {
+  id: string
+  rotulo: string
+  valor: number
+  cor: string
+}
+/** Uma barra: segmentos empilhados e o texto do valor na ponta. `segmentos` vazio = sem valor ("—"). */
+export type Celula = { segmentos: Segmento[]; texto: string }
+/** Uma linha de uma categoria: um mês, com uma célula por coluna. */
+export type LinhaMes = { mes: string; destaque: boolean; celulas: Celula[] }
+export type GrupoBarras = { rotulo: string; linhas: LinhaMes[] }
+export type ColunaBarras = {
+  titulo?: string
+  /** Valor que enche a trilha (a mesma escala em todas as linhas da coluna). */
+  maximo: number
+}
+
+/** Legenda neutra: marcador de cor e nome, sem cara de botão. */
+export function LegendaCores({
+  itens,
+}: {
+  itens: { id: string; rotulo: string; cor: string }[]
+}) {
+  if (itens.length === 0) return null
+  return (
+    <ul
+      aria-label="Legenda das cores"
+      className="flex flex-wrap gap-x-5 gap-y-1"
+    >
+      {itens.map((i) => (
+        <li
+          key={i.id}
+          className="flex items-center gap-2 text-base text-muted-foreground"
+        >
+          <span
+            aria-hidden
+            className="size-3.5 shrink-0 rounded-sm"
+            style={{ backgroundColor: i.cor }}
+          />
+          {i.rotulo}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
+  const total = celula.segmentos.reduce((s, x) => s + x.valor, 0)
+  // 20% de folga na trilha para o texto da ponta
+  const pct = maximo > 0 ? (total / (maximo * 1.2)) * 100 : 0
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {celula.segmentos.length > 0 && total > 0 ? (
+        <div
+          className="flex h-[1.4rem] min-w-0.5 gap-px overflow-hidden rounded-sm"
+          style={{ width: `${pct}%` }}
+        >
+          {celula.segmentos
+            .filter((s) => s.valor > 0)
+            .map((s) => (
+              <div
+                key={s.id}
+                title={`${s.rotulo}: ${s.valor}`}
+                style={{
+                  flexGrow: s.valor,
+                  flexBasis: 0,
+                  backgroundColor: s.cor,
+                }}
+              />
+            ))}
+        </div>
+      ) : null}
+      <span className="num shrink-0 text-base font-semibold text-foreground">
+        {celula.texto}
+      </span>
+    </div>
+  )
+}
+
+export function BarrasHtml({
+  grupos,
+  colunas,
+  descricao,
+}: {
+  grupos: GrupoBarras[]
+  colunas: ColunaBarras[]
+  /** Texto do `aria-label` do gráfico (os dados em palavras). */
+  descricao: string
+}) {
+  const comMes = grupos.some((g) => g.linhas.length > 1 || g.linhas[0]?.mes)
+  const grade = `${comMes ? "4rem " : ""}${colunas.map(() => "minmax(0,1fr)").join(" ")}`
+  const cabecalho = colunas.some((c) => c.titulo)
+  return (
+    <div
+      role="img"
+      aria-label={descricao}
+      className="flex min-h-0 flex-1 flex-col justify-between"
+    >
+      {cabecalho && (
+        <div className="flex gap-3 pb-1" aria-hidden>
+          <span className="w-[clamp(7rem,26%,12rem)] shrink-0" />
+          <div
+            className="grid min-w-0 flex-1 gap-3 text-base font-medium text-muted-foreground"
+            style={{ gridTemplateColumns: grade }}
+          >
+            {comMes && <span />}
+            {colunas.map((c, i) => (
+              <span key={i}>{c.titulo}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {grupos.map((g) => (
+        <div
+          key={g.rotulo}
+          className="flex flex-1 items-center gap-3 border-b border-border/70 py-2 last:border-b-0"
+        >
+          <span
+            className="w-[clamp(7rem,26%,12rem)] shrink-0 truncate text-lg font-medium text-foreground"
+            title={g.rotulo}
+          >
+            {g.rotulo}
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-1" aria-hidden>
+            {g.linhas.map((l) => (
+              <div
+                key={l.mes}
+                className="grid items-center gap-3"
+                style={{ gridTemplateColumns: grade }}
+              >
+                {comMes && (
+                  <span
+                    className={cn(
+                      "num text-sm",
+                      l.destaque
+                        ? "font-semibold text-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {l.mes}
+                  </span>
+                )}
+                {l.celulas.map((c, i) => (
+                  <Barra key={i} celula={c} maximo={colunas[i].maximo} />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}

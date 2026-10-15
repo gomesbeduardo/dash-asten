@@ -163,8 +163,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         <p className="mx-auto w-full max-w-[200rem] px-[clamp(1.5rem,3vw,6rem)] py-1 text-sm text-muted-foreground">
           {p.dica && `${p.dica} · `}
           {p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
-          {p.visoes.length > 1 &&
-            " · P painel · E evolução · C comparar · L leituras"}
+          {p.visoes.length > 1 && " · P painel · C comparar · L leituras"}
         </p>
       </div>
     </motion.header>

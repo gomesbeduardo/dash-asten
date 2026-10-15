@@ -304,13 +304,15 @@ describe("PainelChamados", () => {
     expect(screen.queryByText(/ano não consta na planilha/)).toBeNull()
   })
 
-  it("os cards por situação mostram cada situação como vem e o total da foto; os abertos depois ficam em notas", async () => {
+  it("a faixa por situação mostra cada situação como vem e o total da foto; os abertos depois ficam em notas", async () => {
     render(<PainelChamados {...await cenario(true)} />)
     const topo = await screen.findByRole("region", {
       name: "Chamados por situação",
     })
     const valor = (nome: string) =>
-      within(within(topo).getByRole("article", { name: nome }))
+      within(
+        within(topo).getByRole(nome.startsWith("Situação") ? "listitem" : "article", { name: nome })
+      )
     expect(valor("Total de chamados").getByLabelText("9")).toBeInTheDocument()
     expect(valor("Situação: Em Análise").getByLabelText("6")).toBeInTheDocument()
     expect(valor("Situação: Aguardando aceite").getByLabelText("1")).toBeInTheDocument()

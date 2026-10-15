@@ -1,4 +1,12 @@
-import { act, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import {
+  act,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { criarRepositorioMemoria, type RepositorioDeCargas } from "@/cargas"
@@ -9,14 +17,45 @@ import { makeXlsx } from "@/test/makeWorkbook"
 import { App } from "./App"
 
 const CHAMADOS = [
-  ["Código", "Data de abertura", "SITUAÇÃO", "Data de Solução", "Sla previsto", "Cliente", "Área Superior", "Atividade"],
-  [1, new Date("2026-08-03"), "Finalizado", new Date("2026-08-10"), new Date("2026-08-12"), "A", "X", "Y"],
-  [2, new Date("2026-08-05"), "Aberto", null, new Date("2026-08-20"), "B", "X", "Y"],
+  [
+    "Código",
+    "Data de abertura",
+    "SITUAÇÃO",
+    "Data de Solução",
+    "Sla previsto",
+    "Cliente",
+    "Área Superior",
+    "Atividade",
+  ],
+  [
+    1,
+    new Date("2026-08-03"),
+    "Finalizado",
+    new Date("2026-08-10"),
+    new Date("2026-08-12"),
+    "A",
+    "X",
+    "Y",
+  ],
+  [
+    2,
+    new Date("2026-08-05"),
+    "Aberto",
+    null,
+    new Date("2026-08-20"),
+    "B",
+    "X",
+    "Y",
+  ],
 ]
 const bytes = () => makeXlsx({ Dados: CHAMADOS })
 const arquivo = (nome: string) => new File([bytes()], nome)
 
-async function salvar(repo: RepositorioDeCargas, nome: string, competencia: string) {
+async function salvar(
+  repo: RepositorioDeCargas,
+  nome: string,
+  competencia: string
+) {
   const workbook = readWorkbook(bytes(), nome)
   return repo.salvar({ tipo: "chamados", competencia, arquivo: nome, workbook })
 }
@@ -28,9 +67,15 @@ function montar(repo: RepositorioDeCargas) {
   )
 }
 const abrirUltima = async () =>
-  userEvent.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+  userEvent.click(
+    await screen.findByRole("button", { name: /^Abrir a última/ })
+  )
 
-function disparar(tipo: "dragEnter" | "drop", dt: object, alvo: Element = document.body) {
+function disparar(
+  tipo: "dragEnter" | "drop",
+  dt: object,
+  alvo: Element = document.body
+) {
   const ev = createEvent[tipo](alvo)
   Object.defineProperty(ev, "dataTransfer", { value: dt })
   act(() => {
@@ -55,16 +100,27 @@ describe("soltar em qualquer lugar da tela inicial", () => {
   it("soltar num canto, fora da caixa, chega à confirmação", async () => {
     montar(criarRepositorioMemoria())
     await screen.findByText("Cargas que já existem")
-    disparar("drop", { files: [arquivo("chamados-agosto-2026.xlsx")], types: ["Files"] })
-    expect(await screen.findByRole("dialog", { name: "Confirmar a carga" })).toBeInTheDocument()
+    disparar("drop", {
+      files: [arquivo("chamados-agosto-2026.xlsx")],
+      types: ["Files"],
+    })
+    expect(
+      await screen.findByRole("dialog", { name: "Confirmar a carga" })
+    ).toBeInTheDocument()
   })
 
   it("com a confirmação aberta, soltar outro arquivo não abre o navegador nem troca nada", async () => {
     montar(criarRepositorioMemoria())
     await screen.findByText("Cargas que já existem")
-    disparar("drop", { files: [arquivo("a-agosto-2026.xlsx")], types: ["Files"] })
+    disparar("drop", {
+      files: [arquivo("a-agosto-2026.xlsx")],
+      types: ["Files"],
+    })
     await screen.findByRole("dialog", { name: "Confirmar a carga" })
-    const ev = disparar("drop", { files: [arquivo("b-agosto-2026.xlsx")], types: ["Files"] })
+    const ev = disparar("drop", {
+      files: [arquivo("b-agosto-2026.xlsx")],
+      types: ["Files"],
+    })
     expect(ev.defaultPrevented).toBe(true)
     expect(screen.getAllByRole("dialog")).toHaveLength(1)
   })
@@ -83,9 +139,14 @@ describe("envio em andamento", () => {
       return ev.defaultPrevented
     }
     expect(sair()).toBe(false)
-    await userEvent.upload(await screen.findByLabelText(/Arquivo da planilha/), arquivo("chamados-agosto-2026.xlsx"))
+    await userEvent.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      arquivo("chamados-agosto-2026.xlsx")
+    )
     const d = await screen.findByRole("dialog", { name: "Confirmar a carga" })
-    await userEvent.click(within(d).getByRole("button", { name: "Confirmar carga" }))
+    await userEvent.click(
+      within(d).getByRole("button", { name: "Confirmar carga" })
+    )
     await waitFor(() => expect(sair()).toBe(true))
     liberar()
     await screen.findByRole("heading", { level: 1 })
@@ -99,7 +160,12 @@ describe("abrir uma carga", () => {
     await salvar(repo, "a.xlsx", "2026-08")
     let liberar!: () => void
     const obter = repo.obter.bind(repo)
-    const spy = vi.fn((id: string) => new Promise<Awaited<ReturnType<typeof obter>>>((r) => (liberar = () => r(obter(id)))))
+    const spy = vi.fn(
+      (id: string) =>
+        new Promise<Awaited<ReturnType<typeof obter>>>(
+          (r) => (liberar = () => r(obter(id)))
+        )
+    )
     repo.obter = spy
     montar(repo)
     const botao = await screen.findByRole("button", { name: /^Abrir a última/ })
@@ -130,8 +196,13 @@ describe("lembrar visão e carga neste navegador", () => {
     )
     await userEvent.click(screen.getByRole("button", { name: /Fechar carga/ }))
     await abrirUltima()
-    expect(await screen.findByRole("button", { name: "Competência" })).toHaveTextContent("Julho de 2026")
-    expect(screen.getByRole("tab", { name: "Comparar" })).toHaveAttribute("aria-selected", "true")
+    expect(
+      await screen.findByRole("button", { name: "Competência" })
+    ).toHaveTextContent("Julho de 2026")
+    expect(screen.getByRole("tab", { name: "Comparar" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
   })
 
   it("trocar de visão guarda a escolha", async () => {
@@ -139,8 +210,10 @@ describe("lembrar visão e carga neste navegador", () => {
     await salvar(repo, "a.xlsx", "2026-07")
     montar(repo)
     await abrirUltima()
-    await userEvent.click(await screen.findByRole("tab", { name: "Evolução" }))
-    expect(JSON.parse(localStorage.getItem("dash-asten:ultima-abertura")!)).toMatchObject({ visao: "evolucao" })
+    await userEvent.click(await screen.findByRole("tab", { name: "Leituras" }))
+    expect(
+      JSON.parse(localStorage.getItem("dash-asten:ultima-abertura")!)
+    ).toMatchObject({ visao: "leituras" })
   })
 })
 
@@ -166,7 +239,9 @@ describe("tela cheia", () => {
     await salvar(repo, "a.xlsx", "2026-07")
     montar(repo)
     await abrirUltima()
-    await userEvent.click(await screen.findByRole("button", { name: "Tela cheia" }))
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Tela cheia" })
+    )
     expect(req).toHaveBeenCalledTimes(1)
     await userEvent.keyboard("t")
     expect(req).toHaveBeenCalledTimes(2)
@@ -181,7 +256,8 @@ describe("a barra fixa não cobre o conteúdo", () => {
     montar(repo)
     await abrirUltima()
     await screen.findByRole("tab", { name: "Painel" })
-    const conteudo = () => document.querySelector("main[data-barra-segura]") as HTMLElement
+    const conteudo = () =>
+      document.querySelector("main[data-barra-segura]") as HTMLElement
     expect(conteudo().dataset.barraSegura).toBe("false")
     await userEvent.keyboard("h")
     await waitFor(() => expect(conteudo().dataset.barraSegura).toBe("true"))

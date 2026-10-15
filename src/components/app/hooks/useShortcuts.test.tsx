@@ -80,19 +80,14 @@ describe("useShortcuts e Esc já tratado", () => {
     expect(h.onEscape).not.toHaveBeenCalled()
   })
 
-  it("P, C, E e L pedem a visão (só se o handler existir)", () => {
+  it("P, C e L pedem a visão; E não faz nada (a Evolução virou parte do Painel)", () => {
     const onVisao = vi.fn()
     render(<Harness onVisao={onVisao} />)
     fireEvent.keyDown(window, { key: "p" })
     fireEvent.keyDown(window, { key: "C" })
     fireEvent.keyDown(window, { key: "e" })
     fireEvent.keyDown(window, { key: "l" })
-    expect(onVisao.mock.calls).toEqual([
-      ["painel"],
-      ["comparar"],
-      ["evolucao"],
-      ["leituras"],
-    ])
+    expect(onVisao.mock.calls).toEqual([["painel"], ["comparar"], ["leituras"]])
   })
 
   it("sem handlers, tecla não quebra", () => {

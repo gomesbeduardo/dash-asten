@@ -293,6 +293,8 @@ export function BarrasFaixas({
 export type SerieComparar = {
   id: string
   rotulo: string
+  /** Cor própria da série; sem ela vale a paleta cronológica. */
+  cor?: string
 }
 
 // Da mais antiga à mais recente: a última (mais recente) fica sempre no azul principal e,
@@ -326,15 +328,18 @@ export function BarrasComparar({
 }) {
   const n = series.length
   const { rem, vh } = useEscalaTv()
-  const coloridas = series.map((s, i) => ({ ...s, cor: corDaSerie(i, n) }))
+  const coloridas = series.map((s, i) => ({
+    ...s,
+    cor: s.cor ?? corDaSerie(i, n),
+  }))
   const dados = itens.map((i) => ({
     rotulo: i.rotulo,
     ...Object.fromEntries(series.map((s, k) => [s.id, i.valores[k]])),
   }))
-  // TV: a altura é no mínimo ~38% da viewport; se sobra espaço, a barra engrossa (1,3 a 2,6 rem).
-  const barraMin = tv ? Math.round(1.3 * rem) : 18
+  // TV: a altura é no mínimo ~30% da viewport; se sobra espaço, a barra engrossa (1,3 a 2,6 rem).
+  const barraMin = tv ? Math.round((n >= 4 ? 0.95 : 1.3) * rem) : 18
   const folga = tv ? Math.round(1.1 * rem) : 16
-  const minimo = tv ? Math.round(vh * 0.38) : 220
+  const minimo = tv ? Math.round(vh * 0.3) : 220
   const altura = Math.max(
     minimo,
     Math.max(itens.length, itensParaAltura ?? 0) *
@@ -357,7 +362,7 @@ export function BarrasComparar({
     series.map((s) => s.id)
   )
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <LegendaSeries
         itens={coloridas.map((s) => ({
           id: s.id,
@@ -367,69 +372,71 @@ export function BarrasComparar({
         ocultas={ocultas}
         onAlternar={alternar}
       />
-      <ChartContainer
-        config={Cfg(
-          ...coloridas.map((s): [string, string, string] => [
-            s.id,
-            s.rotulo,
-            s.cor,
-          ])
-        )}
-        className="aspect-auto w-full"
-        style={{ height: altura }}
-        role="img"
-        aria-label={`${series.map((s) => s.rotulo).join(" contra ")}: ${itens.map((i) => `${i.rotulo} ${i.valores.map((v) => v ?? "—").join(", ")}`).join("; ")}`}
-      >
-        <BarChart
-          // remonta ao mudar as séries: o Recharts guarda a ordem em que as barras entraram
-          key={series.map((s) => s.id).join("|")}
-          data={dados}
-          layout="vertical"
-          margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
-          barGap={3}
+      {/* o gráfico preenche o cartão: a altura calculada é o mínimo; sobrando espaço (cartão vizinho mais alto) ele cresce */}
+      <div className="relative flex-1" style={{ minHeight: altura }}>
+        <ChartContainer
+          config={Cfg(
+            ...coloridas.map((s): [string, string, string] => [
+              s.id,
+              s.rotulo,
+              s.cor,
+            ])
+          )}
+          className="absolute inset-0 aspect-auto h-full w-full"
+          role="img"
+          aria-label={`${series.map((s) => s.rotulo).join(" contra ")}: ${itens.map((i) => `${i.rotulo} ${i.valores.map((v) => v ?? "—").join(", ")}`).join("; ")}`}
         >
-          <CartesianGrid horizontal={false} stroke={GRADE} />
-          <XAxis type="number" hide />
-          <YAxis
-            type="category"
-            dataKey="rotulo"
-            width={tv ? Math.round(15 * rem) : 220}
-            tick={tv ? EIXO_TV : EIXO}
-            tickFormatter={(v) => curto(v, tv ? 32 : 26)}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
-          {coloridas
-            .filter((s) => !ocultas.includes(s.id))
-            .map((s) => (
-              <Bar
-                key={s.id}
-                dataKey={s.id}
-                name={s.rotulo}
-                fill={s.cor}
-                stroke={s.cor}
-                strokeWidth={2}
-                radius={[0, 4, 4, 0]}
-                barSize={barra}
-                {...animacao(animar)}
-              >
-                <LabelList
+          <BarChart
+            // remonta ao mudar as séries: o Recharts guarda a ordem em que as barras entraram
+            key={series.map((s) => s.id).join("|")}
+            data={dados}
+            layout="vertical"
+            margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
+            barGap={3}
+          >
+            <CartesianGrid horizontal={false} stroke={GRADE} />
+            <XAxis type="number" hide />
+            <YAxis
+              type="category"
+              dataKey="rotulo"
+              width={tv ? Math.round(15 * rem) : 220}
+              tick={tv ? EIXO_TV : EIXO}
+              tickFormatter={(v) => curto(v, tv ? 32 : 26)}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip content={<Dica />} cursor={{ fill: "#e6edf2" }} />
+            {coloridas
+              .filter((s) => !ocultas.includes(s.id))
+              .map((s) => (
+                <Bar
+                  key={s.id}
                   dataKey={s.id}
-                  position="right"
-                  className="num fill-foreground"
-                  style={{
-                    fontSize: tv ? "1.1250rem" : ".9375rem",
-                    fontWeight: 600,
-                  }}
-                  formatter={(v) =>
-                    v == null ? "—" : inteiro.format(Number(v))
-                  }
-                />
-              </Bar>
-            ))}
-        </BarChart>
-      </ChartContainer>
+                  name={s.rotulo}
+                  fill={s.cor}
+                  stroke={s.cor}
+                  strokeWidth={2}
+                  radius={[0, 4, 4, 0]}
+                  barSize={barra}
+                  {...animacao(animar)}
+                >
+                  <LabelList
+                    dataKey={s.id}
+                    position="right"
+                    className="num fill-foreground"
+                    style={{
+                      fontSize: tv ? "1.1250rem" : ".9375rem",
+                      fontWeight: 600,
+                    }}
+                    formatter={(v) =>
+                      v == null ? "—" : inteiro.format(Number(v))
+                    }
+                  />
+                </Bar>
+              ))}
+          </BarChart>
+        </ChartContainer>
+      </div>
     </div>
   )
 }

@@ -86,11 +86,10 @@ async function montarAberto(repo: RepositorioDeCargas) {
 /** O título pode ser remontado quando os dados terminam de carregar: confere na tela, não no nó. */
 const tituloVisivel = (name: string | RegExp) =>
   waitFor(() =>
-    expect(
-      screen.getByRole("heading", { level: 1, name })
-    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name })).toBeInTheDocument()
   )
-const h1 = (name: string | RegExp) => screen.findByRole("heading", { level: 1, name })
+const h1 = (name: string | RegExp) =>
+  screen.findByRole("heading", { level: 1, name })
 
 beforeEach(() => {
   registrarTiposDoApp()
@@ -109,8 +108,12 @@ describe("nova carga", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
-    expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toHaveTextContent(/outro/i)
-    expect(within(dialog).getByRole("combobox", { name: "Mês" })).toHaveTextContent("Agosto")
+    expect(
+      within(dialog).getByRole("combobox", { name: "Tipo" })
+    ).toHaveTextContent(/outro/i)
+    expect(
+      within(dialog).getByRole("combobox", { name: "Mês" })
+    ).toHaveTextContent("Agosto")
     expect(within(dialog).getByLabelText("Ano")).toHaveValue("2026")
     expect(within(dialog).getByText("pelo nome do arquivo")).toBeInTheDocument()
     expect(
@@ -148,7 +151,9 @@ describe("nova carga", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Confirmar a carga",
     })
-    expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toHaveTextContent(/chamados/i)
+    expect(
+      within(dialog).getByRole("combobox", { name: "Tipo" })
+    ).toHaveTextContent(/chamados/i)
     expect(
       within(dialog).getByText("reconhecido pelas colunas")
     ).toBeInTheDocument()
@@ -162,13 +167,13 @@ describe("nova carga", () => {
     ).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Leituras" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Comparar" })).toBeInTheDocument()
-    expect(screen.getByRole("tab", { name: "Evolução" })).toBeInTheDocument()
+    // a Evolução virou o bloco "Ao longo do tempo" do Painel (decisão 27)
+    expect(screen.queryByRole("tab", { name: "Evolução" })).toBeNull()
     await user.keyboard("l")
     await tituloVisivel(/^Leituras · /)
     await user.keyboard("c")
     await tituloVisivel("Comparar competências")
     await user.keyboard("e")
-    await tituloVisivel("Evolução")
     await user.keyboard("p")
     await screen.findByRole("article", { name: "Não finalizados" })
   })
@@ -247,9 +252,9 @@ describe("nova carga", () => {
     // clique no fundo (overlay) fora do conteúdo
     const overlay = document.querySelector('[data-slot="dialog-overlay"]')!
     await user.click(overlay)
-    expect(
-      screen.getByRole("dialog", { name: "Confirmar a carga" })
-    ).toBe(dialog)
+    expect(screen.getByRole("dialog", { name: "Confirmar a carga" })).toBe(
+      dialog
+    )
     await user.keyboard("{Escape}")
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     expect(await repo.listar()).toEqual([])
@@ -305,8 +310,12 @@ describe("abertura e navegação", () => {
   it("com cargas, abre na tela de envio, não baixa nenhuma carga e mostra a lista agrupada", async () => {
     const repo = criarRepositorioMemoria()
     await salvar(repo, "ch-08.xlsx", "chamados", "2026-08", { Dados: CHAMADOS })
-    await salvar(repo, "ch-09a.xlsx", "chamados", "2026-09", { Dados: CHAMADOS })
-    await salvar(repo, "ch-09b.xlsx", "chamados", "2026-09", { Dados: CHAMADOS })
+    await salvar(repo, "ch-09a.xlsx", "chamados", "2026-09", {
+      Dados: CHAMADOS,
+    })
+    await salvar(repo, "ch-09b.xlsx", "chamados", "2026-09", {
+      Dados: CHAMADOS,
+    })
     const obter = vi.spyOn(repo, "obter")
     montar(repo)
     expect(
@@ -498,7 +507,9 @@ describe("histórico e limpeza", () => {
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
     const painel = await screen.findByRole("dialog", { name: "Histórico" })
     expect(
-      within(painel).getByRole("button", { name: /Abrir Setembro de 2026 v1|Abrir Agosto de 2026 v1/ })
+      within(painel).getByRole("button", {
+        name: /Abrir Setembro de 2026 v1|Abrir Agosto de 2026 v1/,
+      })
     ).toBeInTheDocument()
   })
 
@@ -532,19 +543,28 @@ describe("lote de planilhas", () => {
   it("2 ou mais arquivos abrem a confirmação em lote; guardar registra em Enviados e abre a competência mais recente", async () => {
     const user = userEvent.setup()
     const repo = montar()
-    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), trio())
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      trio()
+    )
 
-    const dialog = await screen.findByRole("dialog", { name: "Confirmar as cargas" })
+    const dialog = await screen.findByRole("dialog", {
+      name: "Confirmar as cargas",
+    })
     expect(within(dialog).getAllByRole("row")).toHaveLength(4)
     expect(within(dialog).getByText(/vira a versão 2/i)).toBeInTheDocument()
-    await user.click(within(dialog).getByRole("button", { name: "Confirmar 3 cargas" }))
+    await user.click(
+      within(dialog).getByRole("button", { name: "Confirmar 3 cargas" })
+    )
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent(
-        "Setembro de 2026"
-      )
+      expect(
+        screen.getByRole("button", { name: "Competência" })
+      ).toHaveTextContent("Setembro de 2026")
     )
-    expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent("v2")
+    expect(
+      screen.getByRole("button", { name: "Competência" })
+    ).toHaveTextContent("v2")
     const metas = await repo.listar()
     expect(metas.map((m) => `${m.competencia} v${m.versao}`).sort()).toEqual([
       "2026-07 v1",
@@ -558,15 +578,24 @@ describe("lote de planilhas", () => {
   it("1 arquivo continua no fluxo de sempre", async () => {
     const user = userEvent.setup()
     montar()
-    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), [outro()])
-    expect(await screen.findByRole("dialog", { name: "Confirmar a carga" })).toBeInTheDocument()
+    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), [
+      outro(),
+    ])
+    expect(
+      await screen.findByRole("dialog", { name: "Confirmar a carga" })
+    ).toBeInTheDocument()
   })
 
   it("mais de 12 arquivos: aviso e nenhum diálogo", async () => {
     const user = userEvent.setup()
     montar()
-    const muitos = Array.from({ length: 13 }, (_, i) => outro(`reuniao-agosto-2026-${i}.xlsx`))
-    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), muitos)
+    const muitos = Array.from({ length: 13 }, (_, i) =>
+      outro(`reuniao-agosto-2026-${i}.xlsx`)
+    )
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      muitos
+    )
     expect(await screen.findByRole("alert")).toHaveTextContent(/no máximo 12/)
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
@@ -588,21 +617,26 @@ describe("lote de planilhas", () => {
       outro("reuniao-setembro-2026.xlsx"),
       outro("reuniao-agosto-2026.xlsx"),
     ])
-    await user.click(await screen.findByRole("button", { name: "Confirmar 3 cargas" }))
-    expect(await screen.findByText("2 de 3 guardadas; 1 com erro")).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole("button", { name: "Confirmar 3 cargas" })
+    )
+    expect(
+      await screen.findByText("2 de 3 guardadas; 1 com erro")
+    ).toBeInTheDocument()
     expect(await base.listar()).toHaveLength(2)
 
     falhar = false
-    await user.click(screen.getByRole("button", { name: "Tentar de novo as que falharam" }))
+    await user.click(
+      screen.getByRole("button", { name: "Tentar de novo as que falharam" })
+    )
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent(
-        "Setembro de 2026"
-      )
+      expect(
+        screen.getByRole("button", { name: "Competência" })
+      ).toHaveTextContent("Setembro de 2026")
     )
     expect(await base.listar()).toHaveLength(3)
   })
 })
-
 
 describe("gestão das cargas (D58)", () => {
   const agora = { t: Date.UTC(2026, 9, 14, 12) }
@@ -624,25 +658,42 @@ describe("gestão das cargas (D58)", () => {
   it("Nome (opcional) só aparece na versão 2 e vai para o banco; o seletor mostra v2 · nome", async () => {
     const user = userEvent.setup()
     const repo = montar()
-    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), outro())
-    let dialog = await screen.findByRole("dialog", { name: "Confirmar a carga" })
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      outro()
+    )
+    let dialog = await screen.findByRole("dialog", {
+      name: "Confirmar a carga",
+    })
     expect(within(dialog).queryByLabelText("Nome (opcional)")).toBeNull()
-    await user.click(within(dialog).getByRole("button", { name: "Confirmar carga" }))
+    await user.click(
+      within(dialog).getByRole("button", { name: "Confirmar carga" })
+    )
     await h1("Projetos")
 
     await user.click(screen.getByRole("button", { name: /Nova carga/ }))
-    await user.upload(await screen.findByLabelText(/Arquivo da nova carga/), outro("correcao-lider-agosto-2026.xlsx"))
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da nova carga/),
+      outro("correcao-lider-agosto-2026.xlsx")
+    )
     dialog = await screen.findByRole("dialog", { name: "Confirmar a carga" })
     const nome = within(dialog).getByLabelText("Nome (opcional)")
     expect(nome).toHaveValue("correcao-lider-agosto-2026")
     await user.clear(nome)
     await user.type(nome, "Correção do Líder")
-    await user.click(within(dialog).getByRole("button", { name: "Confirmar carga" }))
+    await user.click(
+      within(dialog).getByRole("button", { name: "Confirmar carga" })
+    )
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent("v2 · Correção do Líder")
+      expect(
+        screen.getByRole("button", { name: "Competência" })
+      ).toHaveTextContent("v2 · Correção do Líder")
     )
-    expect((await repo.listar()).map((m) => [m.versao, m.nome])).toEqual([[2, "Correção do Líder"], [1, null]])
+    expect((await repo.listar()).map((m) => [m.versao, m.nome])).toEqual([
+      [2, "Correção do Líder"],
+      [1, null],
+    ])
   })
 
   it("arquivadas não aparecem na tela de envio nem no seletor", async () => {
@@ -652,7 +703,9 @@ describe("gestão das cargas (D58)", () => {
     const jul = await salvar(repo, "jul.xlsx", "outro", "2026-07")
     await repo.alterar(jul.id, { arquivada: true })
     montar(repo)
-    expect(await screen.findByRole("button", { name: /^Abrir a última/ })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    ).toBeInTheDocument()
     expect(screen.queryByText("jul.xlsx")).toBeNull()
     await user.click(screen.getByRole("button", { name: /^Abrir a última/ }))
     await h1("Projetos")
@@ -666,28 +719,54 @@ describe("gestão das cargas (D58)", () => {
     const jul = await salvar(repo, "jul.xlsx", "outro", "2026-07")
     await salvar(repo, "ago.xlsx", "outro", "2026-08")
     montar(repo)
-    await user.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+    await user.click(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    )
     await h1("Projetos")
     await user.click(screen.getByRole("button", { name: /Competência/ }))
-    await user.click(await screen.findByRole("button", { name: "Julho de 2026, versão 1" }))
-    await waitFor(() => expect(screen.getByRole("button", { name: "Competência", hidden: true })).toHaveTextContent("Julho"))
+    await user.click(
+      await screen.findByRole("button", { name: "Julho de 2026, versão 1" })
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Competência", hidden: true })
+      ).toHaveTextContent("Julho")
+    )
 
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
     const painel = await screen.findByRole("dialog", { name: "Histórico" })
     await user.click(within(painel).getByRole("tab", { name: "Geral" }))
-    await user.click(within(painel).getByRole("button", { name: "Arquivar Julho de 2026 v1" }))
+    await user.click(
+      within(painel).getByRole("button", { name: "Arquivar Julho de 2026 v1" })
+    )
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Competência", hidden: true })).toHaveTextContent("Agosto"))
-    expect((await repo.listar()).find((m) => m.id === jul.id)?.arquivadaEm).not.toBeNull()
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Competência", hidden: true })
+      ).toHaveTextContent("Agosto")
+    )
+    expect(
+      (await repo.listar()).find((m) => m.id === jul.id)?.arquivadaEm
+    ).not.toBeNull()
     expect(await repo.obter(jul.id)).not.toBeNull()
 
-    await user.click(within(painel).getByRole("checkbox", { name: "Mostrar arquivadas" }))
-    await user.click(within(painel).getByRole("button", { name: "Restaurar Julho de 2026 v1" }))
+    await user.click(
+      within(painel).getByRole("checkbox", { name: "Mostrar arquivadas" })
+    )
+    await user.click(
+      within(painel).getByRole("button", { name: "Restaurar Julho de 2026 v1" })
+    )
     await waitFor(async () =>
-      expect((await repo.listar()).find((m) => m.id === jul.id)?.arquivadaEm).toBeNull()
+      expect(
+        (await repo.listar()).find((m) => m.id === jul.id)?.arquivadaEm
+      ).toBeNull()
     )
     await waitFor(() =>
-      expect(within(painel).getByRole("button", { name: "Arquivar Julho de 2026 v1" })).toBeInTheDocument()
+      expect(
+        within(painel).getByRole("button", {
+          name: "Arquivar Julho de 2026 v1",
+        })
+      ).toBeInTheDocument()
     )
   })
 
@@ -697,22 +776,32 @@ describe("gestão das cargas (D58)", () => {
     await salvar(repo, "ago.xlsx", "outro", "2026-08")
     await salvar(repo, "set.xlsx", "outro", "2026-09")
     montar(repo)
-    await user.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+    await user.click(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    )
     await h1("Projetos")
     await user.click(screen.getByRole("button", { name: /Histórico/ }))
     const painel = await screen.findByRole("dialog", { name: "Histórico" })
     await user.click(within(painel).getByRole("tab", { name: "Geral" }))
-    await user.click(within(painel).getByRole("button", { name: "Editar Setembro de 2026 v1" }))
+    await user.click(
+      within(painel).getByRole("button", { name: "Editar Setembro de 2026 v1" })
+    )
     const dlg = await screen.findByRole("dialog", { name: "Editar carga" })
     await user.click(within(dlg).getByRole("combobox", { name: "Mês" }))
     await user.click(await screen.findByRole("option", { name: "Agosto" }))
-    expect(within(dlg).getByText(/vai virar a versão 2 de Agosto/)).toBeInTheDocument()
+    expect(
+      within(dlg).getByText(/vai virar a versão 2 de Agosto/)
+    ).toBeInTheDocument()
     await user.click(within(dlg).getByRole("button", { name: "Salvar" }))
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Competência", hidden: true })).toHaveTextContent("Agosto de 2026")
+      expect(
+        screen.getByRole("button", { name: "Competência", hidden: true })
+      ).toHaveTextContent("Agosto de 2026")
     )
-    expect(screen.getByRole("button", { name: "Competência", hidden: true })).toHaveTextContent("v2")
+    expect(
+      screen.getByRole("button", { name: "Competência", hidden: true })
+    ).toHaveTextContent("v2")
   })
 
   it("relista ao voltar para a aba, no máximo uma vez a cada 30 s", async () => {
@@ -730,11 +819,17 @@ describe("gestão das cargas (D58)", () => {
     await salvar(base, "set.xlsx", "outro", "2026-09")
     agora.t += 31_000
     voltarAbaVisivel()
-    await waitFor(() => expect(listar).toHaveBeenCalledTimes(chamadasIniciais + 1))
-    await userEvent.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+    await waitFor(() =>
+      expect(listar).toHaveBeenCalledTimes(chamadasIniciais + 1)
+    )
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    )
     await tituloVisivel("Projetos")
     await userEvent.click(screen.getByRole("button", { name: /Competência/ }))
-    expect(await screen.findByRole("button", { name: "Setembro de 2026, versão 1" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: "Setembro de 2026, versão 1" })
+    ).toBeInTheDocument()
 
     agora.t += 5_000
     window.dispatchEvent(new Event("focus"))
@@ -746,9 +841,14 @@ describe("gestão das cargas (D58)", () => {
     const user = userEvent.setup()
     const { repo, listar } = comEspiao()
     montar(repo)
-    await user.upload(await screen.findByLabelText(/Arquivo da planilha/), outro())
+    await user.upload(
+      await screen.findByLabelText(/Arquivo da planilha/),
+      outro()
+    )
     const antes = listar.mock.calls.length
-    await user.click(await screen.findByRole("button", { name: "Confirmar carga" }))
+    await user.click(
+      await screen.findByRole("button", { name: "Confirmar carga" })
+    )
     await h1("Projetos")
     await waitFor(() => expect(listar.mock.calls.length).toBeGreaterThan(antes))
   })
@@ -758,13 +858,22 @@ describe("gestão das cargas (D58)", () => {
     const { repo, base } = comEspiao()
     const c = await salvar(repo, "ago.xlsx", "outro", "2026-08")
     montar(repo)
-    await user.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+    await user.click(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    )
     await h1("Projetos")
     await base.excluir(c.id)
     agora.t += 31_000
     voltarAbaVisivel()
-    expect(await screen.findByText("Esta carga não existe mais.")).toBeInTheDocument()
-    expect(await screen.findByRole("heading", { level: 1, name: /Carregar a planilha/ })).toBeInTheDocument()
+    expect(
+      await screen.findByText("Esta carga não existe mais.")
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: /Carregar a planilha/,
+      })
+    ).toBeInTheDocument()
   })
 
   it("carga aberta arquivada por outra pessoa: avisa e volta à tela de envio quando não sobra outra do tipo", async () => {
@@ -772,13 +881,22 @@ describe("gestão das cargas (D58)", () => {
     const { repo, base } = comEspiao()
     const c = await salvar(repo, "ago.xlsx", "outro", "2026-08")
     montar(repo)
-    await user.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+    await user.click(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    )
     await h1("Projetos")
     await base.alterar(c.id, { arquivada: true })
     agora.t += 31_000
     voltarAbaVisivel()
-    expect(await screen.findByText("Esta carga foi arquivada.")).toBeInTheDocument()
-    expect(await screen.findByRole("heading", { level: 1, name: /Carregar a planilha/ })).toBeInTheDocument()
+    expect(
+      await screen.findByText("Esta carga foi arquivada.")
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: /Carregar a planilha/,
+      })
+    ).toBeInTheDocument()
   })
 
   it("renomeada por outra pessoa: a barra passa a mostrar o novo nome depois de relistar", async () => {
@@ -786,13 +904,17 @@ describe("gestão das cargas (D58)", () => {
     const { repo, base } = comEspiao()
     const c = await salvar(repo, "ago.xlsx", "outro", "2026-08")
     montar(repo)
-    await user.click(await screen.findByRole("button", { name: /^Abrir a última/ }))
+    await user.click(
+      await screen.findByRole("button", { name: /^Abrir a última/ })
+    )
     await h1("Projetos")
     await base.alterar(c.id, { nome: "Fechamento" })
     agora.t += 31_000
     voltarAbaVisivel()
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Competência" })).toHaveTextContent("Fechamento")
+      expect(
+        screen.getByRole("button", { name: "Competência" })
+      ).toHaveTextContent("Fechamento")
     )
   })
 })

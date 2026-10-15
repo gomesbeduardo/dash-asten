@@ -105,8 +105,8 @@ beforeEach(() => {
 const painel = async (cargas: [string, L[]][]) =>
   render(<PainelChamados {...await cenario(cargas)} />)
 
-describe("Painel: topo por Situação (D64)", () => {
-  it("foto abr v1: total e um card por situação, na ordem de frequência", async () => {
+describe("Painel: faixa do topo por Situação (decisão 26)", () => {
+  it("foto abr v1: total à esquerda e uma barra empilhada com as 4 situações e a legenda com contagens", async () => {
     await painel([["2026-04", ABR]])
     const topo = await screen.findByRole("region", {
       name: "Chamados por situação",
@@ -115,11 +115,13 @@ describe("Painel: topo por Situação (D64)", () => {
       name: "Total de chamados",
     })
     expect(within(total).getByLabelText("5")).toBeInTheDocument()
-    const nomes = within(topo)
-      .getAllByRole("article")
-      .map((a) => a.getAttribute("aria-label"))
-    expect(nomes).toEqual([
-      "Total de chamados",
+    const barra = within(topo).getByRole("img", { name: /^Situações:/ })
+    expect(barra.getAttribute("aria-label")).toBe(
+      "Situações: Finalizado 2; Aguardando aceite 1; Em Análise 1; Em Atendimento 1"
+    )
+    expect(barra.querySelectorAll("[data-situacao]")).toHaveLength(4)
+    const itens = within(topo).getAllByRole("listitem")
+    expect(itens.map((i) => i.getAttribute("aria-label"))).toEqual([
       "Situação: Finalizado",
       "Situação: Aguardando aceite",
       "Situação: Em Análise",
@@ -127,19 +129,19 @@ describe("Painel: topo por Situação (D64)", () => {
     ])
     expect(
       within(
-        within(topo).getByRole("article", { name: "Situação: Finalizado" })
+        within(topo).getByRole("listitem", { name: "Situação: Finalizado" })
       ).getByLabelText("2")
     ).toBeInTheDocument()
     expect(
       within(
-        within(topo).getByRole("article", { name: "Situação: Em Análise" })
+        within(topo).getByRole("listitem", { name: "Situação: Em Análise" })
       ).getByLabelText("1")
     ).toBeInTheDocument()
     // sem carga anterior: nada de Δ
     expect(topo).toHaveTextContent("sem base no mês anterior")
   })
 
-  it("foto out: situação nova vira card, com Δ contra o mês anterior e 'nova'", async () => {
+  it("foto out: situação nova na legenda, com Δ contra o mês anterior e 'nova'", async () => {
     await painel([
       ["2026-09", ABR],
       ["2026-10", OUT],
@@ -147,20 +149,19 @@ describe("Painel: topo por Situação (D64)", () => {
     const topo = await screen.findByRole("region", {
       name: "Chamados por situação",
     })
-    const card = (n: string) =>
-      within(topo).getByRole("article", { name: `Situação: ${n}` })
-    expect(card("Aguardando cliente")).toHaveTextContent("nova")
-    expect(within(card("Finalizado")).getByLabelText("8")).toBeInTheDocument()
+    const item = (n: string) =>
+      within(topo).getByRole("listitem", { name: `Situação: ${n}` })
+    expect(item("Aguardando cliente")).toHaveTextContent("nova")
+    expect(within(item("Finalizado")).getByLabelText("8")).toBeInTheDocument()
     // set/26 é corrigido pela foto de out (D65): 5000, 5003 e 5010 já estavam finalizados lá
-    expect(card("Finalizado")).toHaveTextContent("+3 vs set/26")
-    expect(card("Em Análise")).toHaveTextContent("nova")
-    expect(
-      within(topo).getByRole("article", { name: "Total de chamados" })
-    ).toHaveTextContent("+5 vs set/26")
+    expect(item("Finalizado")).toHaveTextContent("+3 vs set/26")
+    expect(item("Em Análise")).toHaveTextContent("nova")
+    const total = within(topo).getByRole("article", {
+      name: "Total de chamados",
+    })
+    expect(total).toHaveTextContent("+5 vs set/26")
+    expect(total).toHaveTextContent("10")
     // o aberto depois do Mes Ref. fica só na nota
-    expect(
-      within(topo).getByRole("article", { name: "Total de chamados" })
-    ).toHaveTextContent("10")
     expect(screen.getByLabelText("Avisos")).toHaveTextContent(
       "1 aberto depois do Mes Ref."
     )

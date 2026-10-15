@@ -40,6 +40,8 @@ export type PainelComparado = {
   /** Mês aberto, filtrado e corrigido (base do cálculo por período dos gráficos). */
   entradaAtual: EntradaCompetencia
   base: BaseAnterior
+  /** Foto do período-base (filtrada e corrigida), para os cruzamentos; `null` sem foto ou sem base usável. */
+  entradaBase: EntradaCompetencia | null
   /** Rótulo do período-base nos Δ ("abr/26", "abr/26 · v1"); `null` sem base. */
   rotuloBase: string | null
   /** ["out/26"] ou ["mai/26", "out/26"]: fotos que corrigiram a foto aberta; vazio se nada mudou. */
@@ -192,9 +194,18 @@ export function usePainelComparado({
           situacoes: bm.situacoes,
           total: bm.totalChamados,
           rotulo: rotuloBase!,
+          distribuicoes: bm.distribuicoes,
+          atrasoFaixas: bm.atrasoFaixas,
         }
     } else if (semFoto && parcial) {
-      base = { situacoes: [], total: 0, rotulo: rotuloBase!, semFoto }
+      base = {
+        situacoes: [],
+        total: 0,
+        rotulo: rotuloBase!,
+        semFoto,
+        distribuicoes: parcial.distribuicoes,
+        atrasoFaixas: [],
+      }
       const p = parcial
       const kpis: KpiCorrigido[] = m.kpis.map((k) => {
         const v = p.kpis.find((x) => x.id === k.id)?.valor ?? null
@@ -246,6 +257,7 @@ export function usePainelComparado({
       metricas: m,
       entradaAtual: corrigida.entrada,
       base,
+      entradaBase: base && !base.semFoto && baseUsavel ? baseUsavel : null,
       rotuloBase,
       corrigidoPor: m.corrigidoPor.map(rotuloCompetencia),
       opcoes,

@@ -1,11 +1,9 @@
-import { CheckIcon } from "lucide-react"
-
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
 
 /**
- * Liga/desliga uma série do gráfico. Ligada: preenchida com check; desligada:
- * contorno tracejado, texto riscado e sem check (a forma muda além da cor).
+ * Liga/desliga uma série do gráfico. Legenda neutra (marcador de cor + nome, sem cara de botão
+ * de ação); desligada: contorno tracejado e texto riscado (a forma muda além da cor).
  */
 export function ToggleSerie({
   ligada,
@@ -32,17 +30,13 @@ export function ToggleSerie({
         if (!ultima) onAlternar()
       }}
       className={cn(
-        "press gap-2 rounded-lg border-2 bg-card px-3 data-[state=on]:border-ring data-[state=on]:bg-brand-soft data-[state=on]:font-semibold data-[state=on]:text-brand-ink data-[state=on]:hover:bg-brand-soft data-[state=off]:border-dashed data-[state=off]:border-input data-[state=off]:text-muted-foreground data-[state=off]:line-through",
+        "press min-w-0 gap-2 rounded-md border border-transparent bg-transparent px-2.5 text-base font-normal text-foreground hover:bg-muted data-[state=off]:border-dashed data-[state=off]:border-input data-[state=off]:text-muted-foreground data-[state=off]:line-through data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=on]:hover:bg-muted",
         ultima && "cursor-not-allowed"
       )}
     >
-      <CheckIcon
-        aria-hidden
-        className={cn("size-5", !ligada && "invisible")}
-      />
       <span
         aria-hidden
-        className="inline-block h-0 w-6 border-t-[4px]"
+        className="inline-block h-0 w-5 shrink-0 border-t-[4px]"
         style={{
           borderColor: cor,
           borderTopStyle: tracejado ? "dashed" : "solid",
