@@ -333,3 +333,44 @@ describe("filtro sem a coluna na carga (D61)", () => {
     expect(m.kpis.every((k) => k.valor === null)).toBe(true)
   })
 })
+
+describe("distribuições por operador e por área", () => {
+  const ROT = ["Data de abertura", "Data de Solução", "Área", "Operador"]
+  const d = (s: string) => new Date(`${s}T00:00:00Z`)
+  const sheet = montarSheet(ROT, [
+    [d("2026-09-01"), null, "Financeiro", "Ana"],
+    [d("2026-09-02"), null, "Financeiro", "Ana"],
+    [d("2026-09-03"), null, "Fiscal", "Bia"],
+    [d("2026-09-04"), null, null, null],
+  ])
+  const m = calcularMetricas({ sheet, ...SET })
+  const dist = (id: string) => m.distribuicoes.find((x) => x.id === id)
+
+  it("backlog por operador, não reconstruível, vazios em (sem informação)", () => {
+    const op = dist("operador")!
+    expect(op.titulo).toBe("Backlog por operador (na exportação)")
+    expect(op.reconstruivel).toBe(false)
+    expect(op.itens).toEqual([
+      { rotulo: "Ana", valor: 2 },
+      { rotulo: "(sem informação)", valor: 1 },
+      { rotulo: "Bia", valor: 1 },
+    ])
+  })
+
+  it("backlog por área é reconstruível", () => {
+    const a = dist("area")!
+    expect(a.titulo).toBe("Backlog por área")
+    expect(a.reconstruivel).toBe(true)
+    expect(a.itens).toContainEqual({ rotulo: "Financeiro", valor: 2 })
+    expect(a.itens).toContainEqual({ rotulo: "(sem informação)", valor: 1 })
+  })
+
+  it("sem a coluna não há distribuição", () => {
+    const s = calcularMetricas({
+      sheet: montarSheet(["Data de abertura", "Data de Solução"], [[d("2026-09-01"), null]]),
+      ...SET,
+    })
+    expect(s.distribuicoes.find((x) => x.id === "operador")).toBeUndefined()
+    expect(s.distribuicoes.find((x) => x.id === "area")).toBeUndefined()
+  })
+})

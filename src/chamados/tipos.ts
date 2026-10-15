@@ -17,7 +17,13 @@ export type KpiChamados = {
 }
 export type ItemDistribuicao = { rotulo: string; valor: number }
 export type Distribuicao = {
-  id: "cliente" | "areaSuperior" | "atividade" | "situacao"
+  id:
+    | "cliente"
+    | "area"
+    | "areaSuperior"
+    | "atividade"
+    | "operador"
+    | "situacao"
   titulo: string
   itens: ItemDistribuicao[]
   reconstruivel: boolean

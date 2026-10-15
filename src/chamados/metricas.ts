@@ -312,6 +312,8 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
     ["areaSuperior", "Backlog por área superior", "areaSuperior"],
     ["atividade", "Backlog por atividade", "atividade"],
     ["situacao", "Backlog por situação atual (na exportação)", "situacao"],
+    ["area", "Backlog por área", "area"],
+    ["operador", "Backlog por operador (na exportação)", "operador"],
   ]
   const distribuicoes: Distribuicao[] = defs
     .filter(([, , campo]) => mapa[campo as keyof MapaColunas])
@@ -319,7 +321,7 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
       id,
       titulo,
       itens: distribuir(backlog, mapa[campo]),
-      reconstruivel: id !== "situacao",
+      reconstruivel: id !== "situacao" && id !== "operador",
     }))
 
   const faixas: [string, number][] = [

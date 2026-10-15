@@ -41,7 +41,7 @@ export const SELOS: Record<
     texto: "Situação na exportação",
     Icon: FileClockIcon,
     explicacao:
-      "É a situação do chamado na data em que a planilha foi exportada, não no fim do mês.",
+      "É a situação (ou o responsável) do chamado na data em que a planilha foi exportada, não no fim do mês.",
   },
   derivado: {
     curta:

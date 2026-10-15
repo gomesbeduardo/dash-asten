@@ -264,6 +264,38 @@ describe("PainelChamados", () => {
     ).toBeInTheDocument()
   })
 
+  it("mostra backlog por operador (selo de exportação) e por área (8 maiores + Outros)", async () => {
+    const repo: RepositorioDeCargas = criarRepositorioMemoria()
+    const cab = [...CAB, "Área", "Operador"]
+    const linhas = Array.from({ length: 12 }, (_, i) => [
+      d("2026-09-02"), i + 1, "Cliente 1", "Área 1", "Suporte", "Em Análise", null, null, null, null, 0,
+      `Módulo ${i + 1}`, i < 6 ? "Ana" : "Bia",
+    ])
+    const meta = await repo.salvar({
+      tipo: "chamados",
+      competencia: "2026-09",
+      arquivo: "x.xlsx",
+      workbook: readWorkbook(makeXlsx({ Dados: [cab, ...linhas] }), "x.xlsx"),
+    })
+    const carga = (await repo.obter(meta.id)) as Carga
+    render(
+      <PainelChamados
+        carga={carga}
+        historico={await repo.listar()}
+        obterCarga={(id) => repo.obter(id)}
+        entrada={false}
+      />
+    )
+    const area = await screen.findByRole("region", { name: "Backlog por área" })
+    expect(within(area).getByRole("button", { name: "Agrupado em Outros" })).toBeInTheDocument()
+    expect(within(area).getByRole("img").getAttribute("aria-label")).toMatch(/Outros 4/)
+    expect(within(area).getByRole("img").getAttribute("aria-label")).not.toMatch(/Módulo 9/)
+    const op = screen.getByRole("region", { name: "Backlog por operador (na exportação)" })
+    expect(op).toHaveTextContent(/carga de trabalho/)
+    expect(within(op).getByRole("button", { name: /Situação na exportação/ })).toBeInTheDocument()
+    expect(within(op).queryByRole("button", { name: "Agrupado em Outros" })).toBeNull()
+  })
+
   it("aviso sutil no cabeçalho quando o ano não consta na planilha da carga", async () => {
     const semData: L[] = [[null, "Cli A", "Em Análise", null, null]]
     const repo: RepositorioDeCargas = criarRepositorioMemoria()
@@ -373,6 +405,36 @@ describe("CompararChamados", () => {
   const cabecalhos = () =>
     screen.getAllByRole("columnheader").map((c) => c.textContent?.trim())
   const seletores = () => screen.getAllByRole("combobox", { name: /^Competência \d$/ })
+
+  it("compara o backlog por área, mas não o por operador (responsável na exportação)", async () => {
+    const repo: RepositorioDeCargas = criarRepositorioMemoria()
+    const cab = [...CAB, "Área", "Operador"]
+    const mk = (n: number) =>
+      Array.from({ length: n }, (_, i) => [
+        d("2026-06-02"), i + 1, "Cliente 1", "Área 1", "Suporte", "Em Análise", null, null, null, null, 0,
+        `Módulo ${i + 1}`, "Ana",
+      ])
+    let ultima = ""
+    for (const [c, n] of [["2026-08", 2], ["2026-09", 3]] as const) {
+      const m = await repo.salvar({
+        tipo: "chamados",
+        competencia: c,
+        arquivo: `ch-${c}.xlsx`,
+        workbook: readWorkbook(makeXlsx({ Dados: [cab, ...mk(n)] }), `ch-${c}.xlsx`),
+      })
+      ultima = m.id
+    }
+    render(
+      <CompararChamados
+        carga={(await repo.obter(ultima)) as Carga}
+        historico={await repo.listar()}
+        obterCarga={(id) => repo.obter(id)}
+        entrada={false}
+      />
+    )
+    expect(await screen.findByRole("region", { name: "Backlog por área" })).toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: /Backlog por operador/ })).toBeNull()
+  })
 
   it("começa com duas competências (anterior e atual), mostra o Δ e não deixa remover", async () => {
     render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
