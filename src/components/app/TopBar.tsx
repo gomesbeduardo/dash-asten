@@ -161,7 +161,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         {p.dica && `${p.dica} · `}
         {p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
         {p.visoes.length > 1 &&
-          " · P painel · L leituras · C comparar · E evolução"}
+          " · P painel · E evolução · C comparar · L leituras"}
       </p>
     </motion.header>
   )
