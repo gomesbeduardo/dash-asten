@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { LayersIcon } from "lucide-react"
+import { HistoryIcon, LayersIcon } from "lucide-react"
 
 import {
   Tooltip,
@@ -14,12 +14,19 @@ export const SELOS: Record<
   { texto: string; Icon: typeof LayersIcon; explicacao: string; curta: string }
 > = {
   outros: {
-    curta:
-      "itens além dos maiores somados em “Outros”; o total se mantém",
+    curta: "itens além dos maiores somados em “Outros”; o total se mantém",
     texto: "Agrupado em Outros",
     Icon: LayersIcon,
     explicacao:
       "Os itens além dos maiores foram somados em “Outros”. O total do gráfico se mantém.",
+  },
+  corrigido: {
+    curta:
+      "valor ajustado por uma foto de mês posterior; o original aparece como “era N”",
+    texto: "Corrigido",
+    Icon: HistoryIcon,
+    explicacao:
+      "Uma foto de mês posterior mostra que chamados desta foto já estavam finalizados no fim do mês. O valor foi corrigido; a planilha não foi alterada e o valor original aparece como “era N”.",
   },
 }
 
@@ -38,7 +45,9 @@ export function Selo({ tipo }: { tipo: SeloTipo }) {
           {texto}
         </button>
       </TooltipTrigger>
-      <TooltipContent className="max-w-md text-base">{explicacao}</TooltipContent>
+      <TooltipContent className="max-w-md text-base">
+        {explicacao}
+      </TooltipContent>
     </Tooltip>
   )
 }
@@ -50,7 +59,13 @@ const CLASSE_SIMBOLO =
  * Só o símbolo do selo, para lugares apertados: mesmo ícone e tom do selo com texto, nome acessível
  * e explicação no foco/hover. A legenda da visão (`LegendaSimbolos`) é obrigatória ao usá-lo (D41).
  */
-export function SeloSimbolo({ tipo, className }: { tipo: SeloTipo; className?: string }) {
+export function SeloSimbolo({
+  tipo,
+  className,
+}: {
+  tipo: SeloTipo
+  className?: string
+}) {
   const { texto, Icon, explicacao } = SELOS[tipo]
   return (
     <Tooltip>
@@ -64,7 +79,9 @@ export function SeloSimbolo({ tipo, className }: { tipo: SeloTipo; className?: s
           <Icon className="size-5" aria-hidden />
         </button>
       </TooltipTrigger>
-      <TooltipContent className="max-w-md text-base">{explicacao}</TooltipContent>
+      <TooltipContent className="max-w-md text-base">
+        {explicacao}
+      </TooltipContent>
     </Tooltip>
   )
 }
@@ -73,7 +90,10 @@ export function SeloSimbolo({ tipo, className }: { tipo: SeloTipo; className?: s
 export function Selos({ tipos }: { tipos: SeloTipo[] }) {
   if (tipos.length === 0) return null
   return (
-    <ul className="inline-flex items-center gap-1.5 align-middle" aria-label="Origem dos dados">
+    <ul
+      className="inline-flex items-center gap-1.5 align-middle"
+      aria-label="Origem dos dados"
+    >
       {tipos.map((t) => (
         <li key={t} className="inline-flex">
           <SeloSimbolo tipo={t} />
@@ -83,7 +103,12 @@ export function Selos({ tipos }: { tipos: SeloTipo[] }) {
   )
 }
 
-export type ItemLegenda = { chave: string; glifo: ReactNode; nome: string; texto: string }
+export type ItemLegenda = {
+  chave: string
+  glifo: ReactNode
+  nome: string
+  texto: string
+}
 
 /** Legenda visível dos símbolos usados numa visão; vazia, não renderiza nada. */
 export function LegendaSimbolos({
@@ -133,4 +158,36 @@ export function LegendaSimbolos({
   )
 }
 
-const ORDEM: SeloTipo[] = ["outros"]
+const ORDEM: SeloTipo[] = ["outros", "corrigido"]
+
+/**
+ * Marca de valor corrigido (D65), discreta e sempre visível: ícone + "corrigido pela foto de out/26 · era 1".
+ * Estática (sem botão), para caber dentro de cartões clicáveis; a explicação está na legenda da visão.
+ */
+export function MarcaCorrigido({
+  por,
+  original,
+  className,
+}: {
+  /** Rótulos das fotos que corrigiram, ex.: ["out/26"]. */
+  por: string[]
+  /** Valor da foto como está, já formatado (ex.: "1", "50,0%", "—"). */
+  original: string
+  className?: string
+}) {
+  const { Icon } = SELOS.corrigido
+  return (
+    <span
+      data-selo="corrigido"
+      className={cn(
+        "inline-flex w-fit max-w-full items-center gap-1 rounded-full border border-dashed border-[#9a4f00]/50 bg-brand-soft px-2 py-0.5 font-sans text-sm font-medium text-[#7a3d00]",
+        className
+      )}
+    >
+      <Icon className="size-3.5 shrink-0" aria-hidden />
+      <span>
+        corrigido pela foto de {por.join(" e ")} · era {original}
+      </span>
+    </span>
+  )
+}

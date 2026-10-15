@@ -13,12 +13,15 @@ import { ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 import { animacao, COR } from "./graficos"
 import { formatarKpi } from "./logica"
+import { MarcaCorrigido } from "./selos"
 
 export type PontoKpi = {
   competencia: string
   rotulo: string
   valor: number | null
   nota: string | null
+  /** Valor corrigido por foto posterior (D65): quem corrigiu e o valor original, já formatado. */
+  marca?: { por: string[]; original: string } | null
 }
 
 export type DeltaKpi = {
@@ -192,6 +195,13 @@ export function ModalKpi({
                           <span className="block text-right font-sans text-sm font-normal text-muted-foreground">
                             {p.nota}
                           </span>
+                        )}
+                        {p.marca && (
+                          <MarcaCorrigido
+                            por={p.marca.por}
+                            original={p.marca.original}
+                            className="mt-1 ml-auto flex"
+                          />
                         )}
                       </span>
                     </li>

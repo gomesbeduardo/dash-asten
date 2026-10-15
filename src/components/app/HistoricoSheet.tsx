@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dataCarga, filtrarHistorico } from "./buscaHistorico"
 import { competenciaLonga, rotuloComNome, rotuloVersao } from "./formatoCarga"
 import { ListaCargasAgrupada } from "./ListaCargasAgrupada"
+import { visoesDoTipo } from "@/panels/tipos"
 
 const maisRecentesPrimeiro = (metas: CargaMeta[]) =>
   [...metas].sort((a, b) => b.importadaEm.localeCompare(a.importadaEm))
@@ -40,6 +41,7 @@ export function HistoricoSheet({
   atualId,
   onAbrir,
   onAlterar,
+  onCompararVersoes,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -48,6 +50,8 @@ export function HistoricoSheet({
   onAbrir: (id: string) => void
   /** Renomeia, corrige tipo/competência ou arquiva/restaura. Quem chama trata os erros. */
   onAlterar: (id: string, alteracao: AlteracaoDeCarga) => Promise<void>
+  /** Atalho "Comparar versões" (D66): abre o Comparar com a versão mais recente do mês e a anterior a ela. */
+  onCompararVersoes?: (atual: CargaMeta, anterior: CargaMeta) => void
 }) {
   // O estado de Enviados vive no localStorage; `rev` força reler após mudar.
   const [rev, setRev] = useState(0)
@@ -62,7 +66,9 @@ export function HistoricoSheet({
       setFalha(null)
       await onAlterar(id, alt)
     } catch (e) {
-      setFalha(e instanceof Error ? e.message : "Não foi possível alterar a carga.")
+      setFalha(
+        e instanceof Error ? e.message : "Não foi possível alterar a carga."
+      )
     }
   }
   const nomeDoTipo = (id: string) =>
@@ -89,6 +95,14 @@ export function HistoricoSheet({
     onAbrir(id)
     onOpenChange(false)
   }
+  const comparar = onCompararVersoes
+    ? (atual: CargaMeta, anterior: CargaMeta) => {
+        onCompararVersoes(atual, anterior)
+        onOpenChange(false)
+      }
+    : undefined
+  // Só os tipos que têm a visão Comparar oferecem o atalho.
+  const podeComparar = (tipo: string) => !!visoesDoTipo(tipo).Comparar
   const nome = (v: CargaMeta) =>
     `${competenciaLonga(v.competencia)} ${rotuloVersao(v)}`
 
@@ -220,6 +234,8 @@ export function HistoricoSheet({
                   nomeDoTipo={nomeDoTipo}
                   atualId={atualId}
                   onAbrir={abrir}
+                  onCompararVersoes={comparar}
+                  podeCompararVersoes={podeComparar}
                   acoes={(v) => (
                     <>
                       {gestao(v)}
@@ -282,6 +298,8 @@ export function HistoricoSheet({
                 expandirTodos={busca.trim() !== ""}
                 detalhes={etiquetas}
                 podeAbrir={podeAbrir}
+                onCompararVersoes={comparar}
+                podeCompararVersoes={podeComparar}
                 acoes={gestao}
               />
             )}
