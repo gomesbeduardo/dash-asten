@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dialog"
 import { BarraContext } from "./BarraContext"
 import { HistoricoSheet } from "./HistoricoSheet"
+import { pedirComparacao } from "@/components/chamados/pedidoComparar"
 import { NovoEnvioDialog } from "./NovoEnvioDialog"
 import { TopBar } from "./TopBar"
 import { useBarVisibility } from "./hooks/useBarVisibility"
@@ -329,6 +330,15 @@ export function Apresentacao(p: ApresentacaoProps) {
           atualId={carga.id}
           onAbrir={p.onAbrir}
           onAlterar={p.onAlterar}
+          onCompararVersoes={(atual, anterior) => {
+            // "Comparar versões" (D66): abre o mês e leva ao Comparar já com as duas versões.
+            pedirComparacao({
+              competencia: atual.competencia,
+              versoes: [anterior.versao, atual.versao],
+            })
+            p.onAbrir(atual.id)
+            escolherVisao("comparar")
+          }}
         />
 
         <Dialog open={limparOpen} onOpenChange={setLimparOpen}>

@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react"
-import { ChevronDownIcon } from "lucide-react"
+import { ChevronDownIcon, ColumnsIcon } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 
 import type { CargaMeta } from "@/cargas"
@@ -7,7 +7,12 @@ import { agruparHistorico } from "@/app/navegacao"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { duration, standard } from "./motion/tokens"
-import { competenciaLonga, dataHora, rotuloComNome, rotuloVersao } from "./formatoCarga"
+import {
+  competenciaLonga,
+  dataHora,
+  rotuloComNome,
+  rotuloVersao,
+} from "./formatoCarga"
 
 const nomeDaCarga = (v: CargaMeta) =>
   `${competenciaLonga(v.competencia)} ${rotuloVersao(v)}`
@@ -26,6 +31,10 @@ type Props = {
   acoes?: (v: CargaMeta) => ReactNode
   /** Conteúdo extra sob o nome do arquivo (ex.: etiquetas). */
   detalhes?: (v: CargaMeta) => ReactNode
+  /** Mês com 2+ versões ativas ganha "Comparar versões": recebe a mais recente e a anterior a ela. */
+  onCompararVersoes?: (atual: CargaMeta, anterior: CargaMeta) => void
+  /** false esconde o atalho para o tipo (ex.: tipo sem a visão Comparar). */
+  podeCompararVersoes?: (tipo: string) => boolean
   className?: string
 }
 
@@ -43,6 +52,8 @@ export function ListaCargasAgrupada({
   acoes,
   detalhes,
   podeAbrir,
+  onCompararVersoes,
+  podeCompararVersoes,
   className,
 }: Props) {
   const tipos = agruparHistorico(metas)
@@ -69,6 +80,11 @@ export function ListaCargasAgrupada({
                 acoes={acoes}
                 detalhes={detalhes}
                 podeAbrir={podeAbrir}
+                onCompararVersoes={
+                  podeCompararVersoes?.(t.tipo) === false
+                    ? undefined
+                    : onCompararVersoes
+                }
               />
             ))}
           </ul>
@@ -86,6 +102,7 @@ function Grupo({
   acoes,
   detalhes,
   podeAbrir,
+  onCompararVersoes,
 }: {
   versoes: CargaMeta[]
   onAbrir: (id: string) => void
@@ -94,12 +111,14 @@ function Grupo({
   acoes?: Props["acoes"]
   detalhes?: Props["detalhes"]
   podeAbrir?: Props["podeAbrir"]
+  onCompararVersoes?: Props["onCompararVersoes"]
 }) {
   const [aberto, setAberto] = useState(false)
   const reduzir = useReducedMotion()
   const idLista = useId()
   const [recente, ...anteriores] = versoes
   const mostrar = anteriores.length > 0 && (aberto || expandirTodos)
+  const ativas = versoes.filter((v) => !v.arquivadaEm)
 
   const linha = (v: CargaMeta, destaque: boolean) => (
     <div
@@ -147,24 +166,39 @@ function Grupo({
       {linha(recente, true)}
       {anteriores.length > 0 && (
         <>
-          <button
-            type="button"
-            aria-expanded={mostrar}
-            aria-controls={idLista}
-            disabled={expandirTodos}
-            onClick={() => setAberto((a) => !a)}
-            className="flex h-11 items-center gap-1 self-start rounded-md px-2 text-sm text-brand-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:no-underline"
-          >
-            <ChevronDownIcon
-              className={cn(
-                "size-4 transition-transform motion-reduce:transition-none",
-                mostrar && "rotate-180"
-              )}
-              aria-hidden
-            />
-            {anteriores.length}{" "}
-            {anteriores.length === 1 ? "versão anterior" : "versões anteriores"}
-          </button>
+          <div className="flex flex-wrap items-center gap-x-3">
+            <button
+              type="button"
+              aria-expanded={mostrar}
+              aria-controls={idLista}
+              disabled={expandirTodos}
+              onClick={() => setAberto((a) => !a)}
+              className="flex h-11 items-center gap-1 self-start rounded-md px-2 text-sm text-brand-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:no-underline"
+            >
+              <ChevronDownIcon
+                className={cn(
+                  "size-4 transition-transform motion-reduce:transition-none",
+                  mostrar && "rotate-180"
+                )}
+                aria-hidden
+              />
+              {anteriores.length}{" "}
+              {anteriores.length === 1
+                ? "versão anterior"
+                : "versões anteriores"}
+            </button>
+            {onCompararVersoes && ativas.length >= 2 && (
+              <button
+                type="button"
+                aria-label={`Comparar versões de ${competenciaLonga(recente.competencia)}`}
+                onClick={() => onCompararVersoes(ativas[0], ativas[1])}
+                className="flex h-11 items-center gap-1 rounded-md px-2 text-sm text-brand-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <ColumnsIcon className="size-4" aria-hidden />
+                Comparar versões
+              </button>
+            )}
+          </div>
           <div id={idLista}>
             <AnimatePresence initial={false}>
               {mostrar && (

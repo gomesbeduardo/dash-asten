@@ -25,6 +25,31 @@ export function useCargasDoTipo(
   obterCarga: (id: string) => Promise<Carga | null>
 ): CargaComAba[] | null {
   const versoes = useMemo(() => ultimasVersoes(historico), [historico])
+  return useCargasDeMetas(versoes, obterCarga)
+}
+
+/** Carrega a aba de chamados de TODAS as versões ativas (não arquivadas), para o Comparar escolher versões (D66). */
+export function useVersoesDoTipo(
+  historico: CargaMeta[],
+  obterCarga: (id: string) => Promise<Carga | null>
+): CargaComAba[] | null {
+  const versoes = useMemo(
+    () =>
+      historico
+        .filter((m) => !m.arquivadaEm)
+        .sort(
+          (a, b) =>
+            a.competencia.localeCompare(b.competencia) || a.versao - b.versao
+        ),
+    [historico]
+  )
+  return useCargasDeMetas(versoes, obterCarga)
+}
+
+function useCargasDeMetas(
+  versoes: CargaMeta[],
+  obterCarga: (id: string) => Promise<Carga | null>
+): CargaComAba[] | null {
   const chave = versoes.map((m) => m.id).join("|")
   // Cargas já no cache: o 1º render já traz os dados (sem esqueleto nem tick assíncrono).
   const imediato = useMemo(() => {

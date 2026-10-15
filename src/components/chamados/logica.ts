@@ -102,7 +102,9 @@ export type OpcaoCompetencia = {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** Competências escolhíveis em Comparar: as que têm carga (foto), da mais recente à mais antiga. Mês sem foto não é reconstruído. */
-export function opcoesDeCompetencia(historico: CargaMeta[]): OpcaoCompetencia[] {
+export function opcoesDeCompetencia(
+  historico: CargaMeta[]
+): OpcaoCompetencia[] {
   return ultimasVersoes(historico)
     .reverse()
     .map((meta) => ({
@@ -238,7 +240,10 @@ export function seriesPorDimensao(
     competencia: e.competencia,
     rotulo: formatarCompetencia(e.competencia),
     valores: Object.fromEntries(
-      series.map((s) => [s.id, contagens[i] ? (contagens[i]!.get(s.rotulo) ?? 0) : null])
+      series.map((s) => [
+        s.id,
+        contagens[i] ? (contagens[i]!.get(s.rotulo) ?? 0) : null,
+      ])
     ),
   }))
   return {
@@ -338,6 +343,21 @@ export type ComparacaoN = {
   atrasoFaixas: ItemSerie[]
 }
 
+/** O que `compararN` lê de uma coluna: uma foto (`MetricasChamados`), corrigida ou o mês sem foto (D65). */
+export type MetricasComparavel = Pick<
+  MetricasChamados,
+  "competencia" | "kpis" | "atrasoFaixas"
+> & {
+  distribuicoes: {
+    id: string
+    titulo: string
+    itens: { rotulo: string; naoFinalizados: number | null }[]
+  }[]
+  colunasSemFiltro?: string[]
+  /** Mês sem foto: distribuições e faixas ficam sem dado (nunca zero). */
+  semFoto?: boolean
+}
+
 const juntarItens = (
   listas: ItemDistribuicao[][],
   ordenar = true,
@@ -355,7 +375,7 @@ const juntarItens = (
 }
 
 /** Compara N competências (já em ordem cronológica): valores por coluna, Δ = última − primeira e setas vs anterior. */
-export function compararN(metricas: MetricasChamados[]): ComparacaoN {
+export function compararN(metricas: MetricasComparavel[]): ComparacaoN {
   const ultima = metricas[metricas.length - 1]
   const kpis = ultima.kpis.map((k) => {
     const valores = metricas.map(
@@ -375,7 +395,9 @@ export function compararN(metricas: MetricasChamados[]): ComparacaoN {
       ),
     }
   })
-  const semDados = metricas.map((m) => (m.colunasSemFiltro ?? []).length > 0)
+  const semDados = metricas.map(
+    (m) => (m.colunasSemFiltro ?? []).length > 0 || m.semFoto === true
+  )
   const ids = [
     ...new Set(metricas.flatMap((m) => m.distribuicoes.map((d) => d.id))),
   ]
@@ -385,10 +407,10 @@ export function compararN(metricas: MetricasChamados[]): ComparacaoN {
       id,
       titulo: (ds[ds.length - 1] ?? ds.find(Boolean))!.titulo,
       itens: juntarItens(
-        ds.map((d) =>
-          (d?.itens ?? []).map((i) => ({
+        ds.map((d, k) =>
+          (metricas[k].semFoto ? [] : (d?.itens ?? [])).map((i) => ({
             rotulo: i.rotulo,
-            valor: i.naoFinalizados,
+            valor: i.naoFinalizados ?? 0,
           }))
         ),
         true,
@@ -537,7 +559,7 @@ export function filtroDaLeitura(
 // ---------------------------------------------------------------- leituras e selos
 
 /** Origem de um dado que não é original puro; o selo aparece igual em todas as visões. */
-export type SeloTipo = "outros"
+export type SeloTipo = "outros" | "corrigido"
 
 const REGRAS: Record<Leitura["id"], string> = {
   fluxo:
@@ -685,8 +707,7 @@ export function limitarItens<T extends { rotulo: string; valor: number }>(
   const nomeados = itens.filter((i) => i.rotulo !== "Outros")
   const outros = itens.find((i) => i.rotulo === "Outros")?.valor ?? 0
   if (nomeados.length <= max && !outros) return itens
-  const resto =
-    nomeados.slice(max).reduce((s, i) => s + i.valor, 0) + outros
+  const resto = nomeados.slice(max).reduce((s, i) => s + i.valor, 0) + outros
   const topo = nomeados.slice(0, max)
   return resto > 0 ? [...topo, { rotulo: "Outros", valor: resto }] : topo
 }

@@ -280,12 +280,15 @@ export function BarrasComparar({
   series,
   animar,
   tv = false,
+  itensParaAltura,
 }: {
   itens: ItemSerie[]
   series: SerieComparar[]
   animar: boolean
   /** Painel/TV: altura proporcional à viewport, barras e rótulos em rem (acompanham a tipografia fluida). */
   tv?: boolean
+  /** Dimensiona a altura como se houvesse este número de itens (cartões lado a lado ficam com a mesma altura). */
+  itensParaAltura?: number
 }) {
   const n = series.length
   const { rem, vh } = useEscalaTv()
@@ -300,7 +303,9 @@ export function BarrasComparar({
   const minimo = tv ? Math.round(vh * 0.38) : 220
   const altura = Math.max(
     minimo,
-    itens.length * (n * (barraMin + 3) + folga) + 24
+    Math.max(itens.length, itensParaAltura ?? 0) *
+      (n * (barraMin + 3) + folga) +
+      24
   )
   const barra = tv
     ? Math.round(
