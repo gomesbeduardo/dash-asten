@@ -83,7 +83,7 @@ Números esperados (contados no gerador direto das datas, não pelo código do a
 
 ## Teste do modelo "foto" (D63+, 15/10)
 
-Recorte de `chamados-2026-04-ficticio.xlsx` com a coluna **Mes Ref.** acrescentada. Cada planilha é uma foto da empresa no Mes Ref. e traz os chamados anteriores com a situação daquele momento. Arquivos (ignorados pelo Git): `teste-foto-abr26-v1.xlsx`, `teste-foto-abr26-v2.xlsx` (mesmo mês, reexportado), `teste-foto-mai26.xlsx`, `teste-foto-out26.xlsx` (salto de jun a set sem fotos).
+Recorte de `chamados-2026-04-ficticio.xlsx` com a coluna **Mes Ref.** acrescentada. Cada planilha é uma foto da empresa no Mes Ref. e traz os chamados anteriores com a situação daquele momento. Arquivos (ignorados pelo Git) em `docs/exemplos/teste-foto/`: `teste-foto-abr26-v1.xlsx`, `teste-foto-abr26-v2.xlsx` (mesmo mês, reexportado), `teste-foto-mai26.xlsx`, `teste-foto-out26.xlsx` (salto de jun a set sem fotos). Regerar: `node docs/exemplos/gerar-teste-foto.cjs`.
 
 Regras usadas na conta: **não finalizado** = Situação ≠ Finalizado; **finalizado no mês** = Situação Finalizado e Data de Solução no mês do Mes Ref.; **em atraso (ciclo)** = não finalizado aberto antes do mês do Mes Ref. (faixas 1 · 2–3 · 4–6 · 7+ meses); **aberto depois do Mes Ref.** = fica numa nota, fora dos números do mês; **SLA vencido** = não finalizado com SLA (renegociado, senão previsto) antes do fim do mês.
 
@@ -131,6 +131,7 @@ Faixa de atraso = meses entre o mês de abertura e o mês do Mes Ref. (jan→abr
 - **v1 × v2 de abril** (Comparar com as duas versões): Em Atendimento 1 → 0, Em Análise 1 → 2, Finalizado 2 → 4, Aguardando aceite 1 → 0; entradas 2 → 3; finalizados no mês 2 → 4; em atraso 2 → 1.
 - **Maio corrigido pela foto de outubro**: a foto de maio dizia 5015 "Em Atendimento"; a de outubro diz que foi resolvido em 30/05. Com as duas fotos carregadas, maio passa a mostrar **finalizados no mês 2** (era 1), **não finalizados 1** (era 2), **Em Atendimento 0** (era 1) e **SLA vencido 1** (era 2), **com a marca "corrigido pela foto de out/26"**. Indicadores que não mudaram ficam sem marca.
 - **Meses sem foto (jun a set)**, ao comparar outubro com eles: só o que as datas dão, tirado da foto de outubro. Jun: entradas 0, finalizados 1 (5003). Jul: 0 e 0. Ago: entradas 1 (5020), finalizados 0. Set: 0 e 0. Cards por Situação e em atraso aparecem como "—" (sem foto).
+- **Abril v1 corrigida pelas fotos de maio e outubro**: 5000 (Em Atendimento na v1, Finalizado 28/04 nas posteriores) e 5010 (Aguardando aceite na v1, Finalizado com solução 25/04 nas posteriores) passam a contar como finalizados em abril → **finalizados 4** (era 2), com a marca "corrigido pela foto de out/26".
 - **v1 e v2 não se corrigem entre si**: a correção só vem de fotos com Mes Ref. posterior; a v1 escolhida no Comparar aparece como está.
 - **Aberto depois do Mes Ref.**: 5026 (03/11) aparece só na nota da foto de outubro; não entra em cards, entradas nem não finalizados.
 - **Situação nova**: "Aguardando cliente" só existe na foto de outubro e vira um card próprio.

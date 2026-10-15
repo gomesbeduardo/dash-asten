@@ -13,3 +13,11 @@ export { gerarLeituras } from "./leituras"
 export type { Severidade, FiltroSugerido, Leitura } from "./leituras"
 export { classificarLinha, classificarLinhas } from "./situacao"
 export type { PosicaoNaFoto } from "./situacao"
+export {
+  corrigirFoto,
+  metricasCorrigidas,
+  metricasDoMesSemFoto,
+  opcoesDeComparacao,
+  rotuloCompetencia,
+} from "./fotos"
+export type { FotoCorrigida } from "./fotos"
