@@ -56,7 +56,7 @@ export type DadosCruzamento = {
 /** Quando o mês escolhido não dá o cruzamento: a nota para o cartão ou nada (sem base). */
 function notaBase(base: BaseAnterior, tem: boolean): string | undefined {
   if (base?.semFoto)
-    return `${base.semFoto}: este cruzamento depende da Situação e só mostra o Mes Ref.`
+    return `${base.semFoto}: este cruzamento depende da Situação e só mostra o mês de referência`
   if (base && !tem)
     return `Sem dados de ${base.rotulo} para este cruzamento (falta coluna).`
   return undefined
@@ -194,7 +194,8 @@ export function OperadorAtraso(d: DadosCruzamento) {
     operadoresPorAtraso(a).map((i) => i.rotulo),
     b?.map((i) => i.rotulo) ?? []
   )
-  const nomeFaixa = (f: string) => (f === "No ciclo" ? f : `${f} meses`)
+  const nomeFaixa = (f: string) =>
+    f === "No ciclo" ? f : f === "1" ? "1 mês" : `${f} meses`
   const celula = (
     i: { total: number; porFaixa: Record<string, number> } | undefined
   ): Celula => ({
@@ -352,10 +353,10 @@ export function AreaSla(d: DadosCruzamento) {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[26%] text-base">Área</TableHead>
-            <TableHead className="w-[42%] text-base">
+            <TableHead className="w-[42%] text-base whitespace-normal">
               No SLA (% dos finalizados no mês)
             </TableHead>
-            <TableHead className="text-base">
+            <TableHead className="min-w-[8.5rem] text-base whitespace-normal">
               Vencidos (nº de não finalizados)
             </TableHead>
           </TableRow>
@@ -375,17 +376,21 @@ export function AreaSla(d: DadosCruzamento) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1" aria-hidden>
+                    <span
+                      className="block h-[1.25rem] rounded-r-[4px]"
+                      style={{
+                        width: `${(i.slaVencido / maxVenc) * 100}%`,
+                        minWidth: i.slaVencido > 0 ? "0.25rem" : 0,
+                        background: gradienteBarra("var(--vencido)"),
+                        boxShadow: i.slaVencido > 0 ? SOMBRA_BARRA : undefined,
+                      }}
+                    />
+                  </div>
                   <span
-                    aria-hidden
-                    className="inline-block h-[1.25rem] rounded-r-[4px]"
-                    style={{
-                      width: `${(i.slaVencido / maxVenc) * 70}%`,
-                      minWidth: i.slaVencido > 0 ? "0.25rem" : 0,
-                      background: gradienteBarra("var(--vencido)"),
-                      boxShadow: i.slaVencido > 0 ? SOMBRA_BARRA : undefined,
-                    }}
-                  />
-                  <span className="num text-lg font-semibold text-foreground">
+                    data-vencidos-num=""
+                    className="num min-w-[3ch] shrink-0 text-right text-lg font-semibold text-foreground tabular-nums"
+                  >
                     {inteiro.format(i.slaVencido)}
                   </span>
                 </div>
