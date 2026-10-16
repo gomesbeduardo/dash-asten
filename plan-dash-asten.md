@@ -136,8 +136,8 @@ Decisões no doc "Pós-reunião MVP — decisões e verificações" e no PRD. Le
 
 **Onda 4 — decisões de 16/10 (D77) e fluxo com spec**
 - [ ] **I. Barras listradas, paleta P3 e reordenação depois da transição** (PR #70).
-- [ ] **K. Área × SLA em gráfico** (`docs/specs/002-area-sla-em-grafico.md`, aguarda prancha; protótipo em `proto/area-sla`).
-- [ ] **J. Retirar o Área × SLA** (`docs/specs/001-retirar-area-sla.md`, suspensa: só se a prancha da K for recusada; pronta em `feat/retirar-area-sla`).
+- [ ] **K. Área × SLA em gráfico** (`docs/specs/002-area-sla-em-grafico.md`, aprovada em 16/10, opção A).
+- [x] ~~**J. Retirar o Área × SLA**~~ (`docs/specs/001-retirar-area-sla.md`, descartada: a K foi aprovada).
 - [ ] **L. Padrão do Painel no Comparar** (`docs/specs/003-padrao-painel-no-comparar.md`, aguarda prancha; pedido da D72).
 - [ ] **M. Padrão do Painel nas Leituras** (`docs/specs/004-padrao-painel-nas-leituras.md`, aguarda prancha; pedido da D72).
 - [ ] **N. Travar a exclusão definitiva** com `ADMIN_TOKEN` na Vercel antes da primeira planilha real (D70).
