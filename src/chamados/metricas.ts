@@ -153,6 +153,8 @@ export function lerFoto(entrada: EntradaCompetencia) {
   const chamados: Chamado[] = []
   let abertosDepois = 0
   let semAbertura = 0
+  // Poucas Situações distintas: normaliza cada texto uma vez, não uma por linha.
+  const normalizadas = new Map<string, string>()
   for (const row of entrada.sheet.rows) {
     const posicao = classificarLinha(row, mapa, entrada.competencia)
     if (posicao === "aberto-depois") {
@@ -165,13 +167,19 @@ export function lerFoto(entrada: EntradaCompetencia) {
     }
     const reneg = tempo(col("slaRenegociado", row))
     const literal = texto(col("situacao", row))
-    const situacao = normalizar(literal ?? "")
+    const chaveSituacao = literal ?? ""
+    let situacao = normalizadas.get(chaveSituacao)
+    if (situacao === undefined) {
+      situacao = normalizar(chaveSituacao)
+      normalizadas.set(chaveSituacao, situacao)
+    }
+    const slaPrevisto = tempo(col("slaPrevisto", row))
     chamados.push({
       abertura: tempo(col("abertura", row))!,
       solucao: tempo(col("solucao", row)),
       aceite: tempo(col("aceite", row)),
-      sla: reneg ?? tempo(col("slaPrevisto", row)),
-      slaPrevisto: tempo(col("slaPrevisto", row)),
+      sla: reneg ?? slaPrevisto,
+      slaPrevisto,
       slaReneg: reneg,
       situacao,
       situacaoTexto: literal ?? SEM_INFO,

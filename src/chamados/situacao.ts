@@ -10,9 +10,16 @@ export function limitesDaCompetencia(c: Competencia): {
   inicio: number
   fim: number
 } {
-  const [ano, mes] = c.split("-").map(Number)
-  return { inicio: Date.UTC(ano, mes - 1, 1), fim: Date.UTC(ano, mes, 1) - 1 }
+  let l = limites.get(c)
+  if (!l) {
+    const [ano, mes] = c.split("-").map(Number)
+    l = { inicio: Date.UTC(ano, mes - 1, 1), fim: Date.UTC(ano, mes, 1) - 1 }
+    limites.set(c, l)
+  }
+  return l
 }
+/** Poucas competências por sessão (uma por mês); evita refazer o split e o Date.UTC a cada linha. */
+const limites = new Map<Competencia, { inicio: number; fim: number }>()
 
 /** Meses de calendário entre o mês da abertura e o Mes Ref. (jan→abr = 3). */
 export function mesesAteCompetencia(
@@ -28,6 +35,10 @@ export const tempo = (v: CellValue | undefined): number | null =>
   v instanceof Date && !Number.isNaN(v.getTime()) ? v.getTime() : null
 export const texto = (v: CellValue | undefined): string | null => {
   if (v === null || v === undefined) return null
+  if (typeof v === "string") {
+    const t = v.trim()
+    return t === "" ? null : t
+  }
   const s = v instanceof Date ? v.toISOString().slice(0, 10) : String(v).trim()
   return s === "" ? null : s
 }
