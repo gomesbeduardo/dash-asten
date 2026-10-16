@@ -28,7 +28,6 @@ export const COR = {
   roxo: "var(--chart-4)",
   cinza: "var(--chart-5)",
   laranja: "#b45f06",
-  castanho: "var(--chart-6)",
   atraso: "var(--late)",
 } as const
 

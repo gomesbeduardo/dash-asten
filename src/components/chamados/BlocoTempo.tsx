@@ -11,6 +11,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { Carregando } from "./Carregando"
 import { GraficoCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, useFiltrosChamados } from "./filtros"
+import { corDaSituacao } from "./cores"
 import { SERIE_FIN } from "./painel-foto"
 import { COR, LinhaMini, type SerieLinha } from "./graficos"
 import { useCargasDoTipo } from "./hooks"
@@ -53,7 +54,7 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     fonte: {
       tipo: "kpis",
       series: [
-        { id: "entradas", rotulo: "Entradas", cor: COR.castanho },
+        { id: "entradas", rotulo: "Entradas", cor: "var(--serie-entradas)" },
         { id: "finalizados", rotulo: "Finalizados", cor: SERIE_FIN },
       ],
     },
@@ -101,14 +102,14 @@ const JANELAS = [6, 12] as const
 
 /** Paleta categórica (até 8 linhas), distinguível entre si e sobre o fundo claro do cartão. */
 const PALETA = [
-  "#1f5fa8",
-  "var(--chart-6)",
-  "#2e7d32",
-  "#7b3fa0",
-  "#c2185b",
-  "#00838f",
-  "#6d4c41",
-  "#546e7a",
+  "var(--chart-1)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--sit-aceite)",
+  "var(--sit-analise)",
+  "var(--chart-2)",
+  "var(--chart-5)",
+  "var(--serie-entradas)",
 ]
 
 /**
@@ -204,10 +205,10 @@ function montar(dados: Dados): Grafico[] {
       out.push({
         g,
         pontos: situacoes.pontos,
-        series: lista.map((s, i) => ({
+        series: lista.map((s) => ({
           id: s.id,
           rotulo: s.rotulo,
-          cor: PALETA[i % PALETA.length],
+          cor: corDaSituacao(s.rotulo),
         })),
         formato: "inteiro",
         subtitulo: (

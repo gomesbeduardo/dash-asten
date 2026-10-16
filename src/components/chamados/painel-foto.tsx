@@ -24,6 +24,7 @@ import {
 import { Toggle } from "@/components/ui/toggle"
 import { GraficoCartao } from "./cartoes"
 import { COR } from "./graficos"
+import { COR_FIN, COR_NAO, coresDasSituacoes } from "./cores"
 import { BarrasRefinadas, type LinhaRefinada } from "./barras-refinadas"
 import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
@@ -77,38 +78,7 @@ function Variacao({
   return <SeloDelta delta={deltaDeContagem(atual, anterior!, rotulo)} />
 }
 
-const normalizar = (r: string) =>
-  r.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim()
-
-const VERDE = "var(--chart-3)"
-const AZUL = "var(--chart-1)"
-/** Cores das situações que não são "Finalizado" (verde), na ordem de frequência. */
-const CORES_SITUACAO = [
-  AZUL,
-  COR.castanho,
-  "var(--chart-4)",
-  "#00778b",
-  "var(--chart-2)",
-  "#8a6d00",
-  "var(--chart-5)",
-  "#a0506b",
-] as const
-
-/** Uma cor por situação, a mesma em toda a página (faixa do topo e cruzamento por situação). */
-export function coresDasSituacoes(rotulos: string[]): Map<string, string> {
-  const cores = new Map<string, string>()
-  let i = 0
-  for (const r of rotulos) {
-    if (cores.has(r)) continue
-    cores.set(
-      r,
-      normalizar(r).startsWith("finaliz")
-        ? VERDE
-        : CORES_SITUACAO[i++ % CORES_SITUACAO.length]
-    )
-  }
-  return cores
-}
+export { coresDasSituacoes }
 
 /** Faixa única do topo (decisão 26): total à esquerda; à direita, barra empilhada por Situação e a legenda com contagem e Δ. */
 export function FaixaSituacao({
@@ -242,16 +212,16 @@ export function FaixaSituacao({
 }
 
 /** Cores das barras de "No mês" e da evolução: tokens de série em index.css. */
-export const SERIE_FIN = "var(--serie-finalizados)"
-export const SERIE_NAO = "var(--serie-nao-finalizados)"
+export const SERIE_FIN = COR_FIN
+export const SERIE_NAO = COR_NAO
 
 const SERIES_MES = [
-  { id: "finalizados", rotulo: "Finalizados no mês", cor: VERDE },
-  { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
+  { id: "finalizados", rotulo: "Finalizados no mês", cor: COR_FIN },
+  { id: "naoFinalizados", rotulo: "Não finalizados", cor: COR_NAO },
 ]
 const SERIES_PERIODO = [
-  { id: "finalizadosPeriodo", rotulo: "Finalizados no período", cor: VERDE },
-  { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
+  { id: "finalizadosPeriodo", rotulo: "Finalizados no período", cor: COR_FIN },
+  { id: "naoFinalizados", rotulo: "Não finalizados", cor: COR_NAO },
 ]
 /** Mês escolhido em tom claro, o Mes Ref. no tom cheio (mesma cor = mesma medida). */
 const claro = (cor: string) => `color-mix(in srgb, ${cor} 38%, white)`
@@ -346,19 +316,19 @@ export function GraficoMes({
       {
         id: "finBase",
         rotulo: `Finalizados ${rotuloBase}`,
-        cor: claro(VERDE),
+        cor: claro(COR_FIN),
       },
-      { id: "finAtual", rotulo: `Finalizados ${mesRef}`, cor: VERDE },
+      { id: "finAtual", rotulo: `Finalizados ${mesRef}`, cor: COR_FIN },
       ...(semFoto
         ? []
         : [
             {
               id: "naoBase",
               rotulo: `Não finalizados ${rotuloBase}`,
-              cor: claro(AZUL),
+              cor: claro(COR_NAO),
             },
           ]),
-      { id: "naoAtual", rotulo: `Não finalizados ${mesRef}`, cor: AZUL },
+      { id: "naoAtual", rotulo: `Não finalizados ${mesRef}`, cor: COR_NAO },
     ]
     linhas = rotulos.map((r) => ({
       rotulo: r,
