@@ -3,6 +3,7 @@
  * (valor em cinza ao lado do atual). Base reta, ponta com raio de 4 px, gradiente leve, sombra suave
  * e grade tracejada. HTML/CSS para acompanhar a tipografia fluida (rem).
  */
+import { useEffect, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
 
 import { chartGrow } from "@/components/app/motion/tokens"
@@ -138,6 +139,14 @@ export function BarrasRefinadas({
   fina?: boolean
 }) {
   const altura = fina ? "0.9rem" : "1.25rem"
+  // A entrada do zero (com atraso escalonado) é só dos elementos do 1º commit (D76): linha ou
+  // série que aparece depois (filtro, competência, legenda) entra pronta e a transição cuida do resto.
+  const [primeiroCommit, setPrimeiroCommit] = useState(true)
+  useEffect(() => {
+    const t = setTimeout(() => setPrimeiroCommit(false))
+    return () => clearTimeout(t)
+  }, [])
+  const entra = animar && primeiroCommit
   const { ocultas, alternar } = useSeriesOcultas(
     series.map((s) => s.id).join("|"),
     series.map((s) => s.id)
@@ -240,7 +249,7 @@ export function BarrasRefinadas({
                       base={v?.base}
                       topo={topo}
                       rotuloBase={rotuloBase}
-                      animar={animar}
+                      animar={entra}
                       atraso={(r * 2 + j) * 0.04}
                       altura={altura}
                       formatar={formatar}

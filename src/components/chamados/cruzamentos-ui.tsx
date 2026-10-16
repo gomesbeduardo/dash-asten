@@ -272,6 +272,32 @@ export function OperadorAtraso(d: DadosCruzamento) {
   )
 }
 
+/** Barra de SLA vencido: largura proporcional ao maior da tabela, com a mesma entrada e transição das outras. */
+function BarraVencidos({
+  valor,
+  maximo,
+  animar = false,
+}: {
+  valor: number
+  maximo: number
+  animar?: boolean
+}) {
+  const crescer = useCrescerBarra<HTMLSpanElement>(animar)
+  return (
+    <span
+      data-barra-vencidos=""
+      ref={crescer}
+      className="transicao-valor block h-[1.25rem] rounded-r-[4px]"
+      style={{
+        width: `${(valor / maximo) * 100}%`,
+        minWidth: valor > 0 ? "0.25rem" : 0,
+        background: gradienteBarra("var(--vencido)"),
+        boxShadow: valor > 0 ? SOMBRA_BARRA : undefined,
+      }}
+    />
+  )
+}
+
 /** Trilha de 0 a 100% com a barra da %; sem número escrito (o valor está no tooltip e no aria-label). `meta` liga uma referência depois. */
 export function BarraPercentual({
   rotulo,
@@ -377,14 +403,10 @@ export function AreaSla(d: DadosCruzamento) {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1" aria-hidden>
-                    <span
-                      className="block h-[1.25rem] rounded-r-[4px]"
-                      style={{
-                        width: `${(i.slaVencido / maxVenc) * 100}%`,
-                        minWidth: i.slaVencido > 0 ? "0.25rem" : 0,
-                        background: gradienteBarra("var(--vencido)"),
-                        boxShadow: i.slaVencido > 0 ? SOMBRA_BARRA : undefined,
-                      }}
+                    <BarraVencidos
+                      valor={i.slaVencido}
+                      maximo={maxVenc}
+                      animar={d.animar}
                     />
                   </div>
                   <span

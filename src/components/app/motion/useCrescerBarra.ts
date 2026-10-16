@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from "react"
+import { useCallback, useInsertionEffect, useRef } from "react"
 import { useReducedMotion } from "motion/react"
 
 import { chartGrow } from "./tokens"
@@ -29,7 +29,9 @@ export function useCrescerBarra<T extends HTMLElement>(
   // Lidos por ref: o callback fica estável e a entrada roda só na montagem do elemento
   // (um atraso novo, vindo de linha que entrou ou saiu, não pode reanimar a barra).
   const atual = useRef({ ativo: animar && !reduce, atraso })
-  useLayoutEffect(() => {
+  // Insertion effect: roda antes de qualquer ref ligar no commit, então um elemento que monta num
+  // componente já vivo lê o `animar`/`atraso` deste render (o layout effect viria depois do ref do filho).
+  useInsertionEffect(() => {
     atual.current = { ativo: animar && !reduce, atraso }
   })
   return useCallback((el: T | null) => {

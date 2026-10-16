@@ -85,4 +85,23 @@ describe("MontarDepois", () => {
     })
     expect(screen.getByText("conteúdo 2")).toBeInTheDocument()
   })
+
+  it("com `aoVisivel` e `limite` de 300 ms, monta aos 300 ms mesmo fora da tela", () => {
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      }
+    )
+    render(cena({ aoVisivel: true, limite: 300 }))
+    act(() => {
+      vi.advanceTimersByTime(299)
+    })
+    expect(screen.queryByText("conteúdo")).not.toBeInTheDocument()
+    act(() => {
+      vi.advanceTimersByTime(101)
+    })
+    expect(screen.getByText("conteúdo")).toBeInTheDocument()
+  })
 })

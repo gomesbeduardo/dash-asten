@@ -56,6 +56,35 @@ export type PainelComparado = {
   opcoes: OpcaoSeletor[]
 }
 
+/** A meta da outra versão do mesmo mês escolhida em "Comparar com"; `null` se não existe (ou foi arquivada). */
+function metaDaVersao(
+  historico: CargaMeta[],
+  carga: Carga,
+  versao: number
+): CargaMeta | null {
+  return (
+    historico.find(
+      (m) =>
+        m.competencia === carga.competencia &&
+        m.versao === versao &&
+        m.id !== carga.id &&
+        !m.arquivadaEm
+    ) ?? null
+  )
+}
+
+/** A escolha vale como está; uma versão que sumiu (arquivada) volta ao padrão, o mês anterior. */
+export function escolhaEfetiva(
+  escolha: string,
+  carga: Carga,
+  historico: CargaMeta[]
+): string {
+  if (!escolha.startsWith("versao:")) return escolha
+  return metaDaVersao(historico, carga, Number(escolha.slice(7)))
+    ? escolha
+    : ANTERIOR
+}
+
 /** Carga de uma versão específica: pronta no 1º render se já está no cache. `undefined` enquanto carrega; `null` sem meta. */
 function useCargaDaMeta(
   meta: CargaMeta | null,
@@ -115,13 +144,8 @@ export function usePainelComparado({
     () =>
       versaoEscolhida === null
         ? null
-        : (historico.find(
-            (m) =>
-              m.competencia === carga.competencia &&
-              m.versao === versaoEscolhida &&
-              m.id !== carga.id
-          ) ?? null),
-    [historico, carga.competencia, carga.id, versaoEscolhida]
+        : metaDaVersao(historico, carga, versaoEscolhida),
+    [historico, carga, versaoEscolhida]
   )
   const cargaVersao = useCargaDaMeta(metaVersao, obterCarga)
 

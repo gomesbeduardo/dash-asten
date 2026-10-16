@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { act, render, screen } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { BarrasRefinadas } from "./barras-refinadas"
 
@@ -141,5 +141,30 @@ describe("BarrasRefinadas", () => {
     }
     const rotulo = screen.getByText("12").parentElement as HTMLElement
     expect(rotulo.className).toMatch(/transicao-valor/)
+  })
+
+  describe("entrada", () => {
+    let animate: ReturnType<typeof vi.fn>
+    beforeEach(() => {
+      animate = vi.fn(() => ({ cancel() {} }))
+      Object.defineProperty(HTMLElement.prototype, "animate", {
+        configurable: true,
+        value: animate,
+      })
+    })
+    afterEach(() => {
+      // @ts-expect-error remove o stub do jsdom
+      delete HTMLElement.prototype.animate
+    })
+
+    it("linha que aparece depois da primeira montagem entra pronta, sem atraso nem entrada do zero", async () => {
+      const { rerender } = render(
+        <BarrasRefinadas linhas={[linhas[0]]} series={series} animar />
+      )
+      expect(animate).toHaveBeenCalledTimes(2)
+      await act(() => new Promise((r) => setTimeout(r, 10)))
+      rerender(<BarrasRefinadas linhas={linhas} series={series} animar />)
+      expect(animate).toHaveBeenCalledTimes(2)
+    })
   })
 })

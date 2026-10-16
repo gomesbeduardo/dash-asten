@@ -60,7 +60,7 @@ describe("BarrasHtml (pilha)", () => {
     expect(estreita).not.toHaveTextContent("1")
   })
 
-  it("a largura da pilha e o flex-grow dos segmentos transitam, e voltam secos com movimento reduzido", () => {
+  it("a largura da pilha e o flex-grow dos segmentos levam a classe de transição (o CSS a seca com movimento reduzido)", () => {
     const { container } = render(
       <BarrasHtml grupos={grupos} colunas={[{ maximo: 3 }]} descricao="teste" />
     )

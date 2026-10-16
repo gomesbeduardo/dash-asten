@@ -14,6 +14,17 @@ function Barra({ animar, atraso }: { animar: boolean; atraso: number }) {
   return <span data-testid="b" ref={ref} />
 }
 
+function BarraCondicional({
+  animar,
+  mostrar,
+}: {
+  animar: boolean
+  mostrar: boolean
+}) {
+  const ref = useCrescerBarra<HTMLSpanElement>(animar)
+  return mostrar ? <span ref={ref} /> : null
+}
+
 let animate: ReturnType<typeof vi.fn>
 let cancel: ReturnType<typeof vi.fn>
 beforeEach(() => {
@@ -48,6 +59,18 @@ describe("useCrescerBarra", () => {
     render(<Barra animar={false} atraso={0} />)
     reduzido = true
     render(<Barra animar atraso={0} />)
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it("elemento que monta num componente já vivo (valor de 0 para mais que 0) usa o `animar` do render atual", () => {
+    const { rerender } = render(<BarraCondicional animar={false} mostrar={false} />)
+    rerender(<BarraCondicional animar mostrar />)
+    expect(animate).toHaveBeenCalledTimes(1)
+  })
+
+  it("e o contrário: `animar` que virou false antes do elemento montar não anima", () => {
+    const { rerender } = render(<BarraCondicional animar mostrar={false} />)
+    rerender(<BarraCondicional animar={false} mostrar />)
     expect(animate).not.toHaveBeenCalled()
   })
 })

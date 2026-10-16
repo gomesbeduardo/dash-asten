@@ -145,7 +145,7 @@ export function FaixaSituacao({
                 key={s.rotulo}
                 data-situacao={s.rotulo}
                 title={`${s.rotulo}: ${n(s.valor)}`}
-                className="num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-primary-foreground"
+                className="transicao-valor num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-primary-foreground"
                 style={{
                   flexGrow: s.valor,
                   flexBasis: 0,

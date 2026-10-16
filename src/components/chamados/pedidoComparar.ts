@@ -1,7 +1,8 @@
 /**
  * Pedido de abrir o Comparar com as versões de um mês (atalho "Comparar versões" do Histórico).
- * Fica na memória por alguns segundos: o Comparar pode já estar aberto (ouve o aviso) ou montar
- * em seguida, quando a carga muda (lê o pedido ao montar).
+ * Fica na memória por alguns segundos: o Comparar pode já estar aberto no mesmo mês (ouve o aviso)
+ * ou remontar em seguida, porque a carga aberta mudou (a visão tem `key` da carga e lê o pedido
+ * ao montar).
  */
 export type PedidoComparar = { competencia: string; versoes: number[] }
 
