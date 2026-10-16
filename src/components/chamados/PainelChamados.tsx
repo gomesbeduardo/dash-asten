@@ -487,7 +487,7 @@ export function PainelChamados({
         <div id="faixa-melhorando" className="scroll-mt-4">
           <MontarDepois
             aoVisivel
-            limite={1500}
+            limite={300}
             reservado={
               <Carregando forma="tempo" texto="Carregando a evolução…" />
             }
