@@ -1,4 +1,5 @@
 import {
+  Activity,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -69,19 +70,21 @@ export type ApresentacaoProps = {
  */
 function Montada({
   entrada,
+  chave,
   onMontar,
   children,
 }: {
   entrada: boolean
-  onMontar: () => void
+  chave: string
+  onMontar: (chave: string) => void
   children: (entrada: boolean) => ReactNode
 }) {
   // Trava aqui: a chave só é marcada depois da montagem.
   const entradaTravada = useEntrada(entrada)
   useEffect(() => {
-    const t = setTimeout(onMontar, 0)
+    const t = setTimeout(() => onMontar(chave), 0)
     return () => clearTimeout(t)
-  }, [onMontar])
+  }, [chave, onMontar])
   return <>{children(entradaTravada)}</>
 }
 
@@ -91,10 +94,13 @@ const Fragmento = ({ children }: { carga: Carga; children: ReactNode }) => (
 
 type ConteudoProps = {
   carga: Carga
+  /** Visão ativa (visível); as demais de `montadas` ficam escondidas. */
   visao: Visao
-  chave: string
-  entrada: boolean
-  onMontar: () => void
+  /** Visões já visitadas desta carga: seguem montadas, só escondidas. */
+  montadas: Visao[]
+  /** Chaves `carga:visão` já vistas: só a primeira visita anima. */
+  vistas: string[]
+  onMontar: (chave: string) => void
   historico: CargaMeta[]
   obterCarga: ApresentacaoProps["obterCarga"]
   irPara: (v: Visao) => void
@@ -103,39 +109,55 @@ type ConteudoProps = {
 /**
  * Conteúdo da aba. Memoizado: quando só a aba escolhida muda (render urgente), as
  * props ficam as da aba antiga e esta parte pesada não renderiza de novo.
+ * O envoltório do tipo (filtros) é um só; cada visão visitada fica num Activity:
+ * escondida, mantém estado e DOM e desliga os efeitos (revisita não remonta).
  */
 const Conteudo = memo(function Conteudo(p: ConteudoProps) {
   const reduce = useReducedMotion()
   const visoes = visoesDoTipo(p.carga.tipo)
   const Envoltorio = visoes.Envoltorio ?? Fragmento
-  const Visao =
-    p.visao === "leituras"
+  const visaoDe = (v: Visao) =>
+    v === "leituras"
       ? visoes.Leituras!
-      : p.visao === "comparar"
+      : v === "comparar"
         ? visoes.Comparar!
         : visoes.Painel
   return (
     <Envoltorio carga={p.carga}>
-      <motion.div
-        key={p.chave}
-        initial={{ opacity: reduce ? 1 : 0.3 }}
-        animate={{
-          opacity: 1,
-          transition: { duration: reduce ? 0 : duration.fast, ease: standard },
-        }}
-      >
-        <Montada entrada={p.entrada} onMontar={p.onMontar}>
-          {(e) => (
-            <Visao
-              carga={p.carga}
-              historico={p.historico}
-              obterCarga={p.obterCarga}
-              entrada={e}
-              irPara={p.irPara}
-            />
-          )}
-        </Montada>
-      </motion.div>
+      {p.montadas.map((v) => {
+        const Visao = visaoDe(v)
+        const chave = `${p.carga.id}:${v}`
+        return (
+          <Activity key={chave} mode={v === p.visao ? "visible" : "hidden"}>
+            <motion.div
+              initial={{ opacity: reduce ? 1 : 0.3 }}
+              animate={{
+                opacity: 1,
+                transition: {
+                  duration: reduce ? 0 : duration.fast,
+                  ease: standard,
+                },
+              }}
+            >
+              <Montada
+                entrada={!p.vistas.includes(chave)}
+                chave={chave}
+                onMontar={p.onMontar}
+              >
+                {(e) => (
+                  <Visao
+                    carga={p.carga}
+                    historico={p.historico}
+                    obterCarga={p.obterCarga}
+                    entrada={e}
+                    irPara={p.irPara}
+                  />
+                )}
+              </Montada>
+            </motion.div>
+          </Activity>
+        )
+      })}
     </Envoltorio>
   )
 })
@@ -254,12 +276,23 @@ export function Apresentacao(p: ApresentacaoProps) {
 
   // Troca pendente: o conteúdo antigo ainda está na tela; atenua, sem mexer no layout.
   const pendente = visaoVista !== visao || cargaVista !== carga
-  const chave = `${cargaVista.id}:${visaoVista}`
-  const entrada = !vistas.includes(chave)
+  // Visões visitadas da carga atual ficam montadas (escondidas); ao trocar de
+  // carga as da antiga são descartadas. Primeira visita monta e anima, como antes.
+  const [visitadas, setVisitadas] = useState({
+    cargaId: cargaVista.id,
+    visoes: [visaoVista],
+  })
+  const anteriores = visitadas.cargaId === cargaVista.id ? visitadas.visoes : []
+  const montadas = anteriores.includes(visaoVista)
+    ? anteriores
+    : [...anteriores, visaoVista]
+  if (montadas !== visitadas.visoes)
+    setVisitadas({ cargaId: cargaVista.id, visoes: montadas })
   // A aba só vira "vista" quando monta na tela.
   const marcarVista = useCallback(
-    () => setVistas((s) => (s.includes(chave) ? s : [...s, chave])),
-    [chave]
+    (chave: string) =>
+      setVistas((s) => (s.includes(chave) ? s : [...s, chave])),
+    []
   )
 
   const ctx = useMemo(() => ({ slot, setHold: setPainelHold, setDica }), [slot])
@@ -348,8 +381,8 @@ export function Apresentacao(p: ApresentacaoProps) {
             <Conteudo
               carga={cargaVista}
               visao={visaoVista}
-              chave={chave}
-              entrada={entrada}
+              montadas={montadas}
+              vistas={vistas}
               onMontar={marcarVista}
               historico={doTipo}
               obterCarga={p.obterCarga}
