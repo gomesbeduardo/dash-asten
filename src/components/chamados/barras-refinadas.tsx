@@ -1,12 +1,10 @@
 /**
- * Barras do "No mês": a barra é o mês aberto e um traço vertical marca o valor do mês comparado
- * (valor em cinza ao lado do atual). Base reta, ponta com raio de 4 px, gradiente leve, sombra suave
- * e grade tracejada. HTML/CSS para acompanhar a tipografia fluida (rem).
+ * Barras do "No mês": o mês comparado é uma barra listrada a 45° atrás (espessura cheia) e a barra
+ * sólida do mês aberto fica na frente, com ~55% da espessura, centralizada (valor comparado em cinza
+ * ao lado do atual). Base reta, ponta com raio de 4 px, gradiente leve, sombra suave e grade tracejada. HTML/CSS para acompanhar a tipografia fluida (rem).
  */
 import { useEffect, useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
 
-import { chartGrow } from "@/components/app/motion/tokens"
 import { useCrescerBarra } from "@/components/app/motion/useCrescerBarra"
 import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
@@ -17,6 +15,14 @@ export type LinhaRefinada = {
   /** Um valor por série (mesma ordem de `series`); `base` é o mesmo valor no mês comparado. */
   valores: { valor: number | null; base?: number | null }[]
 }
+
+/** Listras a 45° (0,09375 rem de traço a cada 0,3125 rem, escalam com a fonte) na cor cheia da série. */
+const listras = (cor: string) =>
+  `repeating-linear-gradient(45deg, ${cor} 0 0.09375rem, transparent 0.09375rem 0.3125rem)`
+/** Fração da espessura que a barra sólida ocupa quando há mês comparado atrás. */
+const FRACAO_SOLIDA = 0.55
+/** Folga em cima e embaixo que a centraliza: (1 − 0,55) / 2. */
+const FOLGA_SOLIDA = 0.225
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const padrao = (v: number) => inteiro.format(v)
@@ -56,24 +62,43 @@ function Barra({
   altura: string
   formatar: (v: number) => string
 }) {
-  const reduce = useReducedMotion()
   const pct = (v: number) => `${(v / topo) * 100}%`
   const comBase =
     rotuloBase !== undefined && base !== undefined && base !== null
   const fim = Math.max(valor ?? 0, comBase ? base : 0)
-  const anima = animar && !reduce
   const crescer = useCrescerBarra<HTMLSpanElement>(animar, atraso)
+  const crescerListras = useCrescerBarra<HTMLSpanElement>(animar, atraso)
+  // A espessura da sólida depende de o gráfico ter comparação, não do valor desta linha: todas
+  // as barras ficam com a mesma espessura. A camada listrada fica montada (largura 0 se a base for 0)
+  // para a largura animar quando a base sai de 0.
+  const listrada = rotuloBase !== undefined
+  const larguraBase = comBase ? base : 0
   return (
     <div className="relative" style={{ height: altura }} title={titulo}>
+      {listrada && (
+        <span
+          data-fantasma=""
+          ref={crescerListras}
+          aria-hidden
+          className="transicao-valor absolute top-0 left-0 rounded-r-[4px]"
+          style={{
+            width: pct(larguraBase),
+            height: altura,
+            minWidth: larguraBase > 0 ? "0.25rem" : 0,
+            background: listras(cor),
+          }}
+        />
+      )}
       {valor !== null && valor > 0 && (
         <span
           data-barra=""
           ref={crescer}
           aria-hidden
-          className="transicao-valor absolute top-0 left-0 rounded-r-[4px]"
+          className="transicao-valor absolute left-0 rounded-r-[4px]"
           style={{
             width: pct(valor),
-            height: altura,
+            height: listrada ? `calc(${altura} * ${FRACAO_SOLIDA})` : altura,
+            top: listrada ? `calc(${altura} * ${FOLGA_SOLIDA})` : 0,
             minWidth: "0.25rem",
             background: gradienteBarra(cor),
             boxShadow: SOMBRA_BARRA,
@@ -82,23 +107,6 @@ function Barra({
       )}
       {(valor === 0 || valor === null) && (
         <span data-barra="" aria-hidden className="hidden" />
-      )}
-      {comBase && base > 0 && (
-        <motion.span
-          data-marca=""
-          aria-hidden
-          className="transicao-valor absolute rounded-[1px] bg-foreground"
-          style={{
-            left: pct(base),
-            top: "-3px",
-            width: "3px",
-            height: `calc(${altura} + 6px)`,
-            transform: "translateX(-50%)",
-          }}
-          initial={anima ? { opacity: 0 } : false}
-          animate={{ opacity: 1 }}
-          transition={{ duration: chartGrow / 1000, ease: "easeOut" }}
-        />
       )}
       <span
         className="transicao-valor absolute top-1/2 flex -translate-y-1/2 items-baseline gap-2 whitespace-nowrap"
@@ -128,7 +136,7 @@ export function BarrasRefinadas({
 }: {
   linhas: LinhaRefinada[]
   series: SerieRefinada[]
-  /** Rótulo do mês comparado ("mai/26"); sem ele não há traço. */
+  /** Rótulo do mês comparado ("mai/26"); sem ele não há camada listrada. */
   rotuloBase?: string
   animar: boolean
   /** Texto do valor (ex.: dias); o padrão é o inteiro em pt-BR. */
@@ -192,7 +200,8 @@ export function BarrasRefinadas({
           <span className="flex items-center gap-2 px-2.5 text-base text-muted-foreground">
             <span
               aria-hidden
-              className="inline-block h-4 w-[3px] rounded-[1px] bg-foreground"
+              className="inline-block h-4 w-6 rounded-r-[4px]"
+              style={{ background: listras("var(--muted-foreground)") }}
             />
             {rotuloBase}
           </span>
