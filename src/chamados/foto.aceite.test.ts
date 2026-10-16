@@ -142,12 +142,12 @@ describe("foto de maio", () => {
   })
 })
 
-describe("foto de outubro (com 1 aberto depois do Mes Ref.)", () => {
+describe("foto de outubro (com 1 aberto depois do mês de referência)", () => {
   const m = calc(out, "2026-10-01", "2026-10")
   it("números", () => {
     expect(m.totalChamados).toBe(10)
     expect(m.abertosDepois).toBe(1)
-    expect(m.avisos).toContain("1 aberto depois do Mes Ref.")
+    expect(m.avisos).toContain("1 aberto depois do mês de referência")
     expect(cards(m)).toEqual({
       "Em Análise": 1,
       "Aguardando cliente": 1,

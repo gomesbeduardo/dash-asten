@@ -56,6 +56,11 @@ describe("leitura envelhecimento (> 25% dos não finalizados na faixa de atraso 
     expect(l.titulo).toBe("6 chamados (30%) estão em atraso há 7 meses ou mais")
     expect(l.filtro).toEqual({ campo: "idade", valores: ["7+"] })
   })
+  it("o texto usa 'mês de referência', não 'Mes Ref.'", () => {
+    const l = achar(gerarLeituras(ent(com(6))), "envelhecimento")!
+    expect(l.texto).toContain("do mês de referência.")
+    expect(l.texto).not.toMatch(/Mes Ref/)
+  })
   it("atencao em 40% exato (8 de 20); critico acima (9 de 20)", () => {
     expect(
       achar(gerarLeituras(ent(com(8))), "envelhecimento")!.severidade

@@ -174,7 +174,7 @@ describe("Painel: comparar com (D65)", () => {
     expect(card).not.toHaveTextContent("sem posição")
   })
 
-  it("(f) mês sem posição: o gráfico mostra só o Mes Ref., com a nota e os finalizados vindos das datas", async () => {
+  it("(f) mês sem posição: o gráfico mostra só o mês de referência, com a nota e os finalizados vindos das datas", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
     await screen.findByRole("combobox", { name: "Comparar com" })
@@ -184,7 +184,7 @@ describe("Painel: comparar com (D65)", () => {
     // só os finalizados vêm com o mês comparado; os não finalizados ficam sem ele (sem posição)
     expect(rotulo).toMatch(/Cliente Ômega: Finalizados no mês 0 \(jun\/26: 1\), Não finalizados 1(;|$)/)
     expect(card).toHaveTextContent("sem posição de jun/26")
-    // cruzamentos dependem da Situação: só o Mes Ref., com a nota
+    // cruzamentos dependem da Situação: só o mês de referência, com a nota
     const cruz = await cruzamento("Cliente × Situação")
     expect(cruz).toHaveTextContent("sem posição de jun/26")
   })

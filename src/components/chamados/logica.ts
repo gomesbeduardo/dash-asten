@@ -798,7 +798,7 @@ const REGRAS: Record<Leitura["id"], string> = {
     "Finalizados no mês de pelo menos 1,5 vez as entradas e menos não finalizados que no mês anterior.",
   concentracao: "Um único cliente com 40% ou mais dos não finalizados (≥ 40%).",
   envelhecimento:
-    "Mais de 25% dos não finalizados abertos há 7 meses ou mais do Mes Ref. (acima de 40% vira crítico).",
+    "Mais de 25% dos não finalizados abertos há 7 meses ou mais do mês de referência (acima de 40% vira crítico).",
   gargaloCliente:
     "30% ou mais dos não finalizados aguardando aceite do cliente (≥ 30%).",
   semSla: "20% ou mais dos não finalizados sem SLA previsto (≥ 20%).",

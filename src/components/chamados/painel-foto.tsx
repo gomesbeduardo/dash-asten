@@ -482,11 +482,11 @@ export function AtrasoMes({
     <GraficoCartao
       id="atrasoFaixas"
       titulo="Em atraso por meses desde a abertura"
-      subtitulo="não finalizados abertos antes do mês do Mes Ref."
+      subtitulo="não finalizados abertos antes do mês de referência"
       contexto={comBase ? `${mesRef} ao lado de ${base.rotulo}` : undefined}
       nota={
         base?.semFoto
-          ? `${base.semFoto}: o atraso depende da Situação e só mostra o Mes Ref.`
+          ? `${base.semFoto}: o atraso depende da Situação e só mostra o mês de referência`
           : undefined
       }
       tabela={{

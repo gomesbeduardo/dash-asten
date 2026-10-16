@@ -59,15 +59,15 @@ export function avisoColunasSemFiltro(rotulos: string[]): string {
 }
 
 const DEFINICOES = {
-  entradas: "Chamados com Data de Abertura dentro do mês do Mes Ref.",
+  entradas: "Chamados com Data de Abertura dentro do mês de referência",
   finalizados:
-    "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
+    "Chamados com Situação Finalizado e Data de Solução dentro do mês de referência (Data de Solução sem Situação Finalizado não conta).",
   naoFinalizados:
     "Chamados da posição do mês com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
   atraso:
-    "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
+    "Não finalizados abertos antes do mês de referência, por meses entre a abertura e o mês de referência (1, 2–3, 4–6, 7+).",
   slaVencido:
-    "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês do Mes Ref.; sem SLA não conta.",
+    "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês de referência; sem SLA não conta.",
   sla: "Entre os finalizados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
   tempoMedio:
     "Média, em dias corridos, entre abertura e solução dos chamados finalizados no mês.",
@@ -78,7 +78,7 @@ const DEFINICOES = {
   semSla: "Não finalizados sem SLA Previsto.",
   slaRenegociado: "Não finalizados com SLA Renegociado preenchido.",
   aguardandoAceite:
-    'Chamados da posição do mês com Situação contendo "aceite" e sem Data de Aceite até o fim do mês do Mes Ref.',
+    'Chamados da posição do mês com Situação contendo "aceite" e sem Data de Aceite até o fim do mês de referência',
 }
 
 export const FAIXAS_ATRASO = ["1", "2–3", "4–6", "7+"]
@@ -258,7 +258,7 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
     )
   if (abertosDepois > 0)
     avisos.push(
-      `${abertosDepois} ${abertosDepois === 1 ? "aberto" : "abertos"} depois do Mes Ref.`
+      `${abertosDepois} ${abertosDepois === 1 ? "aberto" : "abertos"} depois do mês de referência`
     )
   if (semAbertura > 0)
     avisos.push(
