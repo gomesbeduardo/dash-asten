@@ -11,6 +11,7 @@ import {
   type EntradaCompetencia,
 } from "@/chamados"
 import { useCrescerBarra } from "@/components/app/motion/useCrescerBarra"
+import { useOrdemAtrasada } from "@/components/app/motion/useOrdemAtrasada"
 import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { GraficoCartao } from "./cartoes"
 import {
@@ -350,12 +351,16 @@ export function BarraPercentual({
 /** Área × SLA: tabela com barras embutidas, uma linha por área, ordenadas por vencidos. */
 export function AreaSla(d: DadosCruzamento) {
   const { a } = useDuas((e) => areaPorSla(e), d)
+  // Ao filtrar, as barras deslizam na ordem antiga e só depois as áreas trocam de lugar.
+  const linhas = useOrdemAtrasada(
+    [...(a ?? [])].sort(
+      (x, y) =>
+        y.slaVencido - x.slaVencido || x.rotulo.localeCompare(y.rotulo, "pt-BR")
+    ),
+    (i) => i.rotulo
+  )
   if (!a) return null
   const m = mesesDe(d, false)
-  const linhas = [...a].sort(
-    (x, y) =>
-      y.slaVencido - x.slaVencido || x.rotulo.localeCompare(y.rotulo, "pt-BR")
-  )
   const maxVenc = Math.max(1, ...linhas.map((i) => i.slaVencido))
   return (
     <GraficoCartao

@@ -1,11 +1,14 @@
 /**
- * Barras do "No mês": o mês comparado é uma barra listrada a 45° atrás (espessura cheia) e a barra
- * sólida do mês aberto fica na frente, com ~55% da espessura, centralizada (valor comparado em cinza
- * ao lado do atual). Base reta, ponta com raio de 4 px, gradiente leve, sombra suave e grade tracejada. HTML/CSS para acompanhar a tipografia fluida (rem).
+ * Barras do "No mês": a barra sólida é o mês aberto; quando o mês comparado é maior, a diferença
+ * continua a barra em listras a 45° (nunca atrás da sólida). Comparado menor ou igual não tem listra:
+ * o valor dele fica em cinza ao lado do atual. Base reta, ponta com raio de 4 px, gradiente leve,
+ * sombra suave e grade tracejada. HTML/CSS para acompanhar a tipografia fluida (rem).
  */
 import { useEffect, useState } from "react"
 
+import { chartGrow } from "@/components/app/motion/tokens"
 import { useCrescerBarra } from "@/components/app/motion/useCrescerBarra"
+import { useOrdemAtrasada } from "@/components/app/motion/useOrdemAtrasada"
 import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 
@@ -19,10 +22,6 @@ export type LinhaRefinada = {
 /** Listras a 45° (0,09375 rem de traço a cada 0,3125 rem, escalam com a fonte) na cor cheia da série. */
 const listras = (cor: string) =>
   `repeating-linear-gradient(45deg, ${cor} 0 0.09375rem, transparent 0.09375rem 0.3125rem)`
-/** Fração da espessura que a barra sólida ocupa quando há mês comparado atrás. */
-const FRACAO_SOLIDA = 0.55
-/** Folga em cima e embaixo que a centraliza: (1 − 0,55) / 2. */
-const FOLGA_SOLIDA = 0.225
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const padrao = (v: number) => inteiro.format(v)
@@ -66,13 +65,17 @@ function Barra({
   const comBase =
     rotuloBase !== undefined && base !== undefined && base !== null
   const fim = Math.max(valor ?? 0, comBase ? base : 0)
+  const atual = valor ?? 0
   const crescer = useCrescerBarra<HTMLSpanElement>(animar, atraso)
-  const crescerListras = useCrescerBarra<HTMLSpanElement>(animar, atraso)
-  // A espessura da sólida depende de o gráfico ter comparação, não do valor desta linha: todas
-  // as barras ficam com a mesma espessura. A camada listrada fica montada (largura 0 se a base for 0)
-  // para a largura animar quando a base sai de 0.
+  // As listras entram depois que a sólida termina de crescer, como continuação dela.
+  const crescerListras = useCrescerBarra<HTMLSpanElement>(
+    animar,
+    atual > 0 ? atraso + chartGrow / 1000 : atraso
+  )
+  // A camada listrada fica montada quando o gráfico tem comparação (largura 0 sem diferença a
+  // mostrar) para a posição e a largura animarem quando o comparado passa a ser maior ou menor.
   const listrada = rotuloBase !== undefined
-  const larguraBase = comBase ? base : 0
+  const sobra = comBase ? Math.max(0, base - atual) : 0
   return (
     <div className="relative" style={{ height: altura }} title={titulo}>
       {listrada && (
@@ -80,11 +83,12 @@ function Barra({
           data-fantasma=""
           ref={crescerListras}
           aria-hidden
-          className="transicao-valor absolute top-0 left-0 rounded-r-[4px]"
+          className="transicao-valor absolute top-0 rounded-r-[4px]"
           style={{
-            width: pct(larguraBase),
+            left: pct(atual),
+            width: pct(sobra),
             height: altura,
-            minWidth: larguraBase > 0 ? "0.25rem" : 0,
+            minWidth: sobra > 0 ? "0.25rem" : 0,
             background: listras(cor),
           }}
         />
@@ -94,11 +98,10 @@ function Barra({
           data-barra=""
           ref={crescer}
           aria-hidden
-          className="transicao-valor absolute left-0 rounded-r-[4px]"
+          className={`transicao-valor absolute top-0 left-0 ${sobra > 0 ? "" : "rounded-r-[4px]"}`}
           style={{
             width: pct(valor),
-            height: listrada ? `calc(${altura} * ${FRACAO_SOLIDA})` : altura,
-            top: listrada ? `calc(${altura} * ${FOLGA_SOLIDA})` : 0,
+            height: altura,
             minWidth: "0.25rem",
             background: gradienteBarra(cor),
             boxShadow: SOMBRA_BARRA,
@@ -147,6 +150,8 @@ export function BarrasRefinadas({
   fina?: boolean
 }) {
   const altura = fina ? "0.9rem" : "1.25rem"
+  // Ao filtrar, as barras deslizam na ordem antiga e só depois as linhas trocam de lugar.
+  const ordenadas = useOrdemAtrasada(linhas, (l) => l.rotulo)
   // A entrada do zero (com atraso escalonado) é só dos elementos do 1º commit (D76): linha ou
   // série que aparece depois (filtro, competência, legenda) entra pronta e a transição cuida do resto.
   const [primeiroCommit, setPrimeiroCommit] = useState(true)
@@ -236,7 +241,7 @@ export function BarrasRefinadas({
           ))}
         </div>
         <div className="relative flex flex-col gap-6">
-          {linhas.map((l, r) => (
+          {ordenadas.map((l, r) => (
             <div
               key={l.rotulo}
               className="grid grid-cols-[var(--rot)_1fr] items-center gap-x-3"

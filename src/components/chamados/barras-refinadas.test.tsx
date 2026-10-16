@@ -29,7 +29,7 @@ const linhas = [
 ]
 
 describe("BarrasRefinadas", () => {
-  it("o mês comparado aparece como uma barra listrada atrás da barra sólida, com o valor dele ao lado do atual", () => {
+  it("com comparação cada barra tem a camada listrada montada e o valor do mês comparado ao lado do atual", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -49,7 +49,28 @@ describe("BarrasRefinadas", () => {
     expect(container.querySelectorAll("[data-barra]")).toHaveLength(4)
   })
 
-  it("com comparação no gráfico toda barra sólida tem 55% da espessura, mesmo com o comparado em 0, e a camada listrada vai a largura 0", () => {
+  it("comparado maior: as listras continuam a barra do fim da sólida até o comparado, na mesma espessura", () => {
+    const { container } = render(
+      <BarrasRefinadas
+        linhas={linhas}
+        series={series}
+        rotuloBase="mai/26"
+        animar={false}
+      />
+    )
+    // eixo até 30: Alfa, finalizados, 12 (40%) contra 15 no comparado: listras de 40% a 50%
+    const barra = container.querySelector("[data-barra]") as HTMLElement
+    const lista = container.querySelector("[data-fantasma]") as HTMLElement
+    expect(barra.style.width).toBe("40%")
+    expect(barra.style.height).toBe("1.25rem")
+    expect(lista.style.left).toBe("40%")
+    expect(lista.style.width).toBe("10%")
+    expect(lista.style.height).toBe("1.25rem")
+    expect(lista.getAttribute("aria-hidden")).toBe("true")
+    expect(lista.style.background).toMatch(/repeating-linear-gradient\(45deg/)
+  })
+
+  it("comparado menor ou igual não tem listra: a sólida fica inteira e o comparado só no rótulo", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -61,14 +82,21 @@ describe("BarrasRefinadas", () => {
     const barras = [...container.querySelectorAll("[data-barra]")].filter(
       (b) => !b.classList.contains("hidden")
     ) as HTMLElement[]
-    expect(barras).toHaveLength(4)
-    for (const b of barras) expect(b.style.height).toMatch(/0\.6875rem/)
-    // Beta, finalizados: valor 4, comparado 0
+    for (const b of barras) expect(b.style.height).toBe("1.25rem")
     const fantasmas = [
       ...container.querySelectorAll("[data-fantasma]"),
     ] as HTMLElement[]
-    expect(fantasmas[2].style.width).toBe("0%")
-    expect(fantasmas[2].style.minWidth).toMatch(/^0(px)?$/)
+    // Alfa não finalizados 30 contra 22; Beta 4 contra 0 e 9 contra 9
+    for (const [k, inicio] of [
+      [1, "100%"],
+      [2, "13.333333333333334%"],
+      [3, "30%"],
+    ] as const) {
+      expect(fantasmas[k].style.width).toBe("0%")
+      expect(fantasmas[k].style.left).toBe(inicio)
+      expect(fantasmas[k].style.minWidth).toMatch(/^0(px)?$/)
+    }
+    expect(screen.getByText("mai 22")).toBeInTheDocument()
   })
 
   it("sem comparação a barra sólida tem a espessura cheia", () => {
@@ -115,7 +143,7 @@ describe("BarrasRefinadas", () => {
     )
   })
 
-  it("a base (lado do eixo) é reta e só a ponta tem raio de 4 px", () => {
+  it("a base (lado do eixo) é reta e só a ponta da barra inteira tem raio de 4 px", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -124,37 +152,21 @@ describe("BarrasRefinadas", () => {
         animar={false}
       />
     )
-    for (const el of container.querySelectorAll("[data-barra]")) {
-      expect(el.className).toMatch(/rounded-r-\[4px\]/)
+    const barras = [...container.querySelectorAll("[data-barra]")].filter(
+      (b) => !b.classList.contains("hidden")
+    )
+    for (const el of [
+      ...barras,
+      ...container.querySelectorAll("[data-fantasma]"),
+    ])
       expect(el.className).not.toMatch(/(^|\s)rounded-(full|l-)/)
-    }
-  })
-
-  it("a camada listrada tem a espessura cheia e a largura do mês comparado; a sólida fica na frente, com 55% da espessura e centralizada", () => {
-    const { container } = render(
-      <BarrasRefinadas
-        linhas={linhas}
-        series={series}
-        rotuloBase="mai/26"
-        animar={false}
-      />
+    // Alfa, finalizados: as listras continuam a barra, então a ponta arredondada é a delas
+    expect(barras[0].className).not.toMatch(/rounded-r-\[4px\]/)
+    expect(container.querySelector("[data-fantasma]")!.className).toMatch(
+      /rounded-r-\[4px\]/
     )
-    // eixo até 30: a barra de 12 ocupa 40% e o mês comparado (15) ocupa 50%
-    const barra = container.querySelector("[data-barra]") as HTMLElement
-    const lista = container.querySelector("[data-fantasma]") as HTMLElement
-    expect(barra.style.width).toBe("40%")
-    expect(lista.style.width).toBe("50%")
-    expect(lista.getAttribute("aria-hidden")).toBe("true")
-    expect(lista.style.background).toMatch(/repeating-linear-gradient\(45deg/)
-    expect(lista.style.height).toBe("1.25rem")
-    // 55% de 1,25 rem = 0,6875 rem; folga de 22,5% (0,28125 rem) em cima: centralizada
-    expect(barra.style.height).toMatch(/0\.6875rem/)
-    expect(barra.style.top).toMatch(/0\.28125rem/)
-    // listrada atrás (vem antes no DOM), as duas com base reta e ponta de 4 px
-    expect(
-      lista.compareDocumentPosition(barra) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
-    expect(lista.className).toMatch(/rounded-r-\[4px\]/)
+    for (const el of barras.slice(1))
+      expect(el.className).toMatch(/rounded-r-\[4px\]/)
   })
 
   it("sem comparação a barra sólida tem a espessura cheia", () => {
@@ -224,6 +236,22 @@ describe("BarrasRefinadas", () => {
       await act(() => new Promise((r) => setTimeout(r, 10)))
       rerender(<BarrasRefinadas linhas={linhas} series={series} animar />)
       expect(animate).toHaveBeenCalledTimes(2)
+    })
+
+    it("as listras entram depois que a sólida termina de crescer", () => {
+      render(
+        <BarrasRefinadas
+          linhas={[linhas[0]]}
+          series={series.slice(0, 1)}
+          rotuloBase="mai/26"
+          animar
+        />
+      )
+      const atrasos = animate.mock.calls.map(
+        (c) => (c as unknown as [unknown, { delay: number }])[1].delay
+      )
+      // a camada listrada vem antes no DOM: listras em 600 ms, sólida em 0
+      expect(atrasos).toEqual([600, 0])
     })
   })
 })
