@@ -10,6 +10,7 @@ import {
   operadorPorAtraso,
   type EntradaCompetencia,
 } from "@/chamados"
+import { useCrescerBarra } from "@/components/app/motion/useCrescerBarra"
 import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { GraficoCartao } from "./cartoes"
 import {
@@ -174,6 +175,7 @@ export function ClienteSituacao(d: DadosCruzamento) {
         <BarrasHtml
           grupos={grupos}
           colunas={[{ maximo }]}
+          animar={d.animar}
           descricao={`Cliente × Situação: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} ${l.celulas[0].texto}`).join(", ")}`).join("; ")}`}
         />
       </div>
@@ -261,6 +263,7 @@ export function OperadorAtraso(d: DadosCruzamento) {
         <BarrasHtml
           grupos={grupos}
           colunas={[{ maximo }]}
+          animar={d.animar}
           descricao={`Operador × Atraso: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} ${l.celulas[0].texto}`).join(", ")}`).join("; ")}`}
         />
       </div>
@@ -273,11 +276,14 @@ export function BarraPercentual({
   rotulo,
   pct,
   meta,
+  animar = false,
 }: {
   rotulo: string
   pct: number | null
   meta?: number
+  animar?: boolean
 }) {
+  const crescer = useCrescerBarra<HTMLSpanElement>(animar)
   if (pct === null)
     return (
       <span className="text-base text-muted-foreground">
@@ -294,6 +300,7 @@ export function BarraPercentual({
     >
       <span
         data-barra-sla=""
+        ref={crescer}
         className="absolute top-0 left-0 h-full rounded-r-[4px]"
         style={{
           width: `${Math.min(100, Math.max(0, pct))}%`,
@@ -360,7 +367,11 @@ export function AreaSla(d: DadosCruzamento) {
                 {i.rotulo}
               </TableCell>
               <TableCell>
-                <BarraPercentual rotulo={i.rotulo} pct={i.slaPct} />
+                <BarraPercentual
+                  rotulo={i.rotulo}
+                  pct={i.slaPct}
+                  animar={d.animar}
+                />
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
