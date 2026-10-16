@@ -1,6 +1,6 @@
 # 002 — Área × SLA em gráfico (sem tabela)
 
-**Status:** rascunho (aguarda prancha)
+**Status:** rascunho (aguarda prancha). Protótipo das opções A, B e C na branch `proto/area-sla` (commit f80df8e). Se aprovada, substitui o cartão em tabela; se recusada, vale a spec 001 (retirar o cartão).
 **Pedido:** "não achamos uma boa forma de demonstrar por gráfico (ou pesquise como seria o melhor para fazer)".
 **Decisões ligadas:** D75 item 4 (sem meta de SLA; não existe meta), D77 item 3 (evitar tabelas) e item 1 (mês comparado em listras só depois da sólida), regra dataviz do projeto (sem eixo duplo).
 

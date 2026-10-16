@@ -1,11 +1,11 @@
 # 001 — Retirar o Área × SLA do Painel
 
-**Status:** aprovada (16/10, pedido direto do responsável)
+**Status:** suspensa (16/10). Só vale se a prancha da spec 002 (Área × SLA em gráfico) for recusada; se uma opção da 002 for aprovada, o cartão é substituído pelo gráfico e esta spec é descartada. A implementação está pronta na branch `feat/retirar-area-sla` (commit 2990838), sem PR, à espera dessa decisão.
 **Pedido:** "retire o Área x SLA por agora, não achamos uma boa forma de demonstrar por gráfico".
 **Decisões ligadas:** D75 item 4 (Área × SLA como tabela com barras, agora revisto), D77 item 3 (evitar tabelas; o cartão sai até haver forma em gráfico aprovada), D34 (nenhum dado sai do cálculo).
 
 ## Problema
-O cartão "Área × SLA" da faixa "Onde está o problema?" é uma tabela com barras embutidas, e o responsável quer evitar tabelas. Ainda não há forma em gráfico aprovada (spec 002).
+O cartão "Área × SLA" da faixa "Onde está o problema?" é uma tabela com barras embutidas, e o responsável quer evitar tabelas. A forma em gráfico está em avaliação na spec 002; esta spec é o caminho se nenhuma opção for aprovada.
 
 ## Critérios de aceite
 - Dado o Painel de Chamados com qualquer posição, quando a faixa "Onde está o problema?" monta, então não existe cartão "Área × SLA" (teste de componente: nenhum elemento com o título nem `id="areaSla"`).
