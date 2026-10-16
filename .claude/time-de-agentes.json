@@ -1,5 +1,5 @@
 {
-  "_doc": "Caminhos onde a sessão principal (Opus) edita código direto: só áreas sensíveis (dependências, CI, build e deploy). Código de app é dos workers. Aprovado pelo responsável em 13/10/2026. 14/10/2026: + banco, autenticação e API (D37/D38), aprovado pelo responsável.",
+  "_doc": "Caminhos onde a sessão principal (Opus) edita código direto: só áreas sensíveis (dependências, CI, build e deploy). Código de app é dos workers. Aprovado pelo responsável em 13/10/2026. 14/10/2026: + banco, autenticação e API (D37/D38), aprovado pelo responsável. 16/10/2026: + .gitlab-ci.yml e .gitlab/* (migração para o GitLab corporativo), espelhando .github/*.",
   "opusCodaDireto": [
     "*package.json",
     "*package-lock.json",
@@ -12,6 +12,8 @@
     "api/*",
     "db/*",
     "scripts/*",
-    "vercel.json"
+    "vercel.json",
+    ".gitlab-ci.yml",
+    ".gitlab/*"
   ]
 }

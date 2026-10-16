@@ -2,11 +2,13 @@
 
 Um ADR (Architecture Decision Record, registro de decisão de arquitetura) é um arquivo curto que guarda **uma decisão de arquitetura ou de processo que muda como se desenvolve este app**: o que foi decidido, o que isso obriga ou proíbe no código e, quando está registrado, o que foi considerado e descartado.
 
-Os ADRs não trazem decisão nova. Cada um reúne, por tema, decisões que já estão na tabela §0 do `PRD-dash-asten.md` (D1 a D77) e no `plan-dash-asten.md`. Onde o PRD não registra o motivo ou a alternativa, o ADR diz "não registrado".
+Os ADRs não trazem decisão nova. Cada um reúne, por tema, decisões que já estão na tabela §0 do `PRD-dash-asten.md` (D1 a D78) e no `plan-dash-asten.md`. Onde o PRD não registra o motivo ou a alternativa, o ADR diz "não registrado".
 
 ## Quando criar um ADR novo
 
 Crie quando a decisão for **difícil de desfazer** (banco, hospedagem, autenticação, fluxo de Git, modelo de dados) ou quando ela **direciona várias partes do código** (uma regra que toda tela ou todo painel precisa seguir). Decisão de uma tela só, ajuste visual ou regra de negócio isolada fica na spec (`docs/specs/`) e no PRD.
+
+Quem escreve: o subagente `spec-writer` (Fable), que também registra o Dxx no §0 do PRD e a linha do índice (passos 2 e 3). O `reviewer-opus` (modo spec) faz a revisão básica antes de o responsável aceitar, e a palavra final é dele. Enquanto o responsável não aceita, o status é "proposta".
 
 Passos:
 
@@ -22,7 +24,7 @@ Antes de mudar algo que um ADR cobre, leia o ADR.
 ```markdown
 # NNNN — Título
 
-**Status:** aceita | substituída por NNNN | revista (data)
+**Status:** proposta | aceita (dd/mm) | substituída por NNNN | revista (data)
 **Data:** dd/mm/aaaa
 **Decisões do PRD:** Dxx (o que diz, numa cláusula), Dyy (...)
 
@@ -55,3 +57,4 @@ Só as que estão registradas. Se não houver, omita a seção.
 | [0010](0010-transicoes-de-valor.md) | Transições de valor sem remontar | aceita |
 | [0011](0011-design-system-e-simplicidade.md) | Design system obrigatório e simplicidade primeiro | aceita |
 | [0012](0012-spec-antes-do-codigo.md) | Spec antes do código (SDD + TDD) | aceita |
+| [0013](0013-revisao-por-fable-e-portao-de-pr.md) | Revisão em camadas (reviewer-opus no caminho, pr-reviewer Fable no PR) e portão de PR/MR | proposta |
