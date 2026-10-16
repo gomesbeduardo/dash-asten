@@ -94,3 +94,58 @@ Medido com o mesmo método (melhor de 3), load average de 1,5 a 3 antes e de 0,9
 | Motor: troca do seletor | 51 a 62 ms | 36 a 39 ms |
 
 Com 3.000 linhas: abrir o Painel 417 ms (antes ~600 ms); troca do "Comparar com" ~170 ms; motor: montagem 119 ms, evolução 54 ms. (A medição "antes" de 20.000 desta tabela foi refeita na sessão; a da seção "Tempos" acima é a original.) Meta de 1 s atingida.
+
+## Depois do redesenho (16/10)
+
+Staging @ c422b4e (redesenho #57, animações #59/#61, layout #63, período sem remontar #64). Build de produção em modo API, Chromium headless 1920x1080, melhor de 3, `PW_PORT=4192`, sob `portao.sh` + `flock portoes.lock`. Formato: maior quadro / soma de longtasks, em ms. "Antes" = seção "Depois da otimização" acima.
+
+### 20.000 linhas
+
+| Ação | Antes | Agora |
+|---|---|---|
+| Abrir o Painel | 667 / 788 | **350 / 447** |
+| Painel > Comparar | 200 / 443 | 200 / 441 |
+| Comparar > Painel | 167 / 166 | 50 / 118 |
+| Troca do "Comparar com" (3 meses) | 208 a 231 / 223 a 235 | 111 a 125 / 119 a 135 |
+| Troca de competência (ago/26, mai/26) | novo | 133 a 167 / 299 a 320 |
+| Aplicar filtro (1ª opção de Severidade) | novo | 277 / 283 |
+| Limpar filtro | novo | 110 / 114 |
+| Motor: montagem | 563 | 559 |
+| Motor: evolução (6 meses) | 373 | 359 |
+| Motor: troca do seletor | 36 a 39 | 35 a 39 |
+
+### 3.000 linhas
+
+| Ação | Antes | Agora |
+|---|---|---|
+| Abrir o Painel | ~417 (maior quadro) | **133 / 206** |
+| Painel > Comparar | n/d | 100 / 187 |
+| Comparar > Painel | n/d | 50 / 69 |
+| Troca do "Comparar com" | ~170 | 61 a 77 / 77 a 85 |
+| Troca de competência | novo | 100 / 138 a 154 |
+| Aplicar filtro | novo | 126 / 134 |
+| Limpar filtro | novo | 92 / 99 |
+| Motor: montagem | 119 | 120 |
+| Motor: evolução | 54 | 54 |
+| Motor: troca do seletor | n/d | 5 a 6 |
+
+### Leitura
+
+- Meta de abrir o Painel abaixo de 1 s: cumprida com folga (350 ms de maior quadro e 447 ms de longtasks com 20.000 linhas).
+- Nada passou de 1 s e nada piorou mais de 20% contra o "antes".
+- Maior valor novo: aplicar filtro com 20.000 linhas (277 ms num único longtask, recalcula o Painel inteiro); limpar filtro custa 110 ms (cache por entrada).
+- O motor ficou igual ao "antes" (dentro do ruído). n/d = não registrado.
+
+### Cenários novos e como rodar
+
+O "Comparar com" agora é um Radix Select (`#comparar-com`); a troca é medida do `pointerup` no item (antes era o `change` de um `<select>`). Os cenários novos do `scripts/bench/bench-navegador.mjs`:
+
+- Troca de competência: abre o popover "Competência" e clica na versão de agosto/26, depois na de maio/26 (medido no clique).
+- Aplicar/limpar filtro: drawer "Filtros", combobox "Severidade", 1ª opção (medido no clique da opção); limpar = botão "Limpar filtros".
+
+```sh
+node docs/exemplos/gerar-bench-12-posicoes.mjs --linhas 3000 --sem-xlsx
+PW_PORT=4193 node scripts/bench/bench-navegador.mjs 3000 3   # SEM_BUILD=1 reaproveita o build
+```
+
+O script sobe e derruba o próprio preview; o resultado vai para `docs/exemplos/bench/resultado-navegador-<N>.json` (ignorado pelo Git). Em medição de tempo, passe pelas travas de CPU e anote o `uptime`.
