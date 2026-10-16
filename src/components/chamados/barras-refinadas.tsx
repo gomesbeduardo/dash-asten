@@ -6,6 +6,7 @@
 import { motion, useReducedMotion } from "motion/react"
 
 import { chartGrow } from "@/components/app/motion/tokens"
+import { useCrescerBarra } from "@/components/app/motion/useCrescerBarra"
 import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 
@@ -60,26 +61,21 @@ function Barra({
     rotuloBase !== undefined && base !== undefined && base !== null
   const fim = Math.max(valor ?? 0, comBase ? base : 0)
   const anima = animar && !reduce
+  const crescer = useCrescerBarra<HTMLSpanElement>(animar, atraso)
   return (
     <div className="relative" style={{ height: altura }} title={titulo}>
       {valor !== null && valor > 0 && (
-        <motion.span
+        <span
           data-barra=""
+          ref={crescer}
           aria-hidden
-          className="absolute top-0 left-0 origin-left rounded-r-[4px]"
+          className="absolute top-0 left-0 rounded-r-[4px]"
           style={{
             width: pct(valor),
             height: altura,
             minWidth: "0.25rem",
             background: gradienteBarra(cor),
             boxShadow: SOMBRA_BARRA,
-          }}
-          initial={anima ? { scaleX: 0 } : false}
-          animate={{ scaleX: 1 }}
-          transition={{
-            duration: chartGrow / 1000,
-            ease: "easeOut",
-            delay: atraso,
           }}
         />
       )}
