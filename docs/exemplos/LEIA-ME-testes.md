@@ -52,6 +52,26 @@ Valores calculados do arquivo (iguais em A e B, exceto Sem SLA):
 
 Por que dois arquivos: o app limita a 4 leituras e ordena por gravidade (crítico, atenção, destaque). Com as 5 regras ativas, o fluxo (destaque) sai; por isso A mostra o fluxo e B mostra o Sem SLA. O agosto de comparação é o da mesma população (`chamados-2026-08-ficticio.xlsx` ou `chamados-agosto-2026-ficticio.xlsx`; backlog 205); se não houver carga de agosto, o app o reconstrói a partir do próprio arquivo de setembro e dá o mesmo resultado.
 
+## Roteiro de conferência à mão (16/10, modelo de posição do mês)
+
+Use as 4 posições de teste (`teste-foto/`, geradas por `node docs/exemplos/gerar-teste-foto.cjs`): abr/26 v1, abr/26 v2, mai/26 e out/26. Os números esperados estão na seção "Teste do modelo foto", mais abaixo.
+
+1. **Envio**: solte as 4 planilhas de uma vez. A competência vem preenchida pela coluna Mes Ref. (abr/26, abr/26, mai/26, out/26) e a segunda de abril entra como v2.
+2. **Painel de out/26**, três faixas:
+   - "Como estamos?": total 10, faixa por situação com "Aguardando cliente" como nova, 4 indicadores grandes com minigráfico e 8 compactos (Fluxo e Prazo).
+   - "Onde está o problema?": gráficos por cliente, operador, área, atividade e área superior; em atraso por meses; cruzamentos.
+   - "Estamos melhorando?": a evolução de mai a out, com jun a set sem posição (só entradas e finalizados).
+3. **Comparar com**: o seletor começa em abr/26 (a carga mais antiga), lista jun–set como "sem posição" e a v2 de abril. Ao trocar, as barras e os números deslizam até o novo valor, sem voltar do zero e sem esqueleto.
+4. **Filtro**: aplique um filtro (ex.: Cliente Delta). As barras encolhem ou crescem até o novo valor; os chips aparecem sem empurrar a página de uma vez. Limpe e confira o caminho inverso.
+5. **Competência**: com a página rolada, troque para mai/26 pela barra de cima. Nada some nem pisca; a parte da tela que você está vendo fica parada e os valores transitam. Maio deve mostrar a marca de corrigido (ver "Maio corrigido pela foto de outubro").
+6. **Abas**: Painel → Comparar → Leituras → Painel. O indicador anda só na horizontal; a aba nova entra depois do indicador.
+7. **Comparar**: abr/26 v2, mai/26, set/26 e out/26 lado a lado; set/26 com "—" e a nota de sem posição; corrigidos marcados.
+8. **Leituras**: a severidade aparece como selo com ícone e nome ("Atenção"), sem borda colorida.
+9. **Histórico**: dar nome a uma versão, arquivar e restaurar.
+10. **TV**: tecla T (tela cheia), H (fixar a barra) e leitura a ~3 m.
+
+O roteiro antigo, abaixo, é do modelo de backlog e serve só para as planilhas `chamados-2026-*`.
+
 ## Roteiro de teste (ordem sugerida)
 
 1. **Só setembro**: carregue `chamados-2026-09-ficticio.xlsx` (competência 2026-09). Em Comparar, agosto deve aparecer como **reconstruído** (backlog 205, entradas 110, saídas 93).
