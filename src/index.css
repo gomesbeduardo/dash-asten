@@ -126,6 +126,7 @@
     --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
     --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --motion-stagger: 110ms;
+    --motion-chart: 600ms; /* = chartGrow em tokens.ts */
     --shadow-card:
       0 0 0 1px rgb(16 24 40 / 0.04), 0 1px 2px rgb(16 24 40 / 0.08),
       0 6px 16px -4px rgb(16 24 40 / 0.14);
@@ -187,6 +188,15 @@ body {
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; }
 
 /* Toque/clique: encolhe 0.97 em 120 ms, só com mouse (D26). Hover nunca é obrigatório. */
+/* Transição de valor das barras: a largura/posição vai do valor antigo ao novo (D26). Seco com movimento reduzido. */
+.transicao-valor {
+  transition-property: width, left, flex-grow;
+  transition-duration: var(--motion-chart);
+  transition-timing-function: ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .transicao-valor { transition: none; }
+}
 .press { transition: transform 120ms var(--motion-ease-standard); }
 @media (hover: hover) and (pointer: fine) {
   .press:active { transform: scale(0.97); }

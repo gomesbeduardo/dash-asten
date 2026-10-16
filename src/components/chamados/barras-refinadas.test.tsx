@@ -123,4 +123,23 @@ describe("BarrasRefinadas", () => {
     const tick = screen.getByText("5 d")
     expect(tick.className).toMatch(/whitespace-nowrap/)
   })
+
+  it("a largura e a posição do traço e do rótulo transitam do valor antigo ao novo e voltam secas com movimento reduzido", () => {
+    const { container } = render(
+      <BarrasRefinadas
+        linhas={linhas}
+        series={series}
+        rotuloBase="mai/26"
+        animar={false}
+      />
+    )
+    for (const el of [
+      container.querySelector("[data-barra][style*='width']"),
+      container.querySelector("[data-marca]"),
+    ]) {
+      expect(el!.className).toMatch(/transicao-valor/)
+    }
+    const rotulo = screen.getByText("12").parentElement as HTMLElement
+    expect(rotulo.className).toMatch(/transicao-valor/)
+  })
 })

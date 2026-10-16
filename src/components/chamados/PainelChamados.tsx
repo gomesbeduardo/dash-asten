@@ -122,7 +122,6 @@ export function PainelChamados({
         : null,
     [cargasEvolucao, filtros, carga.competencia]
   )
-  const [trocou, setTrocou] = useState(false)
 
   const anoPresumido = useMemo(
     () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
@@ -170,8 +169,7 @@ export function PainelChamados({
     )
 
   const play = entradaFixa && !reduce
-  // reanima só o bloco que depende da comparação, ao trocar o "Comparar com"
-  const playMes = (entradaFixa || trocou) && !reduce
+  // a entrada do zero é só da primeira visita; filtro e "Comparar com" transitam o valor (.transicao-valor)
   const { metricas, entradaAtual, base, entradaBase, opcoes, corrigidoPor } =
     comparado
   // o aviso de filtro sem coluna já aparece junto dos chips
@@ -253,7 +251,7 @@ export function PainelChamados({
     base,
     entradaBase,
     cores,
-    animar: playMes,
+    animar: play,
   }
   const graficoRanking = (r: (typeof rankings)[number]) => {
     const d = dist(r.id)
@@ -267,7 +265,7 @@ export function PainelChamados({
         competencia={carga.competencia}
         sub={r.sub}
         max={r.max}
-        animar={playMes}
+        animar={play}
         corrigidoPor={corrigidoPor}
       />
     )
@@ -278,7 +276,7 @@ export function PainelChamados({
       faixas={metricas.atrasoFaixas}
       base={base}
       competencia={carga.competencia}
-      animar={playMes}
+      animar={play}
       tabelaVazia={semDados}
     />
   )
@@ -307,7 +305,6 @@ export function PainelChamados({
               <Select
                 value={escolha}
                 onValueChange={(valor) => {
-                  setTrocou(true)
                   setEscolha({ carga: carga.id, valor })
                 }}
               >
@@ -445,14 +442,7 @@ export function PainelChamados({
             titulo="Onde está o problema?"
             texto={`${mes} ao lado de ${comparado.rotuloBase ?? "outro mês (escolha em “Comparar com”)"}`}
           />
-          {/* a key remonta só este bloco ao trocar o "Comparar com"; KPIs e evolução não remontam */}
-          <motion.div
-            key={`mes:${escolha}`}
-            className="flex flex-col gap-5"
-            {...(trocou && !reduce
-              ? { variants: entradaRapida, initial: "hidden", animate: "show" }
-              : {})}
-          >
+          <motion.div className="flex flex-col gap-5">
             {cliente && (
               <div className={linha(3)}>
                 <GraficoMes
@@ -462,7 +452,7 @@ export function PainelChamados({
                   competencia={carga.competencia}
                   sub="por cliente"
                   max={8}
-                  animar={playMes}
+                  animar={play}
                   corrigidoPor={corrigidoPor}
                   className="xl:col-span-2"
                 />

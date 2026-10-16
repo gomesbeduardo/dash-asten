@@ -301,7 +301,7 @@ export function BarraPercentual({
       <span
         data-barra-sla=""
         ref={crescer}
-        className="absolute top-0 left-0 h-full rounded-r-[4px]"
+        className="transicao-valor absolute top-0 left-0 h-full rounded-r-[4px]"
         style={{
           width: `${Math.min(100, Math.max(0, pct))}%`,
           background: gradienteBarra(COR_FIN),
@@ -312,7 +312,7 @@ export function BarraPercentual({
         <span
           data-meta=""
           aria-hidden
-          className="absolute -top-0.5 h-[calc(100%+4px)] w-[3px] -translate-x-1/2 rounded-[1px] bg-foreground"
+          className="transicao-valor absolute -top-0.5 h-[calc(100%+4px)] w-[3px] -translate-x-1/2 rounded-[1px] bg-foreground"
           style={{ left: `${meta}%` }}
         />
       )}
