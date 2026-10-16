@@ -6,7 +6,7 @@ import { AnimatedNumber } from "../motion/AnimatedNumber"
 import { entryItem } from "../motion/variants"
 
 const TONE = {
-  good: { Icon: CircleCheckIcon, text: "Bom", cls: "text-[#00694b]" },
+  good: { Icon: CircleCheckIcon, text: "Bom", cls: "text-positive" },
   bad: { Icon: TriangleAlertIcon, text: "Atenção", cls: "text-late" },
 } as const
 

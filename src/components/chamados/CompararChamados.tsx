@@ -60,7 +60,7 @@ import {
 import { limparPedido, lerPedido, ouvirPedido } from "./pedidoComparar"
 
 const TOM = {
-  bom: "text-[#00694b]",
+  bom: "text-positive",
   ruim: "text-late",
   neutro: "text-muted-foreground",
 } as const

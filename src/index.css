@@ -28,6 +28,10 @@
     --color-brand-soft: var(--brand-soft);
     --color-late: var(--late);
     --color-positive: var(--positive);
+    --color-positive-borda: var(--positive-borda);
+    --color-atencao: var(--atencao);
+    --color-atencao-borda: var(--atencao-borda);
+    --color-atencao-ink: var(--atencao-ink);
     --color-vencido: var(--vencido);
     --color-contexto: var(--contexto);
     --color-serie-finalizados: var(--serie-finalizados);
@@ -100,6 +104,11 @@
     --late: #b42318;
     /* Texto de variação favorável (verde com contraste AA sobre o cartão). */
     --positive: #00694b;
+    --positive-borda: #00805d; /* filete do cartão "Destaque" */
+    /* Atenção (âmbar escuro, AA sobre o cartão): texto, filete e selos tracejados. */
+    --atencao: #9a4f00;
+    --atencao-borda: #b45f06;
+    --atencao-ink: #7a3d00;
     /* Séries "No mês" e "Ao longo do tempo": finalizados × não finalizados (laranja = --brand; sem tema escuro no projeto). */
     --serie-finalizados: #0b5c8a;
     --serie-nao-finalizados: #d4650c; /* laranja da marca escurecido: 3,27:1 contra --card */
