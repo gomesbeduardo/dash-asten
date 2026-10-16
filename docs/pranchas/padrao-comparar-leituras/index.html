@@ -1,0 +1,79 @@
+<title>Comparar e Leituras no padrão do Painel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Oxanium:wght@600;700&display=swap">
+<style>
+/* Layout: uma decisão por seção, com a recomendação em destaque e o antes ao lado das opções (capturas reais do protótipo). Tema claro único, igual ao app na TV. */
+:root { color-scheme: light; --bg:#dfe4ea; --card:#eef1f4; --raised:#f6f8fa; --ink:#14202b; --ink-2:#475565; --ink-3:#6b7886; --navy:#043f63; --rec:#dbe7f0; --line:#cfd6de;
+  --shadow:0 1px 2px rgb(20 32 43/.06),0 8px 24px -10px rgb(20 32 43/.16); --font-display:"Oxanium","Geist",system-ui,sans-serif; --font-body:"Geist",system-ui,sans-serif }
+* { box-sizing:border-box }
+body { background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.55; margin:0 }
+.wrap { max-width:1320px; margin:0 auto; padding-inline:20px; padding-block:32px 72px; display:grid; gap:36px }
+h1 { font-family:var(--font-display); font-size:clamp(28px,3.4vw,42px); margin:0; color:var(--navy); line-height:1.1; text-wrap:balance }
+.lead { color:var(--ink-2); max-width:80ch; margin:8px 0 0 }
+section { display:grid; gap:14px }
+h2 { font-family:var(--font-display); font-size:24px; margin:0; color:var(--navy); display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; text-wrap:balance }
+h2 .n { font-family:var(--font-body); font-size:14px; font-weight:600; color:var(--ink-3) }
+.rec { background:var(--rec); border-radius:12px; padding:12px 16px; max-width:90ch }
+.rec b { color:var(--navy) }
+p { margin:0; color:var(--ink-2); max-width:90ch }
+.grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr)); gap:16px; align-items:start }
+.grade.larga { grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr)) }
+figure { margin:0; background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:12px; display:grid; gap:8px; min-width:0 }
+figure img { width:100%; height:auto; border-radius:8px; display:block }
+figcaption { font-size:13.5px; color:var(--ink-2) }
+figcaption b { color:var(--ink) }
+code { font-family:ui-monospace,monospace; font-size:13px; background:var(--raised); padding:1px 5px; border-radius:4px }
+.resp { background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:16px 20px; display:grid; gap:8px }
+</style>
+<div class="wrap">
+<header>
+  <h1>Comparar e Leituras no padrão do Painel</h1>
+  <p class="lead">A D72 pediu que, depois do Painel, o mesmo acabamento fosse para o Comparar e as Leituras. Abaixo estão o antes e as opções, com capturas do protótipo nas planilhas fictícias: Comparar com mai/26, ago/26 e out/26.</p>
+</header>
+
+<section>
+  <h2><span class="n">1</span>Cartões do Comparar: o Δ em selo</h2>
+  <div class="rec"><b>Recomendo o selo.</b> O Δ fica igual ao do Painel: selo com seta e valor, seguido do mês de partida em cinza. "Pior" e "melhor" continuam só para leitor de tela.</div>
+  <div class="grade">
+    <figure><img src="comparar-atual-kpi.jpg" alt="Cartão Finalizado no Comparar hoje, com Δ +444 em texto simples"><figcaption><b>Hoje:</b> "Δ +444" em texto, sem dizer contra qual mês.</figcaption></figure>
+    <figure><img src="comparar-A-kpi.jpg" alt="Cartão Finalizado com o Δ num selo com seta e o mês mai/26 em cinza ao lado"><figcaption><b>Proposta:</b> selo "↑ +444" e "mai/26" em cinza (a diferença é da última para a primeira competência).</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Barras "No mês" do Comparar</h2>
+  <div class="rec"><b>Recomendo a B.</b> Na spec eu tinha recomendado a A, mas as capturas mudaram a recomendação. A B usa o mesmo componente de barras do Painel e mostra os valores e o eixo, o que ajuda na leitura de longe. O risco é a altura: com 5 ou 6 competências, cada categoria fica alta. Ainda não testei esse caso, e confiro antes de implementar.</div>
+  <div class="grade larga">
+    <figure><img src="comparar-atual-grafico.jpg" alt="Barras do Comparar hoje, em verde, amarelo e azul, com pontas arredondadas"><figcaption><b>Hoje:</b> uma cor diferente por competência, pontas redondas, sem eixo.</figcaption></figure>
+    <figure><img src="comparar-A-grafico.jpg" alt="Barras agrupadas em tons de azul, com base reta e ponta de 4 px, sem eixo"><figcaption><b>A:</b> as mesmas barras com base reta e ponta de 4 px, em tons de um azul (a competência mais recente mais forte), sem eixo. Nesta captura e na de hoje, os valores não aparecem.</figcaption></figure>
+    <figure><img src="comparar-B-grafico.jpg" alt="Barras finas em tons de azul com valores ao lado e eixo com grade"><figcaption><b>B:</b> o componente de barras do Painel, uma barra fina por competência, com valores, eixo e grade, e a mesma animação de valor do Painel.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Cores das competências</h2>
+  <div class="rec"><b>Recomendo os tons de um azul</b> (A e B acima): a cor diz qual é a mais recente, sem inventar significado para verde e amarelo. Com 5 ou 6 competências, os dois tons mais claros ficam parecidos. Se isso acontecer, ajusto a escala antes de implementar.</div>
+  <p>Hoje cada competência tem uma cor sem relação com o tempo (verde, amarelo, azul).</p>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Barras no modal das Leituras</h2>
+  <div class="rec"><b>Recomendo a A.</b> É o mesmo componente de barras do Painel, com eixo, e o app fica com um padrão de barras só. As duas opções trocam o cinza genérico pelas cores das faixas de atraso.</div>
+  <div class="grade">
+    <figure><img src="leituras-atual-modal.jpg" alt="Modal da leitura de atraso hoje, com barras cinza e a faixa 7+ em vermelho"><figcaption><b>Hoje:</b> faixas em cinza e o 7+ em vermelho.</figcaption></figure>
+    <figure><img src="leituras-A-modal.jpg" alt="Modal com barras nas cores das faixas de atraso, eixo de 0 a 100"><figcaption><b>A:</b> componente do Painel, com as cores das faixas e um eixo de 0 a 100.</figcaption></figure>
+    <figure><img src="leituras-B-modal.jpg" alt="Modal com barras nas cores das faixas e dica ao passar o mouse"><figcaption><b>B:</b> o componente atual, com as cores das faixas, ponta de 4 px e a dica ao passar o mouse.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">5</span>A faixa 7+ deixa de ser vermelha</h2>
+  <div class="rec"><b>Recomendo aceitar.</b> Nas duas opções das Leituras, o 7+ fica no marrom escuro das faixas de atraso, igual ao Painel. A D75 reservou o vermelho para o SLA vencido.</div>
+</section>
+
+<section class="resp">
+  <h2>Como responder</h2>
+  <p>Por exemplo: "1 selo, 2 B, 3 tons, 4 A, 5 ok". O que você aprovar vira os critérios das specs 003 e 004. Depois vêm os testes, a implementação e a revisão, cada um com um agente diferente.</p>
+  <p>Para ver ao vivo: branch <code>proto/padrao-comparar-leituras</code>, com <code>?comparar=atual|A|B</code> e <code>?leituras=atual|A|B</code> no endereço. Os dados somem ao recarregar, então é preciso reenviar as planilhas depois de trocar a opção.</p>
+</section>
+</div>

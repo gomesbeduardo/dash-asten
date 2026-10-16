@@ -1,6 +1,6 @@
 # 002 — Área × SLA em gráfico (sem tabela)
 
-**Status:** aprovada (16/10, opção A, prancha https://claude.ai/artifact/BPp7T9zdJtEPZc1qGWmLJy). Substitui o cartão em tabela; a spec 001 (retirar o cartão) foi descartada.
+**Status:** aprovada (16/10, opção A, prancha em `docs/pranchas/area-sla/index.html`). Substitui o cartão em tabela; a spec 001 (retirar o cartão) foi descartada.
 **Pedido:** "não achamos uma boa forma de demonstrar por gráfico (ou pesquise como seria o melhor para fazer)".
 **Decisões ligadas:** D75 item 4 (sem meta de SLA; não existe meta), D77 item 3 (evitar tabelas) e item 1 (mês comparado em listras só depois da sólida), regra dataviz do projeto (sem eixo duplo).
 
@@ -9,7 +9,7 @@ Por área, o Painel precisa mostrar duas medidas de naturezas e populações dif
 - **% no SLA:** dos finalizados no mês com SLA, quantos dentro do prazo (0–100%; áreas pequenas podem ter 3 chamados);
 - **SLA vencido:** contagem de não finalizados com SLA vigente vencido.
 
-A versão em tabela foi recusada. Pesquisa em `notas-sessao/manha/pesquisa-area-sla.md` (fontes: Datawrapper sobre small multiples, eixo duplo e eixo no zero; Evergreen sobre amostras pequenas).
+A versão em tabela foi recusada. Pesquisa em `docs/pesquisa/pesquisa-area-sla.md` (fontes: Datawrapper sobre small multiples, eixo duplo e eixo no zero; Evergreen sobre amostras pequenas).
 
 ## Opções para a prancha
 - **A (recomendada):** dois gráficos de barras lado a lado com as mesmas áreas nas linhas. À esquerda, % no SLA em escala fixa de 0 a 100% e rótulo "67% (2 de 3)". À direita, SLA vencido em contagem a partir de 0, em vermelho. Nome da área uma vez, à esquerda.

@@ -1,6 +1,6 @@
 # 003 — Padrão visual do Painel no Comparar
 
-**Status:** rascunho (aguarda prancha)
+**Status:** rascunho (aguarda decisão na prancha `docs/pranchas/padrao-comparar-leituras/index.html`; protótipo na branch `proto/padrao-comparar-leituras`)
 **Pedido:** D72 (15/10): "depois de aprovado no Painel, o mesmo padrão vai para Comparar e Leituras"; confirmado em 16/10 para preparar a prancha.
 **Decisões ligadas:** D72 (Δ em selo colorido com seta e valor, seguido do período em cinza; sem "vs", "·" ou "pior/melhor" visíveis), D75 (base reta e ponta arredondada; paleta por significado), D77 (paleta P3; Comparar continua em cartões, sem tabela).
 
