@@ -69,7 +69,7 @@ function Barra({
           data-barra=""
           ref={crescer}
           aria-hidden
-          className="absolute top-0 left-0 rounded-r-[4px]"
+          className="transicao-valor absolute top-0 left-0 rounded-r-[4px]"
           style={{
             width: pct(valor),
             height: altura,
@@ -86,7 +86,7 @@ function Barra({
         <motion.span
           data-marca=""
           aria-hidden
-          className="absolute rounded-[1px] bg-foreground"
+          className="transicao-valor absolute rounded-[1px] bg-foreground"
           style={{
             left: pct(base),
             top: "-3px",
@@ -100,7 +100,7 @@ function Barra({
         />
       )}
       <span
-        className="absolute top-1/2 flex -translate-y-1/2 items-baseline gap-2 whitespace-nowrap"
+        className="transicao-valor absolute top-1/2 flex -translate-y-1/2 items-baseline gap-2 whitespace-nowrap"
         style={{ left: `calc(${pct(fim)} + 0.6rem)` }}
       >
         <span className="num text-lg font-semibold text-foreground">

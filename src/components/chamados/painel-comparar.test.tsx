@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
   criarRepositorioMemoria,
@@ -50,7 +50,7 @@ const FOTOS: [string, L[], string][] = [
   ["2026-10", out, "2026-10-31"],
 ]
 
-async function abrir(competencia: string, versao: number) {
+async function abrir(competencia: string, versao: number, entrada = false) {
   const repo: RepositorioDeCargas = criarRepositorioMemoria()
   for (const [c, linhas, ref] of FOTOS) {
     await repo.salvar({
@@ -70,7 +70,7 @@ async function abrir(competencia: string, versao: number) {
       carga={carga}
       historico={historico}
       obterCarga={(id: string) => repo.obter(id)}
-      entrada={false}
+      entrada={entrada}
     />
   )
 }
@@ -189,32 +189,61 @@ describe("Painel: comparar com (D65)", () => {
     expect(cruz).toHaveTextContent("sem posição de jun/26")
   })
 
-  it("(g) cruzamentos: Cliente × Situação mostra o Mes Ref. e o mês escolhido", async () => {
+  it("(g) trocar o Comparar com não remonta o bloco do mês: os nós ficam e só o traço do mês comparado muda de posição", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
     await screen.findByRole("combobox", { name: "Comparar com" })
     await escolher(user, "mai/26")
-    for (const nome of [
-      "Cliente × Situação",
-      "Operador × Atraso",
-      "Área × SLA",
-      "Cliente × Tempo médio",
-    ]) {
-      const r = await cruzamento(nome)
-      expect(r).toHaveTextContent("out/26")
-      expect(r).toHaveTextContent("mai/26")
-    }
-  })
-
-  it("(g) trocar o Comparar com remonta só o bloco dos gráficos; os indicadores mantêm o mesmo nó", async () => {
-    const user = userEvent.setup()
-    await abrir("2026-10", 1)
-    await screen.findByRole("combobox", { name: "Comparar com" })
     const kpiAntes = await kpi("Entradas no mês")
     const cardAntes = await screen.findByRole("region", { name: "Por cliente" })
-    await escolher(user, "mai/26")
+    const marcas = (c: HTMLElement) =>
+      [...c.querySelectorAll<HTMLElement>("[data-marca]")]
+    const barraAntes = cardAntes.querySelector("[data-barra]")
+    const traçosAntes = marcas(cardAntes)
+    const lefts = (m: HTMLElement[]) => m.map((e) => e.style.left).join("|")
+    const posAntes = lefts(traçosAntes)
+    expect(traçosAntes.length).toBeGreaterThan(0)
+    await escolher(user, "abr/26")
     const cardDepois = await screen.findByRole("region", { name: "Por cliente" })
-    expect(cardDepois).not.toBe(cardAntes)
+    expect(cardDepois).toBe(cardAntes)
+    expect(cardDepois.querySelector("[data-barra]")).toBe(barraAntes)
     expect(await kpi("Entradas no mês")).toBe(kpiAntes)
+    expect(marcas(cardDepois)[0]).toBe(traçosAntes[0])
+    expect(lefts(marcas(cardDepois))).not.toBe(posAntes)
+  })
+
+  describe("entrada das barras", () => {
+    let animate: ReturnType<typeof vi.fn>
+    beforeEach(() => {
+      animate = vi.fn(() => ({ cancel() {} }))
+      Object.defineProperty(HTMLElement.prototype, "animate", {
+        configurable: true,
+        value: animate,
+      })
+    })
+    // só a entrada das barras (clip-path); o motion também usa animate em outros pontos
+    const entradas = () =>
+      animate.mock.calls.filter(
+        ([k]) => Array.isArray(k) && k.some((f) => "clipPath" in f)
+      )
+    afterEach(() => {
+      // @ts-expect-error remove o stub do jsdom
+      delete HTMLElement.prototype.animate
+    })
+
+    it("(h) Painel aberto por revisita (entrada=false) não anima as barras, nem depois do Comparar com", async () => {
+      const user = userEvent.setup()
+      await abrir("2026-10", 1, false)
+      await cruzamento("Área × SLA")
+      await escolher(user, "mai/26")
+      await cruzamento("Área × SLA")
+      expect(entradas()).toHaveLength(0)
+    })
+
+    it("(i) primeira visita (entrada=true) anima as barras", async () => {
+      await abrir("2026-10", 1, true)
+      await cruzamento("Área × SLA")
+      expect(entradas().length).toBeGreaterThan(0)
+    })
   })
 })

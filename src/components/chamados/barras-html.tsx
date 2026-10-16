@@ -72,7 +72,7 @@ function Barra({
       {celula.segmentos.length > 0 && total > 0 ? (
         <div
           ref={crescer}
-          className="flex h-[1.4rem] min-w-0.5 gap-0.5 overflow-hidden rounded-r-[4px]"
+          className="transicao-valor flex h-[1.4rem] min-w-0.5 gap-0.5 overflow-hidden rounded-r-[4px]"
           style={{ width: `${pct}%`, boxShadow: SOMBRA_BARRA }}
         >
           {celula.segmentos
@@ -84,7 +84,7 @@ function Barra({
                   key={s.id}
                   title={`${s.rotulo}: ${s.valor}`}
                   className={cn(
-                    "num flex items-center justify-center text-base font-semibold",
+                    "transicao-valor num flex items-center justify-center text-base font-semibold",
                     s.claro ? "text-foreground" : "text-primary-foreground"
                   )}
                   style={{

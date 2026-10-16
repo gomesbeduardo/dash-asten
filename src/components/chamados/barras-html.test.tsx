@@ -59,4 +59,15 @@ describe("BarrasHtml (pilha)", () => {
     expect(larga).toHaveTextContent("40")
     expect(estreita).not.toHaveTextContent("1")
   })
+
+  it("a largura da pilha e o flex-grow dos segmentos transitam, e voltam secos com movimento reduzido", () => {
+    const { container } = render(
+      <BarrasHtml grupos={grupos} colunas={[{ maximo: 3 }]} descricao="teste" />
+    )
+    const pilha = container.querySelector("[title='A: 2']")!
+      .parentElement as HTMLElement
+    expect(pilha.className).toMatch(/transicao-valor/)
+    const seg = container.querySelector("[title='A: 2']") as HTMLElement
+    expect(seg.className).toMatch(/transicao-valor/)
+  })
 })
