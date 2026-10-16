@@ -10,9 +10,24 @@ import { registrarTiposDoApp } from "@/app/bootstrap"
 import { foto, out } from "@/chamados/fotos-teste"
 import { montarWorkbook } from "@/chamados/test-util"
 import { reiniciarFilaMontagem } from "@/components/app/motion/MontarDepois"
+const montagens = vi.hoisted(() => ({
+  props: [] as { aoVisivel?: boolean; limite?: number }[],
+}))
+vi.mock("@/components/app/motion/MontarDepois", async (orig) => {
+  const real = await orig<typeof import("@/components/app/motion/MontarDepois")>()
+  return {
+    ...real,
+    MontarDepois: (p: Parameters<typeof real.MontarDepois>[0]) => {
+      montagens.props.push({ aoVisivel: p.aoVisivel, limite: p.limite })
+      return <real.MontarDepois {...p} />
+    },
+  }
+})
+
 import { PainelChamados } from "./PainelChamados"
 
 beforeEach(() => {
+  montagens.props.length = 0
   registrarTiposDoApp()
   reiniciarFilaMontagem()
   globalThis.ResizeObserver ??= class {
@@ -31,12 +46,12 @@ beforeEach(() => {
   )
 })
 afterEach(() => {
-  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
 describe("Painel: faixa 'Estamos melhorando?'", () => {
-  it("fora da tela, sai do esqueleto em ~300 ms, não em 1500 ms", async () => {
+  // O prazo em si (300 ms de relógio falso) é testado em MontarDepois.test; aqui só a ligação.
+  it("a faixa fora da tela pede o limite curto de 300 ms ao MontarDepois", async () => {
     const repo: RepositorioDeCargas = criarRepositorioMemoria()
     const meta = await repo.salvar({
       tipo: "chamados",
@@ -54,15 +69,12 @@ describe("Painel: faixa 'Estamos melhorando?'", () => {
         entrada={false}
       />
     )
-    // a faixa existe (Painel já com dados) e começa em esqueleto
     await waitFor(() =>
       expect(container.querySelector("#faixa-melhorando")).not.toBeNull()
     )
-    const esqueleto = () => screen.queryByText("Carregando a evolução…")
-    expect(esqueleto()).toBeInTheDocument()
-    // com o limite antigo (1500 ms) isto estoura o prazo de 1000 ms
-    await waitFor(() => expect(esqueleto()).not.toBeInTheDocument(), {
-      timeout: 1000,
-    })
+    expect(screen.getByText("Carregando a evolução…")).toBeInTheDocument()
+    const faixa = montagens.props.filter((p) => p.aoVisivel)
+    expect(faixa.length).toBeGreaterThan(0)
+    expect(faixa.every((p) => p.limite === 300)).toBe(true)
   })
 })

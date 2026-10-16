@@ -65,14 +65,16 @@ async function abrir(competencia: string, versao: number, entrada = false) {
     (m) => m.competencia === competencia && m.versao === versao
   )!
   const carga = (await repo.obter(meta.id)) as Carga
-  render(
+  const ui = (h: typeof historico) => (
     <PainelChamados
       carga={carga}
-      historico={historico}
+      historico={h}
       obterCarga={(id: string) => repo.obter(id)}
       entrada={entrada}
     />
   )
+  const { rerender } = render(ui(historico))
+  return { historico, trocarHistorico: (h: typeof historico) => rerender(ui(h)) }
 }
 
 beforeEach(() => {
@@ -194,6 +196,17 @@ describe("Painel: comparar com (D65)", () => {
     await abrir("2026-10", 1)
     await screen.findByRole("combobox", { name: "Comparar com" })
     await escolher(user, "mai/26")
+    // os 4 cruzamentos seguem o "Comparar com" sem remontar o bloco
+    for (const nome of [
+      "Cliente × Situação",
+      "Operador × Atraso",
+      "Área × SLA",
+      "Cliente × Tempo médio",
+    ]) {
+      const r = await cruzamento(nome)
+      expect(r).toHaveTextContent("out/26")
+      expect(r).toHaveTextContent("mai/26")
+    }
     const kpiAntes = await kpi("Entradas no mês")
     const cardAntes = await screen.findByRole("region", { name: "Por cliente" })
     const marcas = (c: HTMLElement) =>
@@ -210,6 +223,30 @@ describe("Painel: comparar com (D65)", () => {
     expect(await kpi("Entradas no mês")).toBe(kpiAntes)
     expect(marcas(cardDepois)[0]).toBe(traçosAntes[0])
     expect(lefts(marcas(cardDepois))).not.toBe(posAntes)
+  })
+
+  it("(d2) com 'versão 2' escolhida e a versão arquivada, volta ao mês anterior (texto e seletor)", async () => {
+    const user = userEvent.setup()
+    const { historico, trocarHistorico } = await abrir("2026-04", 2)
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    await escolher(user, "Abril de 2026 v1")
+    await screen.findByRole("group", { name: "+2 em relação a abr/26 v1" })
+    trocarHistorico(
+      historico.filter((m) => !(m.competencia === "2026-04" && m.versao === 1))
+    )
+    expect(screen.getByRole("combobox", { name: "Comparar com" })).toHaveTextContent(/Mês anterior/)
+    expect(screen.queryByRole("group", { name: /abr\/26 v1/ })).toBeNull()
+  })
+
+  it("(g2) a pilha por situação e a barra de vencidos transitam o valor (classe transicao-valor)", async () => {
+    await abrir("2026-10", 1)
+    const area = await cruzamento("Área × SLA")
+    const vencidos = area.querySelectorAll("[data-barra-vencidos]")
+    expect(vencidos.length).toBeGreaterThan(0)
+    vencidos.forEach((b) => expect(b).toHaveClass("transicao-valor"))
+    const pilha = document.querySelectorAll("[data-situacao]")
+    expect(pilha.length).toBeGreaterThan(0)
+    pilha.forEach((s) => expect(s).toHaveClass("transicao-valor"))
   })
 
   describe("entrada das barras", () => {

@@ -58,18 +58,20 @@ describe("Área × SLA (item 1)", () => {
 })
 
 describe("barras HTML (item 2)", () => {
-  it("o nome do cliente não é cortado com reticências e o nome completo vai no aria-label", async () => {
+  it("o nome do cliente não é cortado com reticências e o nome completo é lido no gráfico (role img), não num aria-label solto", async () => {
     const real = await vi.importActual<typeof import("./barras-html")>("./barras-html")
     const nome = "Cliente Épsilon Comércio e Serviços Ltda"
     const { container } = render(
       <real.BarrasHtml
         grupos={[{ rotulo: nome, linhas: [{ mes: "out/26", destaque: true, celulas: [{ texto: "1", segmentos: [] }] }] }]}
         colunas={[{ maximo: 1 }]}
-        descricao="x"
+        descricao={`Cliente × Situação: ${nome} out/26 1`}
       />
     )
+    // o nome acessível vem do role="img"; um aria-label dentro dele nunca é anunciado
+    expect(screen.getByRole("img", { name: new RegExp(nome) })).toBeInTheDocument()
     const r = container.querySelector(`[title="${nome}"]`) as HTMLElement
-    expect(r).toHaveAttribute("aria-label", nome)
+    expect(r).not.toHaveAttribute("aria-label")
     expect(r.className).not.toMatch(/truncate/)
     expect(r.className).toMatch(/break-words|wrap/)
     void BarrasHtml

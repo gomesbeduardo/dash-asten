@@ -180,4 +180,17 @@ describe("Comparar com fotos (D65/D66)", () => {
     ])
     expect(celulas(/^Entradas/).slice(0, 2)).toEqual(["2", "3"])
   })
+
+  it("trocar o mês aberto devolve as colunas ao padrão [anterior, aberta] (sem herdar a escolha)", async () => {
+    const p = await cenario([ABR1, MAI, OUT])
+    const { rerender } = render(ui(p))
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await escolher(0, /^Abril de 2026/)
+    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "out/26", "Δ"])
+    const meta = p.historico.find((m) => m.competencia === "2026-05")!
+    const cargaMai = (await p.obterCarga(meta.id)) as Carga
+    rerender(ui({ ...p, carga: cargaMai }))
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "mai/26", "Δ"])
+  })
 })

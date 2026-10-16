@@ -151,7 +151,6 @@ export function BarrasHtml({
           <span
             className="w-[clamp(7rem,26%,16rem)] shrink-0 text-lg font-medium [overflow-wrap:anywhere] text-foreground"
             title={g.rotulo}
-            aria-label={g.rotulo}
           >
             {g.rotulo}
           </span>

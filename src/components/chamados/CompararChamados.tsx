@@ -147,6 +147,7 @@ export function CompararChamados({
 
   return (
     <ComparacaoVisao
+      key={chaveAberta}
       cabecalho={cabecalho}
       opcoes={opcoes}
       sheets={sheets}

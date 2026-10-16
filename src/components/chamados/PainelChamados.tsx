@@ -24,7 +24,7 @@ import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
 import { MontarDepois } from "@/components/app/motion/MontarDepois"
-import { ANTERIOR, usePainelComparado } from "./comparar-com"
+import { ANTERIOR, escolhaEfetiva, usePainelComparado } from "./comparar-com"
 import { useCargasDoTipo, useMesDeChamados } from "./hooks"
 import { COR_FIN, COR_NAO } from "./cores"
 import { pontosDaEvolucao, temOutros, type SeloTipo } from "./logica"
@@ -103,7 +103,11 @@ export function PainelChamados({
     obterCarga
   )
   const [escolhaDe, setEscolha] = useState({ carga: carga.id, valor: ANTERIOR })
-  const escolha = escolhaDe.carga === carga.id ? escolhaDe.valor : ANTERIOR
+  const escolha = escolhaEfetiva(
+    escolhaDe.carga === carga.id ? escolhaDe.valor : ANTERIOR,
+    carga,
+    historico
+  )
   const comparado = usePainelComparado({
     carga,
     historico,
