@@ -16,10 +16,12 @@ export const standard = ease.standard as unknown as Bezier
 export const emphasized = ease.emphasized as unknown as Bezier
 
 // Mola do indicador da aba ativa (TopBar): assenta suave, com um leve esticar.
+// Mais firme que antes (380/30): o indicador chega a ±1 px do destino em ~230 ms
+// (era ~310), antes de o conteúdo novo começar a montar (~345 ms).
 export const molaAba = {
   type: "spring",
-  stiffness: 380,
-  damping: 30,
+  stiffness: 500,
+  damping: 38,
   mass: 0.9,
 } as const
 
