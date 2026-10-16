@@ -241,7 +241,11 @@ describe("Painel: comparar com (D65)", () => {
   it("(g2) a pilha por situação e a barra de vencidos transitam o valor (classe transicao-valor)", async () => {
     await abrir("2026-10", 1)
     const area = await cruzamento("Área × SLA")
-    const vencidos = area.querySelectorAll("[data-barra-vencidos]")
+    // AJUSTE spec 002: o cartão antigo (tabela) tinha [data-barra-vencidos]; no gráfico novo são as
+    // barras sólidas ([data-barra]) da série "SLA vencido" (BarrasRefinadas).
+    const vencidos = area.querySelectorAll(
+      '[title*=", SLA vencido:"] [data-barra]'
+    )
     expect(vencidos.length).toBeGreaterThan(0)
     vencidos.forEach((b) => expect(b).toHaveClass("transicao-valor"))
     const pilha = document.querySelectorAll("[data-situacao]")
