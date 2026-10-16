@@ -24,7 +24,7 @@ Conferido no código:
 - `.github/workflows/ci.yml` roda **só em push na `main`** (D24: não gastar minutos de Actions em branches), com lint, typecheck, `npm test`, build e `test:e2e` (Playwright com Chromium).
 - Como o CI só roda na `main` (D24), as branches não têm CI. O script `npm run check` (lint, typecheck, testes e build, em `package.json`) reúne as verificações para rodar localmente; a PR deve trazer a prova delas.
 - `.gitignore` bloqueia `*.xlsx` e `*.csv`, com exceção de `fixtures/` (D16).
-- O deploy na Vercel é feito pela CLI depois do CI verde (D27, `docs/acesso-teste.md`). O deploy automático a cada push **não está ligado**; o plano o lista como refinamento pendente.
+- O deploy de produção na Vercel é feito pela CLI depois do CI verde na `main` (D27). A integração da Vercel com o GitHub já gera **deploy de prévia em cada PR** (checks "Vercel" na PR #70, 16/10); se a `main` também publica sozinha não foi conferido, e `docs/acesso-teste.md` ainda diz que o deploy automático não está ligado (desatualizado).
 - Em worktrees paralelas: o dev server de staging fica na porta 5173 e o e2e usa a 4173 por padrão; `PW_PORT=<porta>` muda a do e2e (CLAUDE.md do projeto).
 - Antes de abrir o PR de fechamento para a `main`, a D74 pede a responsividade conferida nas cinco larguras (1366, 1920, 2560, 3440 e 3840) e a medição com 12 posições sintéticas (abrir o Painel e trocar o "Comparar com" em menos de 1 s).
 
