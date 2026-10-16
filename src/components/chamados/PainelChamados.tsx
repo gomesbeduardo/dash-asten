@@ -204,6 +204,7 @@ export function PainelChamados({
     base,
     entradaBase,
     cores,
+    animar: play,
   }
   const graficoRanking = (r: (typeof rankings)[number]) => {
     const d = dist(r.id)

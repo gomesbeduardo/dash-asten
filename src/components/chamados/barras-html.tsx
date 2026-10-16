@@ -1,4 +1,7 @@
 /** Barras de cruzamento (empilhadas ou simples) em HTML/CSS: acompanham a tipografia fluida e o Mes Ref. ao lado do mês escolhido. */
+import { useLayoutEffect, useRef } from "react"
+
+import { chartGrow } from "@/components/app/motion/tokens"
 import { cn } from "@/lib/utils"
 
 export type Segmento = {
@@ -47,7 +50,26 @@ export function LegendaCores({
   )
 }
 
-function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
+function Barra({
+  celula,
+  maximo,
+  animar,
+}: {
+  celula: Celula
+  maximo: number
+  animar: boolean
+}) {
+  const barra = useRef<HTMLDivElement>(null)
+  // WAAPI em vez de JS: o scaleX corre no compositor e não some se a thread principal estiver ocupada montando o resto
+  useLayoutEffect(() => {
+    const el = barra.current
+    if (!animar || !el || typeof el.animate !== "function") return
+    const a = el.animate(
+      [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+      { duration: chartGrow, easing: "ease-out", fill: "backwards" }
+    )
+    return () => a.cancel()
+  }, [animar])
   const total = celula.segmentos.reduce((s, x) => s + x.valor, 0)
   // 20% de folga na trilha para o texto da ponta
   const pct = maximo > 0 ? (total / (maximo * 1.2)) * 100 : 0
@@ -55,8 +77,10 @@ function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
     <div className="flex min-w-0 items-center gap-2">
       {celula.segmentos.length > 0 && total > 0 ? (
         <div
+          ref={barra}
+          data-barra=""
           className="flex h-[1.4rem] min-w-0.5 gap-px overflow-hidden rounded-sm"
-          style={{ width: `${pct}%` }}
+          style={{ width: `${pct}%`, transformOrigin: "left" }}
         >
           {celula.segmentos
             .filter((s) => s.valor > 0)
@@ -84,11 +108,14 @@ export function BarrasHtml({
   grupos,
   colunas,
   descricao,
+  animar = false,
 }: {
   grupos: GrupoBarras[]
   colunas: ColunaBarras[]
   /** Texto do `aria-label` do gráfico (os dados em palavras). */
   descricao: string
+  /** A barra cresce da esquerda (scaleX, `chartGrow`); sem isto aparece pronta. */
+  animar?: boolean
 }) {
   const comMes = grupos.some((g) => g.linhas.length > 1 || g.linhas[0]?.mes)
   const grade = `${comMes ? "4rem " : ""}${colunas.map(() => "minmax(0,1fr)").join(" ")}`
@@ -144,7 +171,12 @@ export function BarrasHtml({
                   </span>
                 )}
                 {l.celulas.map((c, i) => (
-                  <Barra key={i} celula={c} maximo={colunas[i].maximo} />
+                  <Barra
+                    key={i}
+                    celula={c}
+                    maximo={colunas[i].maximo}
+                    animar={animar}
+                  />
                 ))}
               </div>
             ))}
