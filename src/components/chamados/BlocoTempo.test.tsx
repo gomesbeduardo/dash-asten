@@ -74,7 +74,7 @@ describe("BlocoTempo (Ao longo do tempo)", () => {
         await screen.findByRole("region", { name: g.titulo })
       ).toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { name: "Ao longo do tempo" })
+      screen.getByRole("heading", { name: "Estamos melhorando?" })
     ).toBeInTheDocument()
     for (const fora of ["Sem SLA", "% reabertos", "Tempo até o aceite"])
       expect(screen.queryByRole("region", { name: fora })).toBeNull()

@@ -138,7 +138,8 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
       ).getByLabelText("1")
     ).toBeInTheDocument()
     // sem carga anterior: nada de Δ
-    expect(topo).toHaveTextContent("sem base no mês anterior")
+    expect(topo).not.toHaveTextContent(/sem base|vs /)
+    expect(within(topo).queryByRole("group")).toBeNull()
   })
 
   it("foto out: situação nova na legenda, com Δ contra o mês anterior e 'nova'", async () => {
@@ -155,12 +156,12 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
     expect(within(item("Finalizado")).getByLabelText("8")).toBeInTheDocument()
     // set/26 é corrigido pela posição de out (D65): 5000 e 5003 já estavam finalizados lá. 5010 estava
     // "Aguardando aceite" e a out não traz Data de Aceite: continua aguardando (posição de set estava certa)
-    expect(item("Finalizado")).toHaveTextContent("+4 vs set/26")
+    expect(within(item("Finalizado")).getByRole("group", { name: "+4 em relação a set/26" })).toHaveTextContent("set/26")
     expect(item("Em Análise")).toHaveTextContent("nova")
     const total = within(topo).getByRole("article", {
       name: "Total de chamados",
     })
-    expect(total).toHaveTextContent("+5 vs set/26")
+    expect(within(total).getByRole("group", { name: "+5 em relação a set/26" })).toBeInTheDocument()
     expect(total).toHaveTextContent("10")
     // o aberto depois do Mes Ref. fica só na nota
     expect(screen.getByLabelText("Avisos")).toHaveTextContent(
@@ -176,24 +177,23 @@ describe("Painel: gráficos com período (D64)", () => {
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const grafico = () =>
       within(card).getByRole("img").getAttribute("aria-label")!
-    expect(grafico()).toMatch(/Finalizados no mês contra Não finalizados/)
-    expect(grafico()).toMatch(/Cliente Ômega 0, 1/)
-    expect(grafico()).toMatch(/Cliente Delta 1, 1/)
+    expect(grafico()).toMatch(/Cliente Ômega: Finalizados no mês 0, Não finalizados 1/)
+    expect(grafico()).toMatch(/Cliente Delta: Finalizados no mês 1, Não finalizados 1/)
 
     await user.click(
       within(card).getByRole("button", { name: "Comparar período" })
     )
-    await user.selectOptions(within(card).getByLabelText("Período"), "6")
-    expect(grafico()).toMatch(/Finalizados no período contra Não finalizados/)
-    expect(grafico()).toMatch(/Cliente Ômega 2, 1/)
-    expect(grafico()).toMatch(/Cliente Delta 2, 1/)
+    await user.click(within(card).getByRole("combobox", { name: "Período" }))
+    await user.click(await screen.findByRole("option", { name: "Últimos 6 meses" }))
+    expect(grafico()).toMatch(/Cliente Ômega: Finalizados no período 2, Não finalizados 1/)
+    expect(grafico()).toMatch(/Cliente Delta: Finalizados no período 2, Não finalizados 1/)
     expect(card).toHaveTextContent(/últimos 6 meses/)
 
     // desligar volta ao mês
     await user.click(
       within(card).getByRole("button", { name: "Comparar período" })
     )
-    expect(grafico()).toMatch(/Cliente Ômega 0, 1/)
+    expect(grafico()).toMatch(/Cliente Ômega: Finalizados no mês 0, Não finalizados 1/)
   })
 })
 

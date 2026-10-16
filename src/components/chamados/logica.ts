@@ -41,7 +41,12 @@ export function formatarKpi(valor: number | null, formato: FormatoKpi): string {
 }
 
 export type DeltaUI = {
+  /** Só o valor, com sinal tipográfico: "−16,7 p.p." (sem "vs" nem período). */
   texto: string
+  /** Período-base, à parte do valor: "abr/26 v1". */
+  periodo: string
+  /** Texto completo para leitor de tela: "−16,7 p.p. em relação a abr/26 v1, pior". */
+  aria: string
   sentido: "alta" | "queda" | "igual"
   tom: "bom" | "ruim" | "neutro"
   /** Palavra que acompanha a cor (a cor nunca vai sozinha). Vazia no tom neutro. */
@@ -58,20 +63,23 @@ export function descreverDelta(
     formato === "inteiro" ? Math.round(delta) : Math.round(delta * 10) / 10
   const sentido = arred > 0 ? "alta" : arred < 0 ? "queda" : "igual"
   const fmt = formato === "inteiro" ? inteiro : decimal
-  const sinal = arred > 0 ? "+" : arred < 0 ? "-" : ""
+  const sinal = arred > 0 ? "+" : arred < 0 ? "−" : ""
   const unidade =
     formato === "percentual" ? " p.p." : formato === "dias" ? " dias" : ""
-  const texto = `${sinal}${fmt.format(Math.abs(arred))}${unidade} vs ${rotuloAnterior}`
+  const texto = `${sinal}${fmt.format(Math.abs(arred))}${unidade}`
   let tom: DeltaUI["tom"] = "neutro"
   if (sentido !== "igual" && melhorQuando !== "neutro") {
     const subiu = sentido === "alta"
     tom = (melhorQuando === "maior") === subiu ? "bom" : "ruim"
   }
+  const rotuloTom = tom === "bom" ? "melhor" : tom === "ruim" ? "pior" : ""
   return {
     texto,
+    periodo: rotuloAnterior,
+    aria: `${texto} em relação a ${rotuloAnterior}${rotuloTom ? `, ${rotuloTom}` : ""}`,
     sentido,
     tom,
-    rotuloTom: tom === "bom" ? "melhor" : tom === "ruim" ? "pior" : "",
+    rotuloTom,
   }
 }
 

@@ -1,12 +1,6 @@
 /** Peças do Painel da foto (D64): cards por Situação e gráficos com "comparar período". */
 import { useMemo, useState } from "react"
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CalendarRangeIcon,
-  MinusIcon,
-  SparklesIcon,
-} from "lucide-react"
+import { CalendarRangeIcon } from "lucide-react"
 
 import { formatarCompetencia } from "@/cargas"
 import {
@@ -20,11 +14,26 @@ import {
 import { motion, useReducedMotion } from "motion/react"
 import { AnimatedNumber } from "@/components/app/motion/AnimatedNumber"
 import { entryItemPagina } from "@/components/app/motion/variants"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Toggle } from "@/components/ui/toggle"
 import { GraficoCartao } from "./cartoes"
-import { BarrasComparar, COR } from "./graficos"
+import { COR } from "./graficos"
+import { COR_FIN, COR_NAO, coresDasSituacoes, corDaFaixa } from "./cores"
+import { BarrasRefinadas, type LinhaRefinada } from "./barras-refinadas"
 import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
+import { deltaDeContagem, SeloDelta, SeloNova } from "./selo-delta"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
@@ -63,73 +72,13 @@ function Variacao({
   nova?: boolean
   semFoto?: string
 }) {
-  if (semFoto)
-    return (
-      <p className="text-base text-muted-foreground">
-        <span aria-hidden>—</span> {semFoto}
-      </p>
-    )
-  if (nova)
-    return (
-      <p className="flex items-center gap-1.5 text-base font-medium text-primary">
-        <SparklesIcon className="size-5 shrink-0" aria-hidden /> nova
-        <span className="font-normal text-muted-foreground">
-          · não estava em {rotulo}
-        </span>
-      </p>
-    )
-  if (anterior === null)
-    return (
-      <p className="text-base text-muted-foreground">
-        sem base no mês anterior
-      </p>
-    )
-  const dif = atual - anterior
-  const Seta = dif > 0 ? ArrowUpIcon : dif < 0 ? ArrowDownIcon : MinusIcon
-  return (
-    <p className="flex items-center gap-1.5 text-base text-muted-foreground">
-      <Seta className="size-5 shrink-0" aria-hidden />
-      <span>
-        {dif === 0
-          ? `sem variação vs ${rotulo}`
-          : `${dif > 0 ? "+" : "-"}${n(Math.abs(dif))} vs ${rotulo}`}
-      </span>
-    </p>
-  )
+  // sem base (ou sem foto): o aviso aparece uma vez, junto de "Comparar com"; o item não repete
+  if (semFoto || (anterior === null && !nova)) return null
+  if (nova) return <SeloNova periodo={rotulo} />
+  return <SeloDelta delta={deltaDeContagem(atual, anterior!, rotulo)} />
 }
 
-const normalizar = (r: string) =>
-  r.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim()
-
-const VERDE = "var(--chart-3)"
-const AZUL = "var(--chart-1)"
-/** Cores das situações que não são "Finalizado" (verde), na ordem de frequência. */
-const CORES_SITUACAO = [
-  AZUL,
-  COR.laranja,
-  "var(--chart-4)",
-  "#00778b",
-  "var(--chart-2)",
-  "#8a6d00",
-  "var(--chart-5)",
-  "#a0506b",
-] as const
-
-/** Uma cor por situação, a mesma em toda a página (faixa do topo e cruzamento por situação). */
-export function coresDasSituacoes(rotulos: string[]): Map<string, string> {
-  const cores = new Map<string, string>()
-  let i = 0
-  for (const r of rotulos) {
-    if (cores.has(r)) continue
-    cores.set(
-      r,
-      normalizar(r).startsWith("finaliz")
-        ? VERDE
-        : CORES_SITUACAO[i++ % CORES_SITUACAO.length]
-    )
-  }
-  return cores
-}
+export { coresDasSituacoes }
 
 /** Faixa única do topo (decisão 26): total à esquerda; à direita, barra empilhada por Situação e a legenda com contagem e Δ. */
 export function FaixaSituacao({
@@ -161,12 +110,12 @@ export function FaixaSituacao({
     <motion.section
       aria-label="Chamados por situação"
       variants={reduce ? undefined : entryItemPagina}
-      className="rounded-lg bg-card p-6 shadow-(--shadow-card)"
+      className="rounded-lg bg-card p-7 shadow-(--shadow-card)"
     >
       <div className="flex flex-col gap-6 min-[1100px]:flex-row min-[1100px]:items-stretch min-[1100px]:gap-10">
         <article
           aria-label="Total de chamados"
-          className="flex shrink-0 flex-col justify-center gap-1 min-[1100px]:min-w-60 min-[1100px]:border-r min-[1100px]:pr-10"
+          className="flex shrink-0 flex-col justify-center gap-1 min-[1100px]:min-w-60 min-[1100px]:border-r min-[1100px]:border-border/60 min-[1100px]:pr-10"
         >
           <h3 className="font-sans text-xl leading-tight font-medium text-muted-foreground">
             Total de chamados
@@ -189,14 +138,14 @@ export function FaixaSituacao({
           <div
             role="img"
             aria-label={`Situações: ${situacoes.map((s) => `${s.rotulo} ${s.valor}`).join("; ")}`}
-            className="flex h-14 w-full gap-0.5 overflow-hidden rounded-md bg-muted"
+            className="flex h-14 w-full gap-0.5 overflow-hidden rounded-lg bg-muted"
           >
             {situacoes.map((s) => (
               <div
                 key={s.rotulo}
                 data-situacao={s.rotulo}
                 title={`${s.rotulo}: ${n(s.valor)}`}
-                className="num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-white"
+                className="num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-primary-foreground"
                 style={{
                   flexGrow: s.valor,
                   flexBasis: 0,
@@ -218,9 +167,9 @@ export function FaixaSituacao({
                 <li
                   key={s.rotulo}
                   aria-label={`Situação: ${s.rotulo}`}
-                  className="flex min-w-0 flex-col gap-0.5"
+                  className="flex min-w-0 flex-col gap-1.5"
                 >
-                  <span className="flex items-center gap-2 text-lg text-muted-foreground">
+                  <span className="flex items-center gap-2 text-lg font-medium text-foreground/80">
                     <span
                       aria-hidden
                       className="size-3.5 shrink-0 rounded-sm"
@@ -262,16 +211,20 @@ export function FaixaSituacao({
   )
 }
 
+/** Cores das barras de "No mês" e da evolução: tokens de série em index.css. */
+export const SERIE_FIN = COR_FIN
+export const SERIE_NAO = COR_NAO
+
 const SERIES_MES = [
-  { id: "finalizados", rotulo: "Finalizados no mês", cor: VERDE },
-  { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
+  { id: "finalizados", rotulo: "Finalizados no mês", cor: COR_FIN },
+  { id: "naoFinalizados", rotulo: "Não finalizados", cor: COR_NAO },
 ]
 const SERIES_PERIODO = [
-  { id: "finalizadosPeriodo", rotulo: "Finalizados no período", cor: VERDE },
-  { id: "naoFinalizados", rotulo: "Não finalizados", cor: AZUL },
+  { id: "finalizadosPeriodo", rotulo: "Finalizados no período", cor: COR_FIN },
+  { id: "naoFinalizados", rotulo: "Não finalizados", cor: COR_NAO },
 ]
 /** Mês escolhido em tom claro, o Mes Ref. no tom cheio (mesma cor = mesma medida). */
-const claro = (cor: string) => `color-mix(in srgb, ${cor} 38%, white)`
+const claro = (cor: string) => `color-mix(in srgb, ${cor} 38%, var(--card))`
 export const PERIODOS = [3, 6, 12] as const
 
 /** Início (UTC) do período de `meses` meses que termina no mês `competencia` ("AAAA-MM"). */
@@ -362,20 +315,20 @@ export function GraficoMes({
     series = [
       {
         id: "finBase",
-        rotulo: `Finalizados · ${rotuloBase}`,
-        cor: claro(VERDE),
+        rotulo: `Finalizados ${rotuloBase}`,
+        cor: claro(COR_FIN),
       },
-      { id: "finAtual", rotulo: `Finalizados · ${mesRef}`, cor: VERDE },
+      { id: "finAtual", rotulo: `Finalizados ${mesRef}`, cor: COR_FIN },
       ...(semFoto
         ? []
         : [
             {
               id: "naoBase",
-              rotulo: `Não finalizados · ${rotuloBase}`,
-              cor: claro(AZUL),
+              rotulo: `Não finalizados ${rotuloBase}`,
+              cor: claro(COR_NAO),
             },
           ]),
-      { id: "naoAtual", rotulo: `Não finalizados · ${mesRef}`, cor: AZUL },
+      { id: "naoAtual", rotulo: `Não finalizados ${mesRef}`, cor: COR_NAO },
     ]
     linhas = rotulos.map((r) => ({
       rotulo: r,
@@ -390,9 +343,32 @@ export function GraficoMes({
   const itens = max ? agruparSeries(linhas, max) : linhas
   const subtitulo = doPeriodo
     ? `finalizados nos últimos ${meses} meses (${formatarCompetencia(competenciaDe(periodo.primeira))} a ${formatarCompetencia(competencia)}) × não finalizados, ${sub}`
+    : `finalizados no mês × não finalizados, ${sub}`
+  const contexto = doPeriodo
+    ? undefined
     : comBase
-      ? `finalizados no mês × não finalizados, ${sub} · ${mesRef} ao lado de ${rotuloBase}`
-      : `finalizados no mês × não finalizados, ${sub} · ${formatarCompetencia(competencia, "longo")}`
+      ? `${mesRef} ao lado de ${rotuloBase}`
+      : formatarCompetencia(competencia, "longo")
+  // posições em `valores`: sem base [fin, nao]; com base [finBase, finAtual, (naoBase), naoAtual]
+  const refinadas: LinhaRefinada[] = itens.map((i) => {
+    const v = i.valores
+    if (!comBase)
+      return {
+        rotulo: i.rotulo,
+        valores: [{ valor: v[0] ?? 0 }, { valor: v[1] ?? 0 }],
+      }
+    const semFotoBase = base.semFoto !== undefined
+    return {
+      rotulo: i.rotulo,
+      valores: [
+        { valor: v[1] ?? 0, base: v[0] ?? 0 },
+        {
+          valor: v[v.length - 1] ?? 0,
+          base: semFotoBase ? null : (v[2] ?? 0),
+        },
+      ],
+    }
+  })
   const notas = [
     comBase && base.semFoto
       ? `${base.semFoto}: de ${rotuloBase} só os finalizados no mês, pelas datas.`
@@ -407,6 +383,7 @@ export function GraficoMes({
       id={dist.id}
       titulo={dist.titulo}
       subtitulo={subtitulo}
+      contexto={contexto}
       tabela={{
         colunas: ["Categoria", ...series.map((s) => s.rotulo)],
         linhas: itens.map((i) => [
@@ -419,33 +396,54 @@ export function GraficoMes({
       className={className}
       acoes={
         <>
-          <Toggle
-            variant="outline"
-            pressed={ligado}
-            onPressedChange={setLigado}
-            className="press gap-2"
-          >
-            <CalendarRangeIcon className="size-5" aria-hidden />
-            Comparar período
-          </Toggle>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toggle
+                pressed={ligado}
+                onPressedChange={setLigado}
+                aria-label="Comparar período"
+                className="press h-10 min-w-10 px-0 text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+              >
+                <CalendarRangeIcon className="size-5" aria-hidden />
+              </Toggle>
+            </TooltipTrigger>
+            <TooltipContent className="text-base">
+              Comparar período
+            </TooltipContent>
+          </Tooltip>
           {ligado && (
-            <select
-              aria-label="Período"
-              value={meses}
-              onChange={(e) => setMeses(Number(e.target.value))}
-              className="h-11 rounded-lg border border-input bg-card px-3 text-base text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+            <Select
+              value={String(meses)}
+              onValueChange={(v) => setMeses(Number(v))}
             >
-              {PERIODOS.map((m) => (
-                <option key={m} value={m}>
-                  Últimos {m} meses
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Período" className="w-auto min-w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIODOS.map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    Últimos {m} meses
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </>
       }
     >
-      <BarrasComparar itens={itens} series={series} animar={animar} tv />
+      <BarrasRefinadas
+        linhas={refinadas}
+        series={[
+          {
+            id: "fin",
+            rotulo: doPeriodo ? "Finalizados no período" : "Finalizados no mês",
+            cor: SERIE_FIN,
+          },
+          { id: "nao", rotulo: "Não finalizados", cor: SERIE_NAO },
+        ]}
+        rotuloBase={comBase ? rotuloBase : undefined}
+        animar={animar}
+      />
     </GraficoCartao>
   )
 }
@@ -472,10 +470,10 @@ export function AtrasoMes({
   const mapaBase = new Map(base?.atrasoFaixas.map((f) => [f.rotulo, f.valor]))
   const series = comBase
     ? [
-        { id: "base", rotulo: base.rotulo, cor: claro(AZUL) },
-        { id: "atual", rotulo: mesRef, cor: AZUL },
+        { id: "base", rotulo: base.rotulo, cor: claro(SERIE_NAO) },
+        { id: "atual", rotulo: mesRef, cor: SERIE_NAO },
       ]
-    : [{ id: "atual", rotulo: "Chamados", cor: AZUL }]
+    : [{ id: "atual", rotulo: "Chamados", cor: SERIE_NAO }]
   const itens: ItemSerie[] = faixas.map((f) => ({
     rotulo: f.rotulo,
     valores: comBase ? [mapaBase.get(f.rotulo) ?? 0, f.valor] : [f.valor],
@@ -484,7 +482,8 @@ export function AtrasoMes({
     <GraficoCartao
       id="atrasoFaixas"
       titulo="Em atraso por meses desde a abertura"
-      subtitulo={`não finalizados abertos antes do mês do Mes Ref.${comBase ? ` · ${mesRef} ao lado de ${base.rotulo}` : ""}`}
+      subtitulo="não finalizados abertos antes do mês do Mes Ref."
+      contexto={comBase ? `${mesRef} ao lado de ${base.rotulo}` : undefined}
       nota={
         base?.semFoto
           ? `${base.semFoto}: o atraso depende da Situação e só mostra o Mes Ref.`
@@ -504,7 +503,18 @@ export function AtrasoMes({
           Sem dados com este filtro nesta carga
         </p>
       ) : (
-        <BarrasComparar itens={itens} series={series} animar={animar} tv />
+        <BarrasRefinadas
+          linhas={itens.map((i) => ({
+            rotulo: i.rotulo,
+            valores: comBase
+              ? [{ valor: i.valores[1] ?? 0, base: i.valores[0] ?? 0 }]
+              : [{ valor: i.valores[0] ?? 0 }],
+          }))}
+          series={[{ id: "atual", rotulo: "Não finalizados", cor: SERIE_NAO }]}
+          corDaLinha={corDaFaixa}
+          rotuloBase={comBase ? base.rotulo : undefined}
+          animar={animar}
+        />
       )}
     </GraficoCartao>
   )

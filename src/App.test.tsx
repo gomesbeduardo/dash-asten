@@ -179,7 +179,7 @@ describe("nova carga", () => {
 
     await screen.findByRole("article", { name: "Não finalizados" })
     expect(
-      screen.getByRole("heading", { level: 1, name: /^Chamados · / })
+      screen.getByRole("heading", { level: 1, name: /^Chamados / })
     ).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Leituras" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Comparar" })).toBeInTheDocument()

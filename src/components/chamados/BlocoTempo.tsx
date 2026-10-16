@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { Carregando } from "./Carregando"
-import { GraficoCartao } from "./cartoes"
+import { GraficoCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, useFiltrosChamados } from "./filtros"
+import { COR_NAO, corDaSituacao } from "./cores"
+import { SERIE_FIN } from "./painel-foto"
 import { COR, LinhaMini, type SerieLinha } from "./graficos"
 import { useCargasDoTipo } from "./hooks"
 import {
@@ -52,8 +54,8 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     fonte: {
       tipo: "kpis",
       series: [
-        { id: "entradas", rotulo: "Entradas", cor: COR.laranja },
-        { id: "finalizados", rotulo: "Finalizados", cor: COR.principal },
+        { id: "entradas", rotulo: "Entradas", cor: "var(--serie-entradas)" },
+        { id: "finalizados", rotulo: "Finalizados", cor: SERIE_FIN },
       ],
     },
   },
@@ -63,8 +65,8 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     fonte: {
       tipo: "kpis",
       series: [
-        { id: "atraso", rotulo: "Em atraso", cor: COR.atraso },
-        { id: "slaVencido", rotulo: "SLA vencido", cor: COR.cinza },
+        { id: "atraso", rotulo: "Em atraso", cor: COR_NAO },
+        { id: "slaVencido", rotulo: "SLA vencido", cor: "var(--vencido)" },
       ],
     },
   },
@@ -73,7 +75,7 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     titulo: "% no SLA",
     fonte: {
       tipo: "kpis",
-      series: [{ id: "sla", rotulo: "% no SLA", cor: COR.verde }],
+      series: [{ id: "sla", rotulo: "% no SLA", cor: SERIE_FIN }],
     },
   },
   {
@@ -100,14 +102,14 @@ const JANELAS = [6, 12] as const
 
 /** Paleta categórica (até 8 linhas), distinguível entre si e sobre o fundo claro do cartão. */
 const PALETA = [
-  "#1f5fa8",
-  "#b45f06",
-  "#2e7d32",
-  "#7b3fa0",
-  "#c2185b",
-  "#00838f",
-  "#6d4c41",
-  "#546e7a",
+  "var(--chart-1)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--sit-aceite)",
+  "var(--sit-analise)",
+  "var(--chart-2)",
+  "var(--chart-5)",
+  "var(--serie-entradas)",
 ]
 
 /**
@@ -203,10 +205,10 @@ function montar(dados: Dados): Grafico[] {
       out.push({
         g,
         pontos: situacoes.pontos,
-        series: lista.map((s, i) => ({
+        series: lista.map((s) => ({
           id: s.id,
           rotulo: s.rotulo,
-          cor: PALETA[i % PALETA.length],
+          cor: corDaSituacao(s.rotulo),
         })),
         formato: "inteiro",
         subtitulo: (
@@ -309,31 +311,32 @@ export function BlocoTempo({
   const play = entradaFixa && !reduce
 
   const cabecalho = (
-    <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-      <h2 className="text-4xl leading-none text-primary">Ao longo do tempo</h2>
-      <div role="group" aria-label="Janela" className="flex gap-2">
-        {JANELAS.map((n) => (
-          <Button
-            key={n}
-            type="button"
-            size="sm"
-            variant={n === meses ? "default" : "outline"}
-            aria-pressed={n === meses}
-            onClick={() => setMeses(n)}
-          >
-            {n} meses
-          </Button>
-        ))}
-      </div>
-    </header>
+    <TituloBloco
+      titulo="Estamos melhorando?"
+      texto={`Ao longo do tempo: um ponto por mês até ${formatarCompetencia(carga.competencia)}. Mês sem posição traz só entradas e finalizados (das datas). Ponto vazado = corrigido por posição posterior.`}
+      acao={
+        <div role="group" aria-label="Janela" className="flex gap-2">
+          {JANELAS.map((n) => (
+            <Button
+              key={n}
+              type="button"
+              size="sm"
+              variant={n === meses ? "default" : "outline"}
+              aria-pressed={n === meses}
+              onClick={() => setMeses(n)}
+            >
+              {n} meses
+            </Button>
+          ))}
+        </div>
+      }
+    />
   )
 
   if (!dados)
     return (
       <section aria-label="Ao longo do tempo" className="flex flex-col gap-4">
-        <h2 className="text-4xl leading-none text-primary">
-          Ao longo do tempo
-        </h2>
+        <TituloBloco titulo="Estamos melhorando?" />
         <Carregando forma="evolucao" />
       </section>
     )
@@ -350,11 +353,6 @@ export function BlocoTempo({
       >
         {cabecalho}
         <AvisoFiltroSemColuna avisos={dados.avisosFiltro} />
-        <p className="text-lg text-muted-foreground">
-          Um ponto por mês até {formatarCompetencia(carga.competencia)}. Mês sem
-          posição traz só entradas e finalizados (das datas). Ponto vazado =
-          corrigido por posição posterior.
-        </p>
         <div className={GRADE}>
           {itens.map((item, i) => (
             <CartaoTempo

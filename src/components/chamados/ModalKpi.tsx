@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dialog"
 import { ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
+import { raioBarra, SOMBRA_BARRA_SVG, TRACEJADO_GRADE } from "./barra-estilo"
+import { ColunaTopoArredondada, DefsGradiente, urlGradiente } from "./barra-svg"
 import { animacao, COR } from "./graficos"
 import { formatarKpi } from "./logica"
 import { MarcaCorrigido } from "./selos"
@@ -32,12 +34,12 @@ export type DeltaKpi = {
 } | null
 
 const TOM = {
-  bom: "text-[#00694b]",
+  bom: "text-positive",
   ruim: "text-late",
   neutro: "text-muted-foreground",
 } as const
 
-const EIXO = { fontSize: "1.1250rem", fill: "#475565" }
+const EIXO = { fontSize: "1.1250rem", fill: "var(--muted-foreground)" }
 
 export function ModalKpi({
   aberto,
@@ -83,7 +85,7 @@ export function ModalKpi({
           <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <ChartContainer
               config={{ barra: { label: titulo, color: COR.principal } }}
-              className="aspect-auto h-72 w-full min-w-0 lg:h-[26rem]"
+              className={`aspect-auto h-72 w-full min-w-0 lg:h-[26rem] ${SOMBRA_BARRA_SVG}`}
               role="img"
               aria-label={`${titulo}: ${pontos.map((p) => `${p.rotulo} ${fmt(p.valor)}`).join(", ")}`}
             >
@@ -91,7 +93,15 @@ export function ModalKpi({
                 data={dados}
                 margin={{ top: 36, right: 12, left: 4, bottom: 4 }}
               >
-                <CartesianGrid vertical={false} stroke="#d8dee4" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="color-mix(in srgb, var(--border) 45%, transparent)"
+                  strokeDasharray={TRACEJADO_GRADE}
+                />
+                <DefsGradiente
+                  cores={[COR.principal, COR.cinza]}
+                  orientacao="vertical"
+                />
                 <XAxis
                   dataKey="rotulo"
                   interval="preserveStartEnd"
@@ -115,7 +125,7 @@ export function ModalKpi({
                 />
                 <Bar
                   dataKey="barra"
-                  radius={[4, 4, 0, 0]}
+                  radius={raioBarra(56, "vertical")}
                   maxBarSize={96}
                   {...animacao(animar)}
                   shape={(p: {
@@ -128,13 +138,12 @@ export function ModalKpi({
                     const d = p.payload
                     const cor = d?.atual ? COR.principal : COR.cinza
                     return (
-                      <rect
+                      <ColunaTopoArredondada
                         x={p.x}
                         y={p.y}
                         width={p.width}
                         height={p.height}
-                        rx={4}
-                        fill={cor}
+                        fill={urlGradiente(cor, "vertical")}
                       />
                     )
                   }}
@@ -149,7 +158,7 @@ export function ModalKpi({
                     style={{
                       fontSize: "1.1250rem",
                       fontWeight: 700,
-                      fill: "#043f63",
+                      fill: "var(--primary)",
                     }}
                   />
                 </Bar>
@@ -177,7 +186,7 @@ export function ModalKpi({
                           {p.rotulo}
                         </span>
                         {atual && (
-                          <span className="rounded bg-brand-ink px-1.5 py-0.5 text-sm font-medium text-white">
+                          <span className="rounded bg-brand-ink px-1.5 py-0.5 text-sm font-medium text-primary-foreground">
                             atual
                           </span>
                         )}

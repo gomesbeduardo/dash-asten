@@ -32,7 +32,15 @@ export const valorVersao = (v: number) => `versao:${v}`
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-export type OpcaoSeletor = { valor: string; rotulo: string }
+/** Grupos do seletor "Comparar com": a escolha padrão fica solta no topo; o resto vem agrupado. */
+export type GrupoOpcao = "padrao" | "posicao" | "semPosicao" | "versao"
+export type OpcaoSeletor = {
+  valor: string
+  rotulo: string
+  grupo: GrupoOpcao
+  /** Texto secundário do item (ex.: "sem posição"). */
+  secundario?: string
+}
 
 export type PainelComparado = {
   metricas: MetricasCorrigidas
@@ -41,7 +49,7 @@ export type PainelComparado = {
   base: BaseAnterior
   /** Foto do período-base (filtrada e corrigida), para os cruzamentos; `null` sem posição ou sem base usável. */
   entradaBase: EntradaCompetencia | null
-  /** Rótulo do período-base nos Δ ("abr/26", "abr/26 · v1"); `null` sem base. */
+  /** Rótulo do período-base nos Δ ("abr/26", "abr/26 v1"); `null` sem base. */
   rotuloBase: string | null
   /** ["out/26"] ou ["mai/26", "out/26"]: fotos que corrigiram a foto aberta; vazio se nada mudou. */
   corrigidoPor: string[]
@@ -152,7 +160,7 @@ export function usePainelComparado({
       const aba = cargaVersao ? escolherAba(cargaVersao.workbook) : null
       if (cargaVersao && aba) {
         baseEntrada = entradaFiltradaDe(aba, carga.competencia, filtros)
-        rotuloBase = `${formatarCompetencia(carga.competencia)} · v${cargaVersao.versao}`
+        rotuloBase = `${formatarCompetencia(carga.competencia)} v${cargaVersao.versao}`
       }
     } else if (escolha.startsWith("mes:")) {
       competenciaBase = escolha.slice(4)
@@ -233,21 +241,25 @@ export function usePainelComparado({
         rotulo: anteriorImediato
           ? `Mês anterior (${formatarCompetencia(anteriorImediato.competencia)})`
           : "Mês anterior",
+        grupo: "padrao",
       },
       ...opcoesM.meses
         // o mês anterior com foto já é o padrão
         .filter(
           (o) => !(o.temFoto && o.competencia === anteriorImediato?.competencia)
         )
-        .map((o) => ({
+        .map((o): OpcaoSeletor => ({
           valor: valorMes(o.competencia),
           rotulo: o.temFoto
             ? formatarCompetencia(o.competencia)
-            : `${rotuloCompetencia(o.competencia)} (sem posição)`,
+            : rotuloCompetencia(o.competencia),
+          grupo: o.temFoto ? "posicao" : "semPosicao",
+          secundario: o.temFoto ? undefined : "sem posição",
         })),
-      ...opcoesM.outrasVersoes.map((v) => ({
+      ...opcoesM.outrasVersoes.map((v): OpcaoSeletor => ({
         valor: valorVersao(v),
-        rotulo: `${cap(formatarCompetencia(carga.competencia, "longo"))} · v${v}`,
+        rotulo: `${cap(formatarCompetencia(carga.competencia, "longo"))} v${v}`,
+        grupo: "versao",
       })),
     ]
 

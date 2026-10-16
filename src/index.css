@@ -27,6 +27,11 @@
     --color-brand-ink: var(--brand-ink);
     --color-brand-soft: var(--brand-soft);
     --color-late: var(--late);
+    --color-positive: var(--positive);
+    --color-vencido: var(--vencido);
+    --color-contexto: var(--contexto);
+    --color-serie-finalizados: var(--serie-finalizados);
+    --color-serie-nao-finalizados: var(--serie-nao-finalizados);
     --color-chart-5: var(--chart-5);
     --color-chart-4: var(--chart-4);
     --color-chart-3: var(--chart-3);
@@ -93,6 +98,26 @@
     --chart-4: #7a5ea8; /* pausado */
     --chart-5: #7b8794; /* não iniciado */
     --late: #b42318;
+    /* Texto de variação favorável (verde com contraste AA sobre o cartão). */
+    --positive: #00694b;
+    /* Séries "No mês" e "Ao longo do tempo": finalizados × não finalizados (laranja = --brand; sem tema escuro no projeto). */
+    --serie-finalizados: #0b5c8a;
+    --serie-nao-finalizados: #d4650c; /* laranja da marca escurecido: 3,27:1 contra --card */
+    /* Paleta curta por significado (validada com o verificador de paleta, modo claro). */
+    --vencido: #b42318; /* só alerta: SLA vencido */
+    --contexto: #9fb3c4; /* dentro da referência, "no ciclo" e outros contextos */
+    --serie-entradas: #5a2fc0; /* índigo: Entradas, distinto do petróleo, do laranja e das situações */
+    /* Situações não finalizadas, por nome (nunca pela posição no ranking). */
+    --sit-aguardando-cliente: #159a72;
+    --sit-analise: #d4650c;
+    --sit-atendimento: #7d5fc4;
+    --sit-aceite: #c2416b;
+    --sit-outra: #7b8794; /* situação desconhecida: cinza com rótulo, nunca escondida */
+    /* Faixas de atraso: uma cor, do claro (1 mês) ao escuro (7+). */
+    --atraso-1: #f2b48a;
+    --atraso-2: #e3803f;
+    --atraso-3: #c05515;
+    --atraso-4: #7f2e06;
     --radius: 0.5rem;
     /* Tokens de movimento (D26), espelhados em src/components/app/motion/tokens.ts */
     --motion-fast: 150ms;
@@ -133,6 +158,12 @@ html {
   /* D67: escala fluida; 1920 ≈ 16,5px, 3840 ≈ 24px, teto 30px. */
   font-size: clamp(16px, 0.39vw + 9px, 30px);
   color-scheme: light;
+}
+/* 4K (3840×2160) e telas altas: um degrau a mais, para rótulos e valores dos gráficos chegarem a ~30 px. */
+@media (min-height: 2000px) {
+  html {
+    font-size: clamp(26px, 0.39vw + 15px, 36px);
+  }
 }
 body {
   font-size: 1rem;

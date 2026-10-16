@@ -25,7 +25,11 @@ import {
 } from "./logica"
 import { LegendaSimbolos, Selos } from "./selos"
 
-const SEV_ROTULO = { critico: "Crítico", atencao: "Atenção", destaque: "Destaque" }
+const SEV_ROTULO = {
+  critico: "Crítico",
+  atencao: "Atenção",
+  destaque: "Destaque",
+}
 
 /**
  * Cartões clicáveis das leituras + o modal de detalhe (regra, números, evidência, ação).
@@ -55,13 +59,21 @@ export function ListaLeituras({
   const filtro = leitura ? filtroDaLeitura(leitura) : null
   const selosGrafico: SeloTipo[] = leitura
     ? [
-        ...(evidencia && temOutros(evidencia.itens) ? (["outros"] as const) : []),
+        ...(evidencia && temOutros(evidencia.itens)
+          ? (["outros"] as const)
+          : []),
       ]
     : []
 
   return (
     <>
-      <ul className={cn("grid grid-cols-1 xl:grid-cols-2", grande ? "gap-5" : "gap-4", className)}>
+      <ul
+        className={cn(
+          "grid grid-cols-1 xl:grid-cols-2",
+          grande ? "gap-5" : "gap-4",
+          className
+        )}
+      >
         {leituras.map((l) => (
           <LeituraCartao
             key={l.id}
@@ -98,12 +110,18 @@ export function ListaLeituras({
               </DialogDescription>
             </DialogHeader>
 
-            <section aria-label="Regra que disparou" className="flex flex-col gap-1">
+            <section
+              aria-label="Regra que disparou"
+              className="flex flex-col gap-1"
+            >
               <h3 className="text-xl text-primary">Regra que disparou</h3>
               <p className="text-lg">{regraDaLeitura(leitura.id)}</p>
             </section>
 
-            <section aria-label="Números que sustentam" className="flex flex-col gap-2">
+            <section
+              aria-label="Números que sustentam"
+              className="flex flex-col gap-2"
+            >
               <h3 className="text-xl text-primary">Números que sustentam</h3>
               <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-lg">
                 {numerosDaLeitura(leitura, metricas).map((x) => (
@@ -125,7 +143,9 @@ export function ListaLeituras({
                       <Selos tipos={selosGrafico} />
                     </span>
                   )}
-                  <h3 className="text-xl leading-7 text-primary">{evidencia.titulo}</h3>
+                  <h3 className="text-xl leading-7 text-primary">
+                    {evidencia.titulo}
+                  </h3>
                 </div>
                 <LegendaSimbolos tipos={selosGrafico} />
                 <BarrasRanking
@@ -134,7 +154,7 @@ export function ListaLeituras({
                     evidencia.destaque.includes(i.rotulo)
                       ? leitura.severidade === "critico" || i.rotulo === "7+"
                         ? COR.atraso
-                        : COR.laranja
+                        : "var(--serie-nao-finalizados)"
                       : COR.cinza
                   }
                   animar={false}
@@ -146,7 +166,10 @@ export function ListaLeituras({
             )}
 
             {leitura.acao && (
-              <section aria-label="Ação sugerida" className="flex flex-col gap-1">
+              <section
+                aria-label="Ação sugerida"
+                className="flex flex-col gap-1"
+              >
                 <h3 className="text-xl text-primary">Ação sugerida</h3>
                 <p className="text-lg">{leitura.acao}</p>
               </section>

@@ -2,13 +2,10 @@
 import { useState, type ReactNode } from "react"
 import { motion, useReducedMotion } from "motion/react"
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   ChartColumnIcon,
   CircleCheckIcon,
   InfoIcon,
   MaximizeIcon,
-  MinusIcon,
   OctagonAlertIcon,
   TableIcon,
   TriangleAlertIcon,
@@ -24,19 +21,11 @@ import {
 } from "@/components/ui/tooltip"
 import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
-import {
-  descreverDelta,
-  idAlvo,
-  motivoSemDelta,
-  type SeloTipo,
-} from "./logica"
+import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
 import { Selos } from "./selos"
-
-const TOM = {
-  bom: "text-[#00694b]",
-  ruim: "text-late",
-  neutro: "text-muted-foreground",
-} as const
+import { Minigrafico } from "./minigrafico"
+import { Button } from "@/components/ui/button"
+import { SeloDelta } from "./selo-delta"
 
 export function KpiCartao({
   kpi,
@@ -45,6 +34,7 @@ export function KpiCartao({
   entrada,
   extra,
   marca,
+  serie,
   className,
 }: {
   kpi: KpiChamados
@@ -54,16 +44,12 @@ export function KpiCartao({
   extra?: string
   /** Marca de valor corrigido (D65), abaixo do Δ. */
   marca?: ReactNode
+  /** Tendência dos últimos meses (só nos indicadores em destaque): minigráfico com o mês atual na cor da série. */
+  serie?: { valores: (number | null)[]; rotulos: string[]; cor: string }
   className?: string
 }) {
   const reduce = useReducedMotion()
   const delta = descreverDelta(kpi, rotuloAnterior)
-  const Seta =
-    delta?.sentido === "alta"
-      ? ArrowUpIcon
-      : delta?.sentido === "queda"
-        ? ArrowDownIcon
-        : MinusIcon
   const formato =
     kpi.formato === "inteiro"
       ? "integer"
@@ -76,8 +62,8 @@ export function KpiCartao({
       variants={reduce ? undefined : entryItemPagina}
       aria-label={kpi.rotulo}
       className={cn(
-        "flex min-w-0 flex-col gap-2 rounded-lg bg-card shadow-(--shadow-card)",
-        destaque ? "p-6" : "p-5",
+        "flex min-w-0 flex-col gap-3 rounded-lg bg-card shadow-(--shadow-card)",
+        destaque ? "p-6" : "p-4",
         className
       )}
     >
@@ -92,13 +78,15 @@ export function KpiCartao({
         </h3>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               aria-label={`Definição de ${kpi.rotulo}`}
-              className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className="shrink-0 rounded-full text-muted-foreground"
             >
               <InfoIcon className="size-5" aria-hidden />
-            </button>
+            </Button>
           </TooltipTrigger>
           <TooltipContent className="max-w-md text-base">
             {kpi.definicao}
@@ -113,35 +101,25 @@ export function KpiCartao({
           fromZero={entrada}
           className={cn(
             "num font-display leading-none font-semibold text-primary",
-            destaque ? "text-[4.5rem]" : "text-[2.75rem]"
+            destaque ? "text-7xl" : "text-4xl"
           )}
         />
         {kpi.formato === "dias" && kpi.valor !== null && (
           <span className="text-xl text-muted-foreground">dias</span>
         )}
       </div>
+      {serie && <Minigrafico {...serie} />}
       {kpi.valor === null ? (
         <p className="text-base text-muted-foreground">{motivoSemDelta(kpi)}</p>
       ) : delta ? (
-        <p
-          className={cn(
-            "flex items-start gap-1.5 font-medium",
-            destaque ? "text-xl" : "text-base",
-            TOM[delta.tom]
-          )}
-        >
-          <Seta className="size-5 shrink-0" aria-hidden />
-          <span>
-            {delta.texto}
-            {delta.rotuloTom && (
-              <span className="font-normal"> · {delta.rotuloTom}</span>
-            )}
-          </span>
-        </p>
+        <SeloDelta delta={delta} grande={destaque} />
+      ) : kpi.detalhe ? (
+        <p className="text-base text-muted-foreground">{kpi.detalhe}</p>
       ) : (
-        <p className="text-base text-muted-foreground">
-          <span aria-hidden>—</span> vs {rotuloAnterior}
-          <span className="block">{motivoSemDelta(kpi)}</span>
+        // sem base: o aviso aparece uma vez, junto de "Comparar com"; aqui só um traço discreto
+        <p className="text-base text-muted-foreground/70">
+          <span aria-hidden>—</span>
+          <span className="sr-only">sem comparação</span>
         </p>
       )}
       {extra && <p className="text-base text-muted-foreground">{extra}</p>}
@@ -305,6 +283,7 @@ export function GraficoCartao({
   id,
   titulo,
   subtitulo,
+  contexto,
   nota,
   tabela,
   selos = [],
@@ -315,6 +294,8 @@ export function GraficoCartao({
   id: string
   titulo: string
   subtitulo?: ReactNode
+  /** O que está sendo comparado ("out/26 ao lado de mai/26"), em linha própria, abaixo do subtítulo. */
+  contexto?: ReactNode
   nota?: ReactNode
   tabela: TabelaDados
   selos?: SeloTipo[]
@@ -331,7 +312,7 @@ export function GraficoCartao({
       variants={reduce ? undefined : entryItemPagina}
       aria-label={titulo}
       className={cn(
-        "flex h-full min-w-0 flex-col gap-3 rounded-lg bg-card p-5 shadow-(--shadow-card)",
+        "flex h-full min-w-0 flex-col gap-4 rounded-lg bg-card p-6 shadow-(--shadow-card)",
         className
       )}
     >
@@ -344,38 +325,77 @@ export function GraficoCartao({
                 <Selos tipos={selos} />
               </span>
             )}
-            <h3 className="font-display text-2xl leading-8 font-semibold text-primary">
+            <h3 className="font-display text-xl leading-8 font-semibold text-primary">
               {titulo}
             </h3>
           </div>
           {subtitulo && (
-            <p className="text-base text-muted-foreground">{subtitulo}</p>
+            <p className="mt-0.5 text-base text-muted-foreground">
+              {subtitulo}
+            </p>
+          )}
+          {contexto && (
+            <p className="text-base font-medium text-foreground/75">
+              {contexto}
+            </p>
           )}
         </div>
-        <Toggle
-          variant="outline"
-          pressed={verTabela}
-          onPressedChange={setVerTabela}
-          className="press shrink-0 gap-2"
-        >
-          {verTabela ? (
-            <ChartColumnIcon className="size-5" aria-hidden />
-          ) : (
-            <TableIcon className="size-5" aria-hidden />
-          )}
-          Ver dados
-        </Toggle>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+          {acoes}
+          <Toggle
+            pressed={verTabela}
+            onPressedChange={setVerTabela}
+            className="press h-10 shrink-0 gap-2 text-muted-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          >
+            {verTabela ? (
+              <ChartColumnIcon className="size-5" aria-hidden />
+            ) : (
+              <TableIcon className="size-5" aria-hidden />
+            )}
+            Ver dados
+          </Toggle>
+        </div>
       </header>
-      {acoes && (
-        <div className="flex flex-wrap items-center gap-3">{acoes}</div>
-      )}
       {verTabela && <Tabela titulo={titulo} tabela={tabela} />}
       <div
         className={cn("flex min-h-0 flex-1 flex-col", verTabela && "hidden")}
       >
         {children}
       </div>
-      {nota && <p className="text-base text-muted-foreground">{nota}</p>}
+      {nota && (
+        <p className="border-t border-border/60 pt-3 text-base text-muted-foreground">
+          {nota}
+        </p>
+      )}
     </motion.section>
+  )
+}
+
+/** Título de seção (nível 1 da escala interna): presença sem gritar, sem filete; o texto de apoio vem logo abaixo. */
+export function TituloBloco({
+  id,
+  titulo,
+  texto,
+  acao,
+}: {
+  id?: string
+  titulo: string
+  texto?: ReactNode
+  /** Controle da seção (ex.: janela de meses), alinhado à direita. */
+  acao?: ReactNode
+}) {
+  return (
+    <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pt-2">
+      <div className="flex min-w-0 flex-col gap-1">
+        <h2
+          id={id}
+          className="font-display text-4xl leading-tight font-semibold tracking-tight text-primary"
+        >
+          {titulo}
+        </h2>
+        {texto && <p className="text-lg text-muted-foreground">{texto}</p>}
+      </div>
+      {acao}
+    </header>
   )
 }

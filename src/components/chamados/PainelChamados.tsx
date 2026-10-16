@@ -6,15 +6,28 @@ import { ArrowRightIcon } from "lucide-react"
 import { formatarCompetencia, inferirCompetencia } from "@/cargas"
 import { formatValue } from "@/components/app/motion/format"
 import { avisoColunasSemFiltro, type Distribuicao } from "@/chamados"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { VisaoTipoProps } from "@/panels/tipos"
-import { KpiCartao } from "./cartoes"
+import { KpiCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
+import { MontarDepois } from "@/components/app/motion/MontarDepois"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
-import { useMesDeChamados } from "./hooks"
-import { recorteTexto, temOutros, type SeloTipo } from "./logica"
+import { useCargasDoTipo, useMesDeChamados } from "./hooks"
+import { COR_FIN, COR_NAO } from "./cores"
+import { pontosDaEvolucao, temOutros, type SeloTipo } from "./logica"
 import {
   AtrasoMes,
   coresDasSituacoes,
@@ -34,7 +47,32 @@ const entradaRapida = {
   hidden: {},
   show: { transition: { staggerChildren: 0.03 } },
 }
-const DESTAQUES = ["naoFinalizados", "sla", "atraso", "finalizados"]
+/** Ordem e títulos dos grupos do "Comparar com"; o padrão fica solto no topo. */
+const GRUPOS_COMPARAR = [
+  { grupo: "padrao", titulo: null },
+  { grupo: "posicao", titulo: "Meses com posição" },
+  { grupo: "semPosicao", titulo: "Meses sem posição" },
+  { grupo: "versao", titulo: "Outras versões deste mês" },
+] as const
+const DESTAQUES = ["naoFinalizados", "finalizados", "atraso", "sla"] as const
+/** Cor do ponto do mês atual no minigráfico de cada indicador em destaque. */
+const COR_SERIE: Record<string, string> = {
+  naoFinalizados: COR_NAO,
+  finalizados: COR_FIN,
+  atraso: COR_NAO,
+  sla: COR_FIN,
+}
+/** Os 8 indicadores compactos, em dois grupos com rótulo. */
+const GRUPOS_KPI = [
+  {
+    titulo: "Fluxo",
+    ids: ["entradas", "reabertos", "aguardandoAceite", "semSla"],
+  },
+  {
+    titulo: "Prazo",
+    ids: ["slaVencido", "slaRenegociado", "tempoMedio", "tempoAceite"],
+  },
+] as const
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
 
@@ -47,28 +85,6 @@ const COLUNAS: Record<number, string> = {
 }
 const linha = (n: number) =>
   `grid items-stretch gap-5 ${COLUNAS[Math.min(Math.max(n, 1), 4)]}`
-
-function TituloBloco({
-  id,
-  titulo,
-  texto,
-}: {
-  id: string
-  titulo: string
-  texto: string
-}) {
-  return (
-    <header className="flex flex-col gap-0.5 border-b pb-2">
-      <h2
-        id={id}
-        className="font-display text-4xl leading-tight font-semibold text-primary"
-      >
-        {titulo}
-      </h2>
-      <p className="text-lg text-muted-foreground">{texto}</p>
-    </header>
-  )
-}
 
 /** Painel estratégico do mês (D31–D36): KPIs com delta e gráficos. Sem tabela de linhas soltas. */
 export function PainelChamados({
@@ -97,20 +113,36 @@ export function PainelChamados({
     escolha,
   })
 
+  // tendência de 6 meses dos indicadores em destaque (cache do motor: a mesma conta do "Ao longo do tempo")
+  const cargasEvolucao = useCargasDoTipo(historico, obterCarga)
+  const evolucao = useMemo(
+    () =>
+      cargasEvolucao
+        ? pontosDaEvolucao(cargasEvolucao, 6, filtros, carga.competencia)
+        : null,
+    [cargasEvolucao, filtros, carga.competencia]
+  )
+  const [trocou, setTrocou] = useState(false)
+
   const anoPresumido = useMemo(
     () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
     [carga.workbook, carga.arquivo]
   )
-  const recorte = recorteTexto(filtros)
-  const titulo = `Chamados · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
   const cabecalho = (
-    <header className="flex flex-col gap-1">
-      <h1 className="text-6xl leading-none text-primary">{titulo}</h1>
-      <p className="text-lg text-muted-foreground">
-        {carga.versao > 1 && `versão ${carga.versao} · `}carga de{" "}
-        {new Date(carga.importadaEm).toLocaleDateString("pt-BR")} ·{" "}
-        {carga.arquivo}
-        {anoPresumido && " · ano não consta na planilha"}
+    <header className="flex flex-col gap-2">
+      <h1 className="text-6xl leading-none text-primary">
+        Chamados{" "}
+        <span className="font-normal text-primary/65">
+          {formatarCompetencia(carga.competencia, "longo")}
+        </span>
+      </h1>
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-lg text-muted-foreground">
+        {carga.versao > 1 && <span>versão {carga.versao}</span>}
+        <span>
+          carga de {new Date(carga.importadaEm).toLocaleDateString("pt-BR")}
+        </span>
+        <span>{carga.arquivo}</span>
+        {anoPresumido && <span>ano não consta na planilha</span>}
       </p>
       <ChipsFiltrosChamados />
       <AvisoFiltroSemColuna
@@ -138,6 +170,8 @@ export function PainelChamados({
     )
 
   const play = entradaFixa && !reduce
+  // reanima só o bloco que depende da comparação, ao trocar o "Comparar com"
+  const playMes = (entradaFixa || trocou) && !reduce
   const { metricas, entradaAtual, base, entradaBase, opcoes, corrigidoPor } =
     comparado
   // o aviso de filtro sem coluna já aparece junto dos chips
@@ -159,10 +193,26 @@ export function PainelChamados({
         )}
       />
     ) : undefined
-  const destaques = DESTAQUES.map((id) =>
-    metricas.kpis.find((k) => k.id === id)
-  ).filter((k) => !!k)
-  const demais = metricas.kpis.filter((k) => !DESTAQUES.includes(k.id))
+  const kpiDe = (id: string) => metricas.kpis.find((k) => k.id === id)
+  const destaques = DESTAQUES.map(kpiDe).filter((k) => !!k)
+  const naGrupos = new Set<string>([
+    ...DESTAQUES,
+    ...GRUPOS_KPI.flatMap((g) => g.ids),
+  ])
+  // indicador fora das listas (se o motor criar um novo) entra no fim do 1º grupo: nada some
+  const sobras = metricas.kpis.filter((k) => !naGrupos.has(k.id))
+  const grupos = GRUPOS_KPI.map((g, i) => ({
+    titulo: g.titulo,
+    kpis: [...g.ids.map(kpiDe).filter((k) => !!k), ...(i === 0 ? sobras : [])],
+  }))
+  const serieDe = (id: string) =>
+    evolucao && COR_SERIE[id]
+      ? {
+          valores: evolucao.pontos.map((p) => p.valores[id] ?? null),
+          rotulos: evolucao.pontos.map((p) => p.rotulo),
+          cor: COR_SERIE[id],
+        }
+      : undefined
   const naoFinalizados =
     metricas.kpis.find((k) => k.id === "naoFinalizados")?.valor ?? null
   const dist = (id: Distribuicao["id"]) =>
@@ -203,6 +253,7 @@ export function PainelChamados({
     base,
     entradaBase,
     cores,
+    animar: playMes,
   }
   const graficoRanking = (r: (typeof rankings)[number]) => {
     const d = dist(r.id)
@@ -216,7 +267,7 @@ export function PainelChamados({
         competencia={carga.competencia}
         sub={r.sub}
         max={r.max}
-        animar={play}
+        animar={playMes}
         corrigidoPor={corrigidoPor}
       />
     )
@@ -227,7 +278,7 @@ export function PainelChamados({
       faixas={metricas.atrasoFaixas}
       base={base}
       competencia={carga.competencia}
-      animar={play}
+      animar={playMes}
       tabelaVazia={semDados}
     />
   )
@@ -235,7 +286,7 @@ export function PainelChamados({
   return (
     <TooltipProvider>
       <motion.div
-        className="flex flex-col gap-8"
+        className="flex flex-col gap-10"
         variants={entradaRapida}
         initial={play ? "hidden" : false}
         data-entrada={play ? "" : undefined}
@@ -246,136 +297,219 @@ export function PainelChamados({
 
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-base text-muted-foreground">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="flex items-center gap-2 font-medium text-foreground">
-              Comparar com
-              <select
-                value={escolha}
-                onChange={(e) =>
-                  setEscolha({ carga: carga.id, valor: e.target.value })
-                }
-                className="h-11 rounded-lg border border-input bg-card px-3 text-base font-normal text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+            <div className="flex items-center gap-3">
+              <Label
+                htmlFor="comparar-com"
+                className="text-base font-medium text-foreground"
               >
-                {opcoes.map((o) => (
-                  <option key={o.valor} value={o.valor}>
-                    {o.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Comparar com
+              </Label>
+              <Select
+                value={escolha}
+                onValueChange={(valor) => {
+                  setTrocou(true)
+                  setEscolha({ carga: carga.id, valor })
+                }}
+              >
+                <SelectTrigger id="comparar-com" className="w-auto min-w-56">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRUPOS_COMPARAR.map(({ grupo, titulo }) => {
+                    const itens = opcoes.filter((o) => o.grupo === grupo)
+                    if (itens.length === 0) return null
+                    const lista = itens.map((o) => (
+                      <SelectItem key={o.valor} value={o.valor}>
+                        {o.rotulo}{" "}
+                        {o.secundario && (
+                          <span className="text-sm font-normal text-muted-foreground">
+                            {o.secundario}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))
+                    return titulo ? (
+                      <SelectGroup key={grupo}>
+                        <SelectLabel>{titulo}</SelectLabel>
+                        {lista}
+                      </SelectGroup>
+                    ) : (
+                      <SelectGroup key={grupo}>{lista}</SelectGroup>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
             <p>
-              Variação contra {rotuloAnterior}
-              {base?.semFoto
-                ? " (sem posição: só entradas e finalizados)"
-                : base
-                  ? " (carga própria)"
-                  : ": sem carga do mês anterior"}
-              . Vale para o topo, os indicadores e os gráficos.
+              {!base
+                ? "Sem variação: sem carga do mês anterior. Os cartões mostram só o valor do mês."
+                : `Variação contra ${rotuloAnterior}${
+                    base?.semFoto
+                      ? " (sem posição: só entradas e finalizados)"
+                      : base
+                        ? " (carga própria)"
+                        : ""
+                  }. Vale para o topo, os indicadores e os gráficos.`}
             </p>
           </div>
           {irPara && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => irPara("leituras")}
-              className="flex items-center gap-1.5 text-base font-medium text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+              className="h-auto gap-1.5 p-0 text-base font-medium underline"
             >
               {leituras.length === 1
                 ? "1 leitura do mês"
                 : `${leituras.length} leituras do mês`}
               <ArrowRightIcon className="size-4" aria-hidden />
-            </button>
+            </Button>
           )}
         </div>
 
-        {metricas.totalChamados === null ? (
-          <section aria-label="Chamados por situação">{vazio}</section>
-        ) : (
-          <FaixaSituacao
-            total={metricas.totalChamados}
-            situacoes={metricas.situacoes}
-            anterior={base}
-            mes={mes}
-            entrada={play}
-            corrigidoPor={corrigidoPor}
-            cores={cores}
+        <section
+          id="faixa-como"
+          aria-labelledby="titulo-como"
+          className="flex scroll-mt-4 flex-col gap-6"
+        >
+          <TituloBloco
+            id="titulo-como"
+            titulo="Como estamos?"
+            texto={`Situação dos chamados e indicadores de ${mes}`}
           />
-        )}
+          {metricas.totalChamados === null ? (
+            <section aria-label="Chamados por situação">{vazio}</section>
+          ) : (
+            <FaixaSituacao
+              total={metricas.totalChamados}
+              situacoes={metricas.situacoes}
+              anterior={base}
+              mes={mes}
+              entrada={play}
+              corrigidoPor={corrigidoPor}
+              cores={cores}
+            />
+          )}
 
-        <section aria-label="Indicadores">
-          <div className="grid grid-cols-2 gap-5 min-[2200px]:grid-cols-[repeat(24,minmax(0,1fr))] md:max-[2199px]:grid-cols-4">
-            {destaques.map((k) => (
-              <KpiCartao
-                key={k.id}
-                kpi={k}
-                destaque
-                rotuloAnterior={rotuloAnterior}
-                entrada={play}
-                marca={marcaDe(k)}
-                className="min-[2200px]:col-span-6"
-              />
-            ))}
-            {demais.map((k) => (
-              <KpiCartao
-                key={k.id}
-                kpi={k}
-                rotuloAnterior={rotuloAnterior}
-                entrada={play}
-                marca={marcaDe(k)}
-                className="min-[2200px]:col-span-3"
-                extra={
-                  k.id === "aguardandoAceite" &&
-                  k.valor !== null &&
-                  naoFinalizados
-                    ? `de ${n(naoFinalizados)} não finalizados`
-                    : undefined
-                }
-              />
-            ))}
-          </div>
+          <section aria-label="Indicadores" className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+              {destaques.map((k) => (
+                <KpiCartao
+                  key={k.id}
+                  kpi={k}
+                  destaque
+                  rotuloAnterior={rotuloAnterior}
+                  entrada={play}
+                  marca={marcaDe(k)}
+                  serie={serieDe(k.id)}
+                />
+              ))}
+            </div>
+            <div className="grid gap-6 min-[2200px]:grid-cols-2">
+              {grupos.map((g) => (
+                <div key={g.titulo} className="flex flex-col gap-3">
+                  <h3 className="text-lg font-medium text-muted-foreground">
+                    {g.titulo}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    {g.kpis.map((k) => (
+                      <KpiCartao
+                        key={k.id}
+                        kpi={k}
+                        rotuloAnterior={rotuloAnterior}
+                        entrada={play}
+                        marca={marcaDe(k)}
+                        extra={
+                          k.id === "aguardandoAceite" &&
+                          k.valor !== null &&
+                          naoFinalizados
+                            ? `de ${n(naoFinalizados)} não finalizados`
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </section>
 
-        <section aria-labelledby="bloco-no-mes" className="flex flex-col gap-5">
+        <section
+          id="faixa-onde"
+          aria-labelledby="titulo-onde"
+          className="flex scroll-mt-4 flex-col gap-5"
+        >
           <TituloBloco
-            id="bloco-no-mes"
-            titulo="No mês"
+            id="titulo-onde"
+            titulo="Onde está o problema?"
             texto={`${mes} ao lado de ${comparado.rotuloBase ?? "outro mês (escolha em “Comparar com”)"}`}
           />
-          {cliente && (
-            <div className={linha(3)}>
-              <GraficoMes
-                dist={cliente}
-                base={base}
-                entrada={entradaAtual}
-                competencia={carga.competencia}
-                sub="por cliente"
-                max={8}
-                animar={play}
-                corrigidoPor={corrigidoPor}
-                className="xl:col-span-2"
-              />
-              {atraso}
-            </div>
-          )}
-          {cartoesLinha2 > 0 && (
-            <div className={linha(cartoesLinha2)}>
-              {!cliente && atraso}
-              {rankingsAqui.map(graficoRanking)}
-            </div>
-          )}
-          <div className={linha(4)}>
-            <ClienteSituacao {...cruz} />
-            <OperadorAtraso {...cruz} />
-            <AreaSla {...cruz} />
-            <ClienteTempo {...cruz} />
-          </div>
+          {/* a key remonta só este bloco ao trocar o "Comparar com"; KPIs e evolução não remontam */}
+          <motion.div
+            key={`mes:${escolha}`}
+            className="flex flex-col gap-5"
+            {...(trocou && !reduce
+              ? { variants: entradaRapida, initial: "hidden", animate: "show" }
+              : {})}
+          >
+            {cliente && (
+              <div className={linha(3)}>
+                <GraficoMes
+                  dist={cliente}
+                  base={base}
+                  entrada={entradaAtual}
+                  competencia={carga.competencia}
+                  sub="por cliente"
+                  max={8}
+                  animar={playMes}
+                  corrigidoPor={corrigidoPor}
+                  className="xl:col-span-2"
+                />
+                {atraso}
+              </div>
+            )}
+            {cartoesLinha2 > 0 && (
+              <div className={linha(cartoesLinha2)}>
+                {!cliente && atraso}
+                {rankingsAqui.map(graficoRanking)}
+              </div>
+            )}
+            <MontarDepois
+              reservado={
+                <Carregando
+                  forma="cruzamentos"
+                  texto="Carregando os cruzamentos…"
+                />
+              }
+            >
+              <div className={linha(4)}>
+                <ClienteSituacao {...cruz} />
+                <OperadorAtraso {...cruz} />
+                <AreaSla {...cruz} />
+                <ClienteTempo {...cruz} />
+              </div>
+            </MontarDepois>
+          </motion.div>
         </section>
 
-        {/* 3º bloco: a Evolução, com os mesmos filtros do Painel */}
-        <BlocoTempo
-          carga={carga}
-          historico={historico}
-          obterCarga={obterCarga}
-          entrada={entrada}
-        />
+        {/* 3ª faixa: a Evolução, com os mesmos filtros do Painel */}
+        <div id="faixa-melhorando" className="scroll-mt-4">
+          <MontarDepois
+            aoVisivel
+            limite={1500}
+            reservado={
+              <Carregando forma="tempo" texto="Carregando a evolução…" />
+            }
+          >
+            <BlocoTempo
+              carga={carga}
+              historico={historico}
+              obterCarga={obterCarga}
+              entrada={entrada}
+            />
+          </MontarDepois>
+        </div>
 
         {avisosRodape.length > 0 && (
           <footer

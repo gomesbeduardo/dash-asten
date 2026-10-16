@@ -2,7 +2,7 @@
  * Contagem de chamadas ao motor: a montagem do Painel calcula cada foto (métricas e correção) no
  * máximo uma vez, e trocar o "Comparar com" não refaz nada do mês atual.
  */
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -41,7 +41,7 @@ async function abrirPainel() {
       entrada={false}
     />
   )
-  await screen.findByLabelText("Comparar com")
+  await screen.findByRole("combobox", { name: "Comparar com" })
   await screen.findByRole("article", { name: "Entradas no mês" })
   return { calc, corr, carga }
 }
@@ -63,9 +63,14 @@ describe("contagem de chamadas ao motor", () => {
     const { calc, corr, carga } = await abrirPainel()
     calc.mockClear()
     corr.mockClear()
-    await user.selectOptions(screen.getByLabelText("Comparar com"), "abr/26")
+    await user.click(screen.getByRole("combobox", { name: "Comparar com" }))
+    await user.click(await screen.findByRole("option", { name: "abr/26" }))
     await waitFor(() =>
-      expect(screen.getByRole("article", { name: "Entradas no mês" })).toHaveTextContent("vs abr/26")
+      expect(
+        within(screen.getByRole("article", { name: "Entradas no mês" })).getByRole("group", {
+          name: /em relação a abr\/26/,
+        })
+      ).toBeInTheDocument()
     )
     console.info(`CONTAGEM troca: calcularMetricas=${calc.mock.calls.length} corrigirFoto=${corr.mock.calls.length}`)
     const doMesAtual = (xs: EntradaCompetencia[]) =>

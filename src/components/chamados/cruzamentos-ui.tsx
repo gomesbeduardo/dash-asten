@@ -10,6 +10,7 @@ import {
   operadorPorAtraso,
   type EntradaCompetencia,
 } from "@/chamados"
+import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { GraficoCartao } from "./cartoes"
 import {
   BarrasHtml,
@@ -18,8 +19,23 @@ import {
   type GrupoBarras,
   type Segmento,
 } from "./barras-html"
-import { COR } from "./graficos"
-import { coresDasSituacoes, type BaseAnterior } from "./painel-foto"
+import {
+  clientesPorTotal,
+  operadoresPorAtraso,
+  ordemFaixas,
+  ordemSituacoes,
+} from "./cruzamentos-ordem"
+import { BarrasRefinadas } from "./barras-refinadas"
+import { corDaFaixa, COR_FIN, coresDasSituacoes } from "./cores"
+import type { BaseAnterior } from "./painel-foto"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 })
@@ -31,6 +47,8 @@ export type DadosCruzamento = {
   base: BaseAnterior
   entradaBase: EntradaCompetencia | null
   cores: Map<string, string>
+  /** Crescimento das barras na entrada (a mesma prop `animar` dos outros gráficos). */
+  animar?: boolean
   className?: string
 }
 
@@ -63,7 +81,9 @@ const mesesDe = (d: DadosCruzamento, temBase: boolean) => {
   return { atual, base: temBase ? (d.base?.rotulo ?? "") : "" }
 }
 
-/** Cliente × Situação: não finalizados por cliente, empilhados pela Situação. */
+const SEM_INFO_COR = "var(--sit-outra)"
+
+/** Cliente × Situação: não finalizados por cliente, empilhados pela Situação (a de maior total fica na base). */
 export function ClienteSituacao(d: DadosCruzamento) {
   const { a, b } = useDuas((e) => clientePorSituacao(e), d)
   const cores = useMemo(
@@ -77,11 +97,16 @@ export function ClienteSituacao(d: DadosCruzamento) {
   )
   if (!a) return null
   const m = mesesDe(d, !!b)
+  // clientes pelo total do mês aberto; os que só existem no comparado vão depois
   const rotulos = uniao(
-    a.itens.map((i) => i.rotulo),
+    clientesPorTotal(a.itens).map((i) => i.rotulo),
     b?.itens.map((i) => i.rotulo) ?? []
   )
-  const situacoes = uniao(a.situacoes, b?.situacoes ?? [])
+  // ordem fixa dos segmentos: a situação de maior total (nos dois meses) na base
+  const situacoes = ordemSituacoes(uniao(a.situacoes, b?.situacoes ?? []), [
+    a.itens,
+    b?.itens ?? [],
+  ])
   const celula = (
     i: { total: number; porSituacao: Record<string, number> } | undefined
   ): Celula => ({
@@ -90,7 +115,7 @@ export function ClienteSituacao(d: DadosCruzamento) {
       id: s,
       rotulo: s,
       valor: i?.porSituacao[s] ?? 0,
-      cor: cores.get(s) ?? COR.cinza,
+      cor: cores.get(s) ?? SEM_INFO_COR,
     })),
   })
   const grupos: GrupoBarras[] = rotulos.map((r) => ({
@@ -121,7 +146,8 @@ export function ClienteSituacao(d: DadosCruzamento) {
     <GraficoCartao
       id="clienteSituacao"
       titulo="Cliente × Situação"
-      subtitulo={`não finalizados por cliente, divididos pela Situação · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="não finalizados por cliente, divididos pela Situação"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: ["Cliente", "Mês", ...situacoes],
@@ -142,7 +168,7 @@ export function ClienteSituacao(d: DadosCruzamento) {
           itens={situacoes.map((s) => ({
             id: s,
             rotulo: s,
-            cor: cores.get(s) ?? COR.cinza,
+            cor: cores.get(s) ?? SEM_INFO_COR,
           }))}
         />
         <BarrasHtml
@@ -155,33 +181,28 @@ export function ClienteSituacao(d: DadosCruzamento) {
   )
 }
 
-const COR_FAIXA: Record<string, string> = {
-  "No ciclo": "var(--chart-3)",
-  "1": "#e3b341",
-  "2–3": "#d9822b",
-  "4–6": "#c4492a",
-  "7+": "var(--late)",
-}
-
-/** Operador × Atraso: não finalizados por operador, empilhados por faixa de atraso. */
+/** Operador × Atraso: não finalizados por operador, empilhados por faixa (7+ na base; uma cor, claro a escuro). */
 export function OperadorAtraso(d: DadosCruzamento) {
   const { a, b } = useDuas((e) => operadorPorAtraso(e), d)
   if (!a) return null
   const m = mesesDe(d, !!b)
-  const faixas = ["No ciclo", ...FAIXAS_ATRASO]
+  // 7+ na base e "No ciclo" (sem atraso) na ponta
+  const faixas = ordemFaixas(FAIXAS_ATRASO)
   const rotulos = uniao(
-    a.map((i) => i.rotulo),
+    operadoresPorAtraso(a).map((i) => i.rotulo),
     b?.map((i) => i.rotulo) ?? []
   )
+  const nomeFaixa = (f: string) => (f === "No ciclo" ? f : `${f} meses`)
   const celula = (
     i: { total: number; porFaixa: Record<string, number> } | undefined
   ): Celula => ({
     texto: inteiro.format(i?.total ?? 0),
     segmentos: faixas.map((f) => ({
       id: f,
-      rotulo: f === "No ciclo" ? f : `${f} meses`,
+      rotulo: nomeFaixa(f),
       valor: i?.porFaixa[f] ?? 0,
-      cor: COR_FAIXA[f],
+      cor: corDaFaixa(f),
+      claro: f === "1" || f === "No ciclo",
     })),
   })
   const grupos: GrupoBarras[] = rotulos.map((r) => ({
@@ -212,7 +233,8 @@ export function OperadorAtraso(d: DadosCruzamento) {
     <GraficoCartao
       id="operadorAtraso"
       titulo="Operador × Atraso"
-      subtitulo={`não finalizados por operador, por tempo desde a abertura · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="não finalizados por operador, por tempo desde a abertura"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: ["Operador", "Mês", ...faixas],
@@ -232,8 +254,8 @@ export function OperadorAtraso(d: DadosCruzamento) {
         <LegendaCores
           itens={faixas.map((f) => ({
             id: f,
-            rotulo: f === "No ciclo" ? f : `${f} meses`,
-            cor: COR_FAIXA[f],
+            rotulo: nomeFaixa(f),
+            cor: corDaFaixa(f),
           }))}
         />
         <BarrasHtml
@@ -246,143 +268,161 @@ export function OperadorAtraso(d: DadosCruzamento) {
   )
 }
 
-const simples = (valor: number | null, cor: string, texto: string): Celula => ({
-  texto,
-  segmentos:
-    valor === null || valor <= 0
-      ? []
-      : [{ id: "v", rotulo: texto, valor, cor }],
-})
+/** Trilha de 0 a 100% com a barra da %; sem número escrito (o valor está no tooltip e no aria-label). `meta` liga uma referência depois. */
+export function BarraPercentual({
+  rotulo,
+  pct,
+  meta,
+}: {
+  rotulo: string
+  pct: number | null
+  meta?: number
+}) {
+  if (pct === null)
+    return (
+      <span className="text-base text-muted-foreground">
+        sem finalizados com SLA
+      </span>
+    )
+  const texto = `${decimal.format(pct)}%`
+  return (
+    <div
+      role="img"
+      aria-label={`${rotulo}: ${texto} dos finalizados dentro do SLA`}
+      title={`${rotulo}: ${texto}`}
+      className="relative h-[1.25rem] w-full rounded-r-[4px] bg-muted"
+    >
+      <span
+        data-barra-sla=""
+        className="absolute top-0 left-0 h-full rounded-r-[4px]"
+        style={{
+          width: `${Math.min(100, Math.max(0, pct))}%`,
+          background: gradienteBarra(COR_FIN),
+          boxShadow: SOMBRA_BARRA,
+        }}
+      />
+      {meta !== undefined && (
+        <span
+          data-meta=""
+          aria-hidden
+          className="absolute -top-0.5 h-[calc(100%+4px)] w-[3px] -translate-x-1/2 rounded-[1px] bg-foreground"
+          style={{ left: `${meta}%` }}
+        />
+      )}
+    </div>
+  )
+}
 
-/** Área × SLA: % no SLA dos finalizados no mês e SLA vencido dos não finalizados. */
+/** Área × SLA: tabela com barras embutidas, uma linha por área, ordenadas por vencidos. */
 export function AreaSla(d: DadosCruzamento) {
-  const { a, b } = useDuas((e) => areaPorSla(e), d)
+  const { a } = useDuas((e) => areaPorSla(e), d)
   if (!a) return null
-  const m = mesesDe(d, !!b)
-  const rotulos = uniao(
-    a.map((i) => i.rotulo),
-    b?.map((i) => i.rotulo) ?? []
+  const m = mesesDe(d, false)
+  const linhas = [...a].sort(
+    (x, y) =>
+      y.slaVencido - x.slaVencido || x.rotulo.localeCompare(y.rotulo, "pt-BR")
   )
-  type Linha = (typeof a)[number] | undefined
-  const celulas = (i: Linha): Celula[] => [
-    simples(
-      i?.slaPct ?? null,
-      "var(--chart-3)",
-      i?.slaPct == null ? "—" : `${decimal.format(i.slaPct)}%`
-    ),
-    simples(
-      i?.slaVencido ?? 0,
-      "var(--late)",
-      inteiro.format(i?.slaVencido ?? 0)
-    ),
-  ]
-  const grupos: GrupoBarras[] = rotulos.map((r) => ({
-    rotulo: r,
-    linhas: [
-      ...(b
-        ? [
-            {
-              mes: m.base,
-              destaque: false,
-              celulas: celulas(b.find((i) => i.rotulo === r)),
-            },
-          ]
-        : []),
-      {
-        mes: m.atual,
-        destaque: true,
-        celulas: celulas(a.find((i) => i.rotulo === r)),
-      },
-    ],
-  }))
-  const maxVenc = Math.max(
-    1,
-    ...a.map((i) => i.slaVencido),
-    ...(b?.map((i) => i.slaVencido) ?? [])
-  )
+  const maxVenc = Math.max(1, ...linhas.map((i) => i.slaVencido))
   return (
     <GraficoCartao
       id="areaSla"
       titulo="Área × SLA"
-      subtitulo={`finalizados dentro do SLA e SLA vencido, por área · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
-      nota={notaBase(d.base, !!b)}
+      subtitulo="finalizados dentro do SLA e SLA vencido, por área"
+      contexto={m.atual}
+      nota={notaBase(d.base, false)}
       tabela={{
-        colunas: [
-          "Área",
-          "Mês",
-          "% no SLA",
-          "Finalizados com SLA",
-          "SLA vencido",
-        ],
-        linhas: rotulos.flatMap((r) =>
-          [
-            ...(b ? [{ mes: m.base, i: b.find((x) => x.rotulo === r) }] : []),
-            { mes: m.atual, i: a.find((x) => x.rotulo === r) },
-          ].map(({ mes, i }, k) => [
-            k === 0 ? r : "",
-            mes,
-            i?.slaPct == null ? "—" : `${decimal.format(i.slaPct)}%`,
-            i?.finalizadosComSla ?? 0,
-            i?.slaVencido ?? 0,
-          ])
-        ),
+        colunas: ["Área", "% no SLA", "Finalizados com SLA", "SLA vencido"],
+        linhas: linhas.map((i) => [
+          i.rotulo,
+          i.slaPct == null ? "—" : `${decimal.format(i.slaPct)}%`,
+          i.finalizadosComSla ?? 0,
+          i.slaVencido,
+        ]),
       }}
       className={d.className}
     >
-      <BarrasHtml
-        grupos={grupos}
-        colunas={[
-          { titulo: "% no SLA (finalizados no mês)", maximo: 100 },
-          { titulo: "SLA vencido (não finalizados)", maximo: maxVenc },
-        ]}
-        descricao={`Área × SLA: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} ${l.celulas[0].texto} no SLA, ${l.celulas[1].texto} vencidos`).join(", ")}`).join("; ")}`}
-      />
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[26%] text-base">Área</TableHead>
+            <TableHead className="w-[42%] text-base">
+              No SLA (% dos finalizados no mês)
+            </TableHead>
+            <TableHead className="text-base">
+              Vencidos (nº de não finalizados)
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {linhas.map((i) => (
+            <TableRow key={i.rotulo}>
+              <TableCell className="text-lg font-medium whitespace-normal">
+                {i.rotulo}
+              </TableCell>
+              <TableCell>
+                <BarraPercentual rotulo={i.rotulo} pct={i.slaPct} />
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="inline-block h-[1.25rem] rounded-r-[4px]"
+                    style={{
+                      width: `${(i.slaVencido / maxVenc) * 70}%`,
+                      minWidth: i.slaVencido > 0 ? "0.25rem" : 0,
+                      background: gradienteBarra("var(--vencido)"),
+                      boxShadow: i.slaVencido > 0 ? SOMBRA_BARRA : undefined,
+                    }}
+                  />
+                  <span className="num text-lg font-semibold text-foreground">
+                    {inteiro.format(i.slaVencido)}
+                  </span>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </GraficoCartao>
   )
 }
 
-/** Cliente × Tempo médio: dias para resolver e dias até o aceite, por cliente. */
+/** Cliente × Tempo médio: duas barras finas por cliente (resolução e até o aceite), mesma escala em dias. */
 export function ClienteTempo(d: DadosCruzamento) {
   const { a, b } = useDuas((e) => clientePorTempo(e), d)
   if (!a) return null
   const m = mesesDe(d, !!b)
   const rotulos = uniao(
-    a.map((i) => i.rotulo),
+    [...a]
+      .sort((x, y) => (y.tempoMedio ?? -1) - (x.tempoMedio ?? -1))
+      .map((i) => i.rotulo),
     b?.map((i) => i.rotulo) ?? []
   )
-  type Linha = (typeof a)[number] | undefined
   const dias = (v: number | null | undefined) =>
     v == null ? "—" : `${decimal.format(v)} d`
-  const celulas = (i: Linha): Celula[] => [
-    simples(i?.tempoMedio ?? null, "var(--chart-1)", dias(i?.tempoMedio)),
-    simples(i?.tempoAceite ?? null, "var(--chart-4)", dias(i?.tempoAceite)),
-  ]
-  const grupos: GrupoBarras[] = rotulos.map((r) => ({
-    rotulo: r,
-    linhas: [
-      ...(b
-        ? [
-            {
-              mes: m.base,
-              destaque: false,
-              celulas: celulas(b.find((i) => i.rotulo === r)),
-            },
-          ]
-        : []),
-      {
-        mes: m.atual,
-        destaque: true,
-        celulas: celulas(a.find((i) => i.rotulo === r)),
-      },
-    ],
-  }))
-  const max = (k: "tempoMedio" | "tempoAceite") =>
-    Math.max(1, ...a.map((i) => i[k] ?? 0), ...(b?.map((i) => i[k] ?? 0) ?? []))
+  const linhas = rotulos.map((r) => {
+    const x = a.find((i) => i.rotulo === r)
+    const y = b?.find((i) => i.rotulo === r)
+    return {
+      rotulo: r,
+      valores: [
+        {
+          valor: x?.tempoMedio ?? null,
+          base: b ? (y?.tempoMedio ?? null) : undefined,
+        },
+        {
+          valor: x?.tempoAceite ?? null,
+          base: b ? (y?.tempoAceite ?? null) : undefined,
+        },
+      ],
+    }
+  })
   return (
     <GraficoCartao
       id="clienteTempo"
       titulo="Cliente × Tempo médio"
-      subtitulo={`dias para resolver e até o aceite, por cliente · ${b ? `${m.atual} ao lado de ${m.base}` : m.atual}`}
+      subtitulo="dias para resolver e até o aceite, por cliente"
+      contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
       tabela={{
         colunas: [
@@ -407,13 +447,16 @@ export function ClienteTempo(d: DadosCruzamento) {
       }}
       className={d.className}
     >
-      <BarrasHtml
-        grupos={grupos}
-        colunas={[
-          { titulo: "Resolução", maximo: max("tempoMedio") },
-          { titulo: "Até o aceite", maximo: max("tempoAceite") },
+      <BarrasRefinadas
+        linhas={linhas}
+        series={[
+          { id: "res", rotulo: "Resolução", cor: COR_FIN },
+          { id: "ace", rotulo: "Até o aceite", cor: "var(--chart-4)" },
         ]}
-        descricao={`Cliente × Tempo médio: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} resolução ${l.celulas[0].texto}, aceite ${l.celulas[1].texto}`).join(", ")}`).join("; ")}`}
+        rotuloBase={b ? m.base : undefined}
+        animar={d.animar ?? false}
+        formatar={(v) => `${decimal.format(v)} d`}
+        fina
       />
     </GraficoCartao>
   )
