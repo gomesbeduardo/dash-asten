@@ -15,6 +15,14 @@ describe("Carregando", () => {
     }
   )
 
+  it("a forma tempo reserva 7 cartões (os 7 gráficos reais) e a cruzamentos 4", () => {
+    const { container, rerender } = render(<Carregando forma="tempo" />)
+    // 1 título + 7 cartões
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(8)
+    rerender(<Carregando forma="cruzamentos" />)
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(4)
+  })
+
   it("sem forma usa o texto padrão", () => {
     render(<Carregando />)
     expect(screen.getByRole("status")).toHaveTextContent("Carregando competências…")

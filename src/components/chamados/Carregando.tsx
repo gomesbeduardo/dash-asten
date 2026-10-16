@@ -43,11 +43,12 @@ function Forma({ forma }: { forma: FormaCarregando }) {
           </div>
         </div>
       )
-    // Blocos que o Painel monta depois (MontarDepois): altura próxima da real, sem pulo de layout.
+    // Blocos que o Painel monta depois (MontarDepois): altura próxima da real (medida em 1366, 1920
+    // e 2560), sem pulo de layout. "tempo" tem os 7 cartões do bloco; as classes seguem as colunas dele.
     case "cruzamentos":
       return (
         <div className="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-4 xl:max-[2199px]:grid-cols-2">
-          {blocos(4, "h-[41rem] min-[2200px]:h-[68rem]")}
+          {blocos(4, "h-[43.5rem] min-[2200px]:h-[49.5rem]")}
         </div>
       )
     case "tempo":
@@ -55,7 +56,7 @@ function Forma({ forma }: { forma: FormaCarregando }) {
         <div className="flex flex-col gap-4">
           <Skeleton className="h-10 w-72" />
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3 min-[137.5rem]:grid-cols-4">
-            {blocos(6, "h-[44rem]")}
+            {blocos(7, "h-[28.5rem] 2xl:h-[29.5rem] min-[137.5rem]:h-[35rem]")}
           </div>
         </div>
       )
