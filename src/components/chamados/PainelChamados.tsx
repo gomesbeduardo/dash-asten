@@ -24,8 +24,9 @@ import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
-import { useMesDeChamados } from "./hooks"
-import { temOutros, type SeloTipo } from "./logica"
+import { useCargasDoTipo, useMesDeChamados } from "./hooks"
+import { COR_FIN, COR_NAO } from "./cores"
+import { pontosDaEvolucao, temOutros, type SeloTipo } from "./logica"
 import {
   AtrasoMes,
   coresDasSituacoes,
@@ -52,7 +53,25 @@ const GRUPOS_COMPARAR = [
   { grupo: "semPosicao", titulo: "Meses sem posição" },
   { grupo: "versao", titulo: "Outras versões deste mês" },
 ] as const
-const DESTAQUES = ["naoFinalizados", "sla", "atraso", "finalizados"]
+const DESTAQUES = ["naoFinalizados", "finalizados", "atraso", "sla"] as const
+/** Cor do ponto do mês atual no minigráfico de cada indicador em destaque. */
+const COR_SERIE: Record<string, string> = {
+  naoFinalizados: COR_NAO,
+  finalizados: COR_FIN,
+  atraso: COR_NAO,
+  sla: COR_FIN,
+}
+/** Os 8 indicadores compactos, em dois grupos com rótulo. */
+const GRUPOS_KPI = [
+  {
+    titulo: "Fluxo",
+    ids: ["entradas", "reabertos", "aguardandoAceite", "semSla"],
+  },
+  {
+    titulo: "Prazo",
+    ids: ["slaVencido", "slaRenegociado", "tempoMedio", "tempoAceite"],
+  },
+] as const
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
 
@@ -92,6 +111,17 @@ export function PainelChamados({
     filtros,
     escolha,
   })
+
+  // tendência de 6 meses dos indicadores em destaque (cache do motor: a mesma conta do "Ao longo do tempo")
+  const cargasEvolucao = useCargasDoTipo(historico, obterCarga)
+  const evolucao = useMemo(
+    () =>
+      cargasEvolucao
+        ? pontosDaEvolucao(cargasEvolucao, 6, filtros, carga.competencia)
+        : null,
+    [cargasEvolucao, filtros, carga.competencia]
+  )
+  const [trocou, setTrocou] = useState(false)
 
   const anoPresumido = useMemo(
     () => inferirCompetencia(carga.workbook, carga.arquivo).anoPresumido,
@@ -139,6 +169,8 @@ export function PainelChamados({
     )
 
   const play = entradaFixa && !reduce
+  // reanima só o bloco que depende da comparação, ao trocar o "Comparar com"
+  const playMes = (entradaFixa || trocou) && !reduce
   const { metricas, entradaAtual, base, entradaBase, opcoes, corrigidoPor } =
     comparado
   // o aviso de filtro sem coluna já aparece junto dos chips
@@ -160,10 +192,26 @@ export function PainelChamados({
         )}
       />
     ) : undefined
-  const destaques = DESTAQUES.map((id) =>
-    metricas.kpis.find((k) => k.id === id)
-  ).filter((k) => !!k)
-  const demais = metricas.kpis.filter((k) => !DESTAQUES.includes(k.id))
+  const kpiDe = (id: string) => metricas.kpis.find((k) => k.id === id)
+  const destaques = DESTAQUES.map(kpiDe).filter((k) => !!k)
+  const naGrupos = new Set<string>([
+    ...DESTAQUES,
+    ...GRUPOS_KPI.flatMap((g) => g.ids),
+  ])
+  // indicador fora das listas (se o motor criar um novo) entra no fim do 1º grupo: nada some
+  const sobras = metricas.kpis.filter((k) => !naGrupos.has(k.id))
+  const grupos = GRUPOS_KPI.map((g, i) => ({
+    titulo: g.titulo,
+    kpis: [...g.ids.map(kpiDe).filter((k) => !!k), ...(i === 0 ? sobras : [])],
+  }))
+  const serieDe = (id: string) =>
+    evolucao && COR_SERIE[id]
+      ? {
+          valores: evolucao.pontos.map((p) => p.valores[id] ?? null),
+          rotulos: evolucao.pontos.map((p) => p.rotulo),
+          cor: COR_SERIE[id],
+        }
+      : undefined
   const naoFinalizados =
     metricas.kpis.find((k) => k.id === "naoFinalizados")?.valor ?? null
   const dist = (id: Distribuicao["id"]) =>
@@ -204,7 +252,7 @@ export function PainelChamados({
     base,
     entradaBase,
     cores,
-    animar: play,
+    animar: playMes,
   }
   const graficoRanking = (r: (typeof rankings)[number]) => {
     const d = dist(r.id)
@@ -218,7 +266,7 @@ export function PainelChamados({
         competencia={carga.competencia}
         sub={r.sub}
         max={r.max}
-        animar={play}
+        animar={playMes}
         corrigidoPor={corrigidoPor}
       />
     )
@@ -229,7 +277,7 @@ export function PainelChamados({
       faixas={metricas.atrasoFaixas}
       base={base}
       competencia={carga.competencia}
-      animar={play}
+      animar={playMes}
       tabelaVazia={semDados}
     />
   )
@@ -257,9 +305,10 @@ export function PainelChamados({
               </Label>
               <Select
                 value={escolha}
-                onValueChange={(valor) =>
+                onValueChange={(valor) => {
+                  setTrocou(true)
                   setEscolha({ carga: carga.id, valor })
-                }
+                }}
               >
                 <SelectTrigger id="comparar-com" className="w-auto min-w-56">
                   <SelectValue />
@@ -317,96 +366,132 @@ export function PainelChamados({
           )}
         </div>
 
-        {metricas.totalChamados === null ? (
-          <section aria-label="Chamados por situação">{vazio}</section>
-        ) : (
-          <FaixaSituacao
-            total={metricas.totalChamados}
-            situacoes={metricas.situacoes}
-            anterior={base}
-            mes={mes}
-            entrada={play}
-            corrigidoPor={corrigidoPor}
-            cores={cores}
+        <section
+          id="faixa-como"
+          aria-labelledby="titulo-como"
+          className="flex scroll-mt-4 flex-col gap-6"
+        >
+          <TituloBloco
+            id="titulo-como"
+            titulo="Como estamos?"
+            texto={`Situação dos chamados e indicadores de ${mes}`}
           />
-        )}
+          {metricas.totalChamados === null ? (
+            <section aria-label="Chamados por situação">{vazio}</section>
+          ) : (
+            <FaixaSituacao
+              total={metricas.totalChamados}
+              situacoes={metricas.situacoes}
+              anterior={base}
+              mes={mes}
+              entrada={play}
+              corrigidoPor={corrigidoPor}
+              cores={cores}
+            />
+          )}
 
-        <section aria-label="Indicadores">
-          <div className="grid grid-cols-2 gap-5 min-[2200px]:grid-cols-[repeat(24,minmax(0,1fr))] md:max-[2199px]:grid-cols-4">
-            {destaques.map((k) => (
-              <KpiCartao
-                key={k.id}
-                kpi={k}
-                destaque
-                rotuloAnterior={rotuloAnterior}
-                entrada={play}
-                marca={marcaDe(k)}
-                className="min-[2200px]:col-span-6"
-              />
-            ))}
-            {demais.map((k) => (
-              <KpiCartao
-                key={k.id}
-                kpi={k}
-                rotuloAnterior={rotuloAnterior}
-                entrada={play}
-                marca={marcaDe(k)}
-                className="min-[2200px]:col-span-3"
-                extra={
-                  k.id === "aguardandoAceite" &&
-                  k.valor !== null &&
-                  naoFinalizados
-                    ? `de ${n(naoFinalizados)} não finalizados`
-                    : undefined
-                }
-              />
-            ))}
-          </div>
+          <section aria-label="Indicadores" className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+              {destaques.map((k) => (
+                <KpiCartao
+                  key={k.id}
+                  kpi={k}
+                  destaque
+                  rotuloAnterior={rotuloAnterior}
+                  entrada={play}
+                  marca={marcaDe(k)}
+                  serie={serieDe(k.id)}
+                />
+              ))}
+            </div>
+            <div className="grid gap-6 min-[2200px]:grid-cols-2">
+              {grupos.map((g) => (
+                <div key={g.titulo} className="flex flex-col gap-3">
+                  <h3 className="text-lg font-medium text-muted-foreground">
+                    {g.titulo}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    {g.kpis.map((k) => (
+                      <KpiCartao
+                        key={k.id}
+                        kpi={k}
+                        rotuloAnterior={rotuloAnterior}
+                        entrada={play}
+                        marca={marcaDe(k)}
+                        extra={
+                          k.id === "aguardandoAceite" &&
+                          k.valor !== null &&
+                          naoFinalizados
+                            ? `de ${n(naoFinalizados)} não finalizados`
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </section>
 
-        <section aria-labelledby="bloco-no-mes" className="flex flex-col gap-5">
+        <section
+          id="faixa-onde"
+          aria-labelledby="titulo-onde"
+          className="flex scroll-mt-4 flex-col gap-5"
+        >
           <TituloBloco
-            id="bloco-no-mes"
-            titulo="No mês"
+            id="titulo-onde"
+            titulo="Onde está o problema?"
             texto={`${mes} ao lado de ${comparado.rotuloBase ?? "outro mês (escolha em “Comparar com”)"}`}
           />
-          {cliente && (
-            <div className={linha(3)}>
-              <GraficoMes
-                dist={cliente}
-                base={base}
-                entrada={entradaAtual}
-                competencia={carga.competencia}
-                sub="por cliente"
-                max={8}
-                animar={play}
-                corrigidoPor={corrigidoPor}
-                className="xl:col-span-2"
-              />
-              {atraso}
+          {/* a key remonta só este bloco ao trocar o "Comparar com"; KPIs e evolução não remontam */}
+          <motion.div
+            key={`mes:${escolha}`}
+            className="flex flex-col gap-5"
+            {...(trocou && !reduce
+              ? { variants: entradaRapida, initial: "hidden", animate: "show" }
+              : {})}
+          >
+            {cliente && (
+              <div className={linha(3)}>
+                <GraficoMes
+                  dist={cliente}
+                  base={base}
+                  entrada={entradaAtual}
+                  competencia={carga.competencia}
+                  sub="por cliente"
+                  max={8}
+                  animar={playMes}
+                  corrigidoPor={corrigidoPor}
+                  className="xl:col-span-2"
+                />
+                {atraso}
+              </div>
+            )}
+            {cartoesLinha2 > 0 && (
+              <div className={linha(cartoesLinha2)}>
+                {!cliente && atraso}
+                {rankingsAqui.map(graficoRanking)}
+              </div>
+            )}
+            <div className={linha(4)}>
+              <ClienteSituacao {...cruz} />
+              <OperadorAtraso {...cruz} />
+              <AreaSla {...cruz} />
+              <ClienteTempo {...cruz} />
             </div>
-          )}
-          {cartoesLinha2 > 0 && (
-            <div className={linha(cartoesLinha2)}>
-              {!cliente && atraso}
-              {rankingsAqui.map(graficoRanking)}
-            </div>
-          )}
-          <div className={linha(4)}>
-            <ClienteSituacao {...cruz} />
-            <OperadorAtraso {...cruz} />
-            <AreaSla {...cruz} />
-            <ClienteTempo {...cruz} />
-          </div>
+          </motion.div>
         </section>
 
-        {/* 3º bloco: a Evolução, com os mesmos filtros do Painel */}
-        <BlocoTempo
-          carga={carga}
-          historico={historico}
-          obterCarga={obterCarga}
-          entrada={entrada}
-        />
+        {/* 3ª faixa: a Evolução, com os mesmos filtros do Painel */}
+        <div id="faixa-melhorando" className="scroll-mt-4">
+          <BlocoTempo
+            carga={carga}
+            historico={historico}
+            obterCarga={obterCarga}
+            entrada={entrada}
+          />
+        </div>
 
         {avisosRodape.length > 0 && (
           <footer

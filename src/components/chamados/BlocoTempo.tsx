@@ -312,8 +312,8 @@ export function BlocoTempo({
 
   const cabecalho = (
     <TituloBloco
-      titulo="Ao longo do tempo"
-      texto={`Um ponto por mês até ${formatarCompetencia(carga.competencia)}. Mês sem posição traz só entradas e finalizados (das datas). Ponto vazado = corrigido por posição posterior.`}
+      titulo="Estamos melhorando?"
+      texto={`Ao longo do tempo: um ponto por mês até ${formatarCompetencia(carga.competencia)}. Mês sem posição traz só entradas e finalizados (das datas). Ponto vazado = corrigido por posição posterior.`}
       acao={
         <div role="group" aria-label="Janela" className="flex gap-2">
           {JANELAS.map((n) => (
@@ -336,7 +336,7 @@ export function BlocoTempo({
   if (!dados)
     return (
       <section aria-label="Ao longo do tempo" className="flex flex-col gap-4">
-        <TituloBloco titulo="Ao longo do tempo" />
+        <TituloBloco titulo="Estamos melhorando?" />
         <Carregando forma="evolucao" />
       </section>
     )

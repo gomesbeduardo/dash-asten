@@ -23,6 +23,8 @@ import { Toggle } from "@/components/ui/toggle"
 import { cn } from "@/lib/utils"
 import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
 import { Selos } from "./selos"
+import { Minigrafico } from "./minigrafico"
+import { Button } from "@/components/ui/button"
 import { SeloDelta } from "./selo-delta"
 
 export function KpiCartao({
@@ -32,6 +34,7 @@ export function KpiCartao({
   entrada,
   extra,
   marca,
+  serie,
   className,
 }: {
   kpi: KpiChamados
@@ -41,6 +44,8 @@ export function KpiCartao({
   extra?: string
   /** Marca de valor corrigido (D65), abaixo do Δ. */
   marca?: ReactNode
+  /** Tendência dos últimos meses (só nos indicadores em destaque): minigráfico com o mês atual na cor da série. */
+  serie?: { valores: (number | null)[]; rotulos: string[]; cor: string }
   className?: string
 }) {
   const reduce = useReducedMotion()
@@ -58,7 +63,7 @@ export function KpiCartao({
       aria-label={kpi.rotulo}
       className={cn(
         "flex min-w-0 flex-col gap-3 rounded-lg bg-card shadow-(--shadow-card)",
-        destaque ? "p-6" : "p-5",
+        destaque ? "p-6" : "p-4",
         className
       )}
     >
@@ -73,13 +78,15 @@ export function KpiCartao({
         </h3>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               aria-label={`Definição de ${kpi.rotulo}`}
-              className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              className="shrink-0 rounded-full text-muted-foreground"
             >
               <InfoIcon className="size-5" aria-hidden />
-            </button>
+            </Button>
           </TooltipTrigger>
           <TooltipContent className="max-w-md text-base">
             {kpi.definicao}
@@ -94,13 +101,14 @@ export function KpiCartao({
           fromZero={entrada}
           className={cn(
             "num font-display leading-none font-semibold text-primary",
-            destaque ? "text-[4.5rem]" : "text-[2.75rem]"
+            destaque ? "text-7xl" : "text-4xl"
           )}
         />
         {kpi.formato === "dias" && kpi.valor !== null && (
           <span className="text-xl text-muted-foreground">dias</span>
         )}
       </div>
+      {serie && <Minigrafico {...serie} />}
       {kpi.valor === null ? (
         <p className="text-base text-muted-foreground">{motivoSemDelta(kpi)}</p>
       ) : delta ? (
@@ -274,7 +282,6 @@ function Tabela({ titulo, tabela }: { titulo: string; tabela: TabelaDados }) {
 export function GraficoCartao({
   id,
   titulo,
-  conclusao,
   subtitulo,
   contexto,
   nota,
@@ -286,8 +293,6 @@ export function GraficoCartao({
 }: {
   id: string
   titulo: string
-  /** Título calculado do dado ("A lidera os finalizados..."); o nome fixo vira o 1º subtítulo. */
-  conclusao?: string
   subtitulo?: ReactNode
   /** O que está sendo comparado ("out/26 ao lado de mai/26"), em linha própria, abaixo do subtítulo. */
   contexto?: ReactNode
@@ -321,14 +326,9 @@ export function GraficoCartao({
               </span>
             )}
             <h3 className="font-display text-xl leading-8 font-semibold text-primary">
-              {conclusao ?? titulo}
+              {titulo}
             </h3>
           </div>
-          {conclusao && conclusao !== titulo && (
-            <p className="mt-0.5 text-base font-medium text-foreground/80">
-              {titulo}
-            </p>
-          )}
           {subtitulo && (
             <p className="mt-0.5 text-base text-muted-foreground">
               {subtitulo}

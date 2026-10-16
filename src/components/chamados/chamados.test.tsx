@@ -889,7 +889,7 @@ describe("estado de carregamento", () => {
         <BlocoTempo {...props} />
       </FiltrosChamadosProvider>
     )
-    expect(screen.getByRole("heading", { level: 2, name: "Ao longo do tempo" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 2, name: "Estamos melhorando?" })).toBeInTheDocument()
     const status = screen.getByRole("status")
     expect(status).toHaveTextContent("Carregando competências…")
     expect(status).toHaveAttribute("aria-busy", "true")

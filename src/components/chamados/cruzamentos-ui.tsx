@@ -36,12 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  tituloAreaSla,
-  tituloClienteSituacao,
-  tituloOperadorAtraso,
-  tituloTempo,
-} from "./titulos-conclusao"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 })
@@ -152,7 +146,6 @@ export function ClienteSituacao(d: DadosCruzamento) {
     <GraficoCartao
       id="clienteSituacao"
       titulo="Cliente × Situação"
-      conclusao={tituloClienteSituacao(a.itens, "Cliente × Situação")}
       subtitulo="não finalizados por cliente, divididos pela Situação"
       contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
@@ -240,15 +233,6 @@ export function OperadorAtraso(d: DadosCruzamento) {
     <GraficoCartao
       id="operadorAtraso"
       titulo="Operador × Atraso"
-      conclusao={tituloOperadorAtraso(
-        a.map((i) => ({
-          rotulo: i.rotulo,
-          maisAntigos: i.porFaixa["7+"] ?? 0,
-          total: i.total,
-        })),
-        "7+ meses",
-        "Operador × Atraso"
-      )}
       subtitulo="não finalizados por operador, por tempo desde a abertura"
       contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
@@ -343,14 +327,6 @@ export function AreaSla(d: DadosCruzamento) {
     <GraficoCartao
       id="areaSla"
       titulo="Área × SLA"
-      conclusao={tituloAreaSla(
-        linhas.map((i) => ({
-          rotulo: i.rotulo,
-          pct: i.slaPct,
-          vencidos: i.slaVencido,
-        })),
-        "Área × SLA"
-      )}
       subtitulo="finalizados dentro do SLA e SLA vencido, por área"
       contexto={m.atual}
       nota={notaBase(d.base, false)}
@@ -445,10 +421,6 @@ export function ClienteTempo(d: DadosCruzamento) {
     <GraficoCartao
       id="clienteTempo"
       titulo="Cliente × Tempo médio"
-      conclusao={tituloTempo(
-        a.map((i) => ({ rotulo: i.rotulo, resolucao: i.tempoMedio })),
-        "Cliente × Tempo médio"
-      )}
       subtitulo="dias para resolver e até o aceite, por cliente"
       contexto={b ? `${m.atual} ao lado de ${m.base}` : m.atual}
       nota={notaBase(d.base, !!b)}
