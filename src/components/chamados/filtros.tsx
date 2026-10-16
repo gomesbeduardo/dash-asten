@@ -65,6 +65,17 @@ export function FiltrosChamadosProvider({
   const [aberto, setAberto] = useState(false)
   const { slot, setHold, setDica } = useBarra()
   const sheet = useMemo(() => escolherAba(carga.workbook), [carga.workbook])
+  // Só muda com a planilha (a gaveta fechada não paga esse custo a cada render).
+  const opcoesPorCampo = useMemo(
+    () =>
+      Object.fromEntries(
+        CAMPOS_FILTRO.map(({ campo }) => [
+          campo,
+          sheet ? opcoesDoFiltro(sheet, campo) : [],
+        ])
+      ) as Record<CampoFiltro, string[]>,
+    [sheet]
+  )
 
   useEffect(() => {
     setHold(aberto)
@@ -118,7 +129,7 @@ export function FiltrosChamadosProvider({
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
             {CAMPOS_FILTRO.map(({ campo, rotulo }) => {
               const selecionados = filtros[campo] ?? []
-              const opcoes = sheet ? opcoesDoFiltro(sheet, campo) : []
+              const opcoes = opcoesPorCampo[campo]
               const todas = [
                 ...opcoes,
                 ...selecionados.filter((v) => !opcoes.includes(v)),
