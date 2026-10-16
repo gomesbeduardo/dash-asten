@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 import { Carregando } from "./Carregando"
 
 describe("Carregando", () => {
-  it.each(["painel", "leituras", "comparar", "evolucao"] as const)(
+  it.each(["painel", "leituras", "comparar", "evolucao", "cruzamentos", "tempo"] as const)(
     "forma %s mantém role=status, aria-busy e o texto acessível",
     (forma) => {
       render(<Carregando forma={forma} texto="Carregando o corpo…" />)

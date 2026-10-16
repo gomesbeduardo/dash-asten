@@ -1,7 +1,13 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-export type FormaCarregando = "painel" | "leituras" | "comparar" | "evolucao"
+export type FormaCarregando =
+  | "painel"
+  | "leituras"
+  | "comparar"
+  | "evolucao"
+  | "cruzamentos"
+  | "tempo"
 
 const bloco = (i: number, className: string) => (
   <Skeleton key={i} className={cn("rounded-lg", className)} />
@@ -34,6 +40,22 @@ function Forma({ forma }: { forma: FormaCarregando }) {
             <div className="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-4 xl:max-[2199px]:grid-cols-2">
               {blocos(4, "h-96")}
             </div>
+          </div>
+        </div>
+      )
+    // Blocos que o Painel monta depois (MontarDepois): altura próxima da real, sem pulo de layout.
+    case "cruzamentos":
+      return (
+        <div className="grid grid-cols-1 gap-5 min-[2200px]:grid-cols-4 xl:max-[2199px]:grid-cols-2">
+          {blocos(4, "h-[41rem] min-[2200px]:h-[68rem]")}
+        </div>
+      )
+    case "tempo":
+      return (
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-10 w-72" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3 min-[137.5rem]:grid-cols-4">
+            {blocos(6, "h-[44rem]")}
           </div>
         </div>
       )

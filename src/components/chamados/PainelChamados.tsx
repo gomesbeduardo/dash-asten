@@ -1,3 +1,4 @@
+import { MontarDepois } from "@/components/app/motion/MontarDepois"
 import { useEntrada } from "@/components/app/motion/useEntrada"
 import { useMemo, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
@@ -361,21 +362,38 @@ export function PainelChamados({
               {rankingsAqui.map(graficoRanking)}
             </div>
           )}
-          <div className={linha(4)}>
-            <ClienteSituacao {...cruz} />
-            <OperadorAtraso {...cruz} />
-            <AreaSla {...cruz} />
-            <ClienteTempo {...cruz} />
-          </div>
+          <MontarDepois
+            reservado={
+              <Carregando
+                forma="cruzamentos"
+                texto="Carregando os cruzamentos…"
+              />
+            }
+          >
+            <div className={linha(4)}>
+              <ClienteSituacao {...cruz} />
+              <OperadorAtraso {...cruz} />
+              <AreaSla {...cruz} />
+              <ClienteTempo {...cruz} />
+            </div>
+          </MontarDepois>
         </section>
 
         {/* 3º bloco: a Evolução, com os mesmos filtros do Painel */}
-        <BlocoTempo
-          carga={carga}
-          historico={historico}
-          obterCarga={obterCarga}
-          entrada={entrada}
-        />
+        <MontarDepois
+          aoVisivel
+          limite={3000}
+          reservado={
+            <Carregando forma="tempo" texto="Carregando a evolução…" />
+          }
+        >
+          <BlocoTempo
+            carga={carga}
+            historico={historico}
+            obterCarga={obterCarga}
+            entrada={entrada}
+          />
+        </MontarDepois>
 
         {avisosRodape.length > 0 && (
           <footer

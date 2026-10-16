@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it } from "vitest"
 
@@ -86,6 +86,12 @@ beforeEach(() => {
 })
 
 const kpi = (nome: string) => screen.findByRole("article", { name: nome })
+/** O “Por cliente” do bloco “No mês” (a Evolução tem outro, com o mesmo nome). */
+const porClienteNoMes = async () =>
+  within(await screen.findByRole("region", { name: "No mês" })).findByRole(
+    "region",
+    { name: "Por cliente" }
+  )
 
 describe("Painel: comparar com (D65)", () => {
   it("(a) out contra mai/26: Δ contra maio corrigido pela posição de out", async () => {
@@ -151,7 +157,7 @@ describe("Painel: comparar com (D65)", () => {
     await abrir("2026-10", 1)
     await screen.findByLabelText("Comparar com")
     await user.selectOptions(screen.getByLabelText("Comparar com"), "mai/26")
-    const card = await screen.findByRole("region", { name: "Por cliente" })
+    const card = await porClienteNoMes()
     const grafico = () =>
       within(card).getByRole("img").getAttribute("aria-label")!
     expect(grafico()).toMatch(
@@ -171,14 +177,16 @@ describe("Painel: comparar com (D65)", () => {
       screen.getByLabelText("Comparar com"),
       "jun/26 (sem posição)"
     )
-    const card = await screen.findByRole("region", { name: "Por cliente" })
+    const card = await porClienteNoMes()
     const rotulo = within(card).getByRole("img").getAttribute("aria-label")!
     expect(rotulo).toMatch(/Finalizados · jun\/26/)
     expect(rotulo).not.toMatch(/Não finalizados · jun\/26/)
     expect(rotulo).toMatch(/Cliente Ômega 1, 0, 1/)
     expect(card).toHaveTextContent("sem posição de jun/26")
     // cruzamentos dependem da Situação: só o Mes Ref., com a nota
-    const cruz = screen.getByRole("region", { name: "Cliente × Situação" })
+    const cruz = await screen.findByRole("region", {
+      name: "Cliente × Situação",
+    })
     expect(cruz).toHaveTextContent("sem posição de jun/26")
   })
 
@@ -198,4 +206,5 @@ describe("Painel: comparar com (D65)", () => {
       expect(r).toHaveTextContent("mai/26")
     }
   })
+
 })
