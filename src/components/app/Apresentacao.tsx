@@ -252,6 +252,8 @@ export function Apresentacao(p: ApresentacaoProps) {
     return () => ro.disconnect()
   }, [barraSegura])
 
+  // Troca pendente: o conteúdo antigo ainda está na tela; atenua, sem mexer no layout.
+  const pendente = visaoVista !== visao || cargaVista !== carga
   const chave = `${cargaVista.id}:${visaoVista}`
   const entrada = !vistas.includes(chave)
   // A aba só vira "vista" quando monta na tela.
@@ -339,16 +341,21 @@ export function Apresentacao(p: ApresentacaoProps) {
           }
           className="mx-auto flex w-full max-w-[200rem] flex-col gap-6 px-[clamp(1.5rem,3vw,6rem)] pt-[max(2rem,env(safe-area-inset-top))] pb-16"
         >
-          <Conteudo
-            carga={cargaVista}
-            visao={visaoVista}
-            chave={chave}
-            entrada={entrada}
-            onMontar={marcarVista}
-            historico={doTipo}
-            obterCarga={p.obterCarga}
-            irPara={pedirVisao}
-          />
+          <div
+            aria-busy={pendente}
+            className={`transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease-standard)] motion-reduce:transition-none ${pendente ? "opacity-70" : ""}`}
+          >
+            <Conteudo
+              carga={cargaVista}
+              visao={visaoVista}
+              chave={chave}
+              entrada={entrada}
+              onMontar={marcarVista}
+              historico={doTipo}
+              obterCarga={p.obterCarga}
+              irPara={pedirVisao}
+            />
+          </div>
         </main>
 
         <NovoEnvioDialog

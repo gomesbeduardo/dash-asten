@@ -112,6 +112,20 @@ describe("Apresentacao: troca de aba em duas fases", () => {
     expect(screen.queryByTestId("visao-painel")).not.toBeInTheDocument()
   })
 
+  it("o conteúdo antigo fica com aria-busy enquanto a troca está pendente", async () => {
+    await abrir()
+    const ocupado = (id: string) =>
+      screen.getByTestId(id).closest("[aria-busy]")
+
+    expect(ocupado("visao-painel")).toHaveAttribute("aria-busy", "false")
+
+    clicar("Comparar")
+    expect(ocupado("visao-painel")).toHaveAttribute("aria-busy", "true")
+
+    await avancar(esperaTrocaAba)
+    expect(ocupado("visao-comparar")).toHaveAttribute("aria-busy", "false")
+  })
+
   it("com movimento reduzido a troca é imediata", async () => {
     mocks.reduzido = true
     await abrir()
