@@ -6,9 +6,10 @@ import {
   type Competencia,
 } from "@/cargas"
 import {
-  calcularMetricas,
-  corrigirFoto,
+  corrigirDe,
+  idDaSheet,
   mapearColunas,
+  metricasDe,
   metricasCorrigidas,
   metricasDoMesSemFoto,
   rotuloCompetencia,
@@ -167,7 +168,25 @@ export function pontosDaEvolucao(
   maxPontos = 6,
   filtros: FiltrosChamados = {},
   fim?: Competencia
-): {
+): Evolucao {
+  const chave = [
+    ...ultimasVersoesDe(proprias).map(
+      ([c, p]) => `${c}:${idDaSheet(p.sheet)}`
+    ),
+    maxPontos,
+    fim ?? "",
+    chaveDosFiltros(filtros),
+  ].join("|")
+  const guardado = evolucoes.get(chave)
+  if (guardado) return guardado
+  const r = calcularEvolucao(proprias, maxPontos, filtros, fim)
+  if (evolucoes.size >= MAX_EVOLUCOES)
+    evolucoes.delete(evolucoes.keys().next().value!)
+  evolucoes.set(chave, r)
+  return r
+}
+
+type Evolucao = {
   pontos: PontoEvolucao[]
   kpis: { id: string; rotulo: string; formato: FormatoKpi }[]
   /** Filtros ativos sem coluna em alguma foto da janela: os pontos dela ficam vazios. */
@@ -176,13 +195,65 @@ export function pontosDaEvolucao(
   dimensoes: { operador: SeriesDimensao; cliente: SeriesDimensao }
   /** Chamados por Situação, uma linha por situação. */
   situacoes: SeriesSituacao
-} {
-  const maisRecentes = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>()
+}
+
+const MAX_EVOLUCOES = 8
+const evolucoes = new Map<string, Evolucao>()
+
+/** Texto estável dos filtros ativos (a ordem das chaves não conta). */
+const chaveDosFiltros = (f: FiltrosChamados) =>
+  JSON.stringify(
+    Object.entries(f)
+      .filter(([, v]) => (v?.length ?? 0) > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+  )
+
+const ultimasVersoesDe = (proprias: { meta: CargaMeta; sheet: Sheet }[]) => {
+  const m = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>()
   for (const p of proprias) {
-    const a = maisRecentes.get(p.meta.competencia)
-    if (!a || p.meta.versao > a.meta.versao)
-      maisRecentes.set(p.meta.competencia, p)
+    const a = m.get(p.meta.competencia)
+    if (!a || p.meta.versao > a.meta.versao) m.set(p.meta.competencia, p)
   }
+  return [...m.entries()].sort(([a], [b]) => a.localeCompare(b))
+}
+
+/** `entradaFiltrada` por planilha (identidade), competência e filtros: o mesmo objeto sempre, para o cache do motor valer. */
+const entradas = new WeakMap<Sheet, Map<string, EntradaCompetencia>>()
+const MAX_ENTRADAS_POR_SHEET = 24
+export function entradaFiltradaDe(
+  sheet: Sheet,
+  competencia: Competencia,
+  filtros: FiltrosChamados
+): EntradaCompetencia {
+  const chave = `${competencia}|${chaveDosFiltros(filtros)}`
+  let porChave = entradas.get(sheet)
+  if (!porChave) {
+    porChave = new Map()
+    entradas.set(sheet, porChave)
+  }
+  let e = porChave.get(chave)
+  if (!e) {
+    e = {
+      sheet: filtrarSheet(sheet, filtros, competencia),
+      competencia,
+      colunasSemFiltro: colunasAusentes(sheet, filtros),
+    }
+    if (porChave.size >= MAX_ENTRADAS_POR_SHEET)
+      porChave.delete(porChave.keys().next().value!)
+    porChave.set(chave, e)
+  }
+  return e
+}
+
+function calcularEvolucao(
+  proprias: { meta: CargaMeta; sheet: Sheet }[],
+  maxPontos: number,
+  filtros: FiltrosChamados,
+  fim?: Competencia
+): Evolucao {
+  const maisRecentes = new Map<Competencia, { meta: CargaMeta; sheet: Sheet }>(
+    ultimasVersoesDe(proprias)
+  )
   const n = Math.max(maxPontos, 0)
   const comps = [...maisRecentes.keys()].sort((a, b) => a.localeCompare(b))
   const vazio = {
@@ -205,13 +276,10 @@ export function pontosDaEvolucao(
     competencia: c,
     sheet: maisRecentes.get(c)!.sheet,
   }))
-  const filtrada = (e: EntradaCompetencia): EntradaCompetencia => ({
-    competencia: e.competencia,
-    colunasSemFiltro: colunasAusentes(e.sheet, filtros),
-    sheet: filtrarSheet(e.sheet, filtros, e.competencia),
-  })
+  const filtrada = (e: EntradaCompetencia): EntradaCompetencia =>
+    entradaFiltradaDe(e.sheet, e.competencia, filtros)
   const maisAtual = filtrada(brutas[brutas.length - 1])
-  const kpis = calcularMetricas(maisAtual).kpis.map(
+  const kpis = metricasDe(maisAtual).kpis.map(
     ({ id, rotulo, formato }) => ({ id, rotulo, formato })
   )
   const posterioresDe = (c: Competencia) =>
@@ -224,7 +292,7 @@ export function pontosDaEvolucao(
   }))
   const comFoto = itens.filter((i) => i.entrada)
   const corrigidas = comFoto.map(
-    (i) => corrigirFoto(i.entrada!, posterioresDe(i.c)).entrada
+    (i) => corrigirDe(i.entrada!, posterioresDe(i.c)).entrada
   )
 
   const situacaoPorMes = new Map<
@@ -240,7 +308,13 @@ export function pontosDaEvolucao(
         Object.fromEntries(parcial.kpis.map((k) => [k.id, k.valor]))
       )
     }
-    const m = metricasCorrigidas(entrada, posterioresDe(c))
+    const posteriores = posterioresDe(c)
+    const m = metricasCorrigidas(
+      entrada,
+      posteriores,
+      undefined,
+      corrigirDe(entrada, posteriores)
+    )
     situacaoPorMes.set(
       c,
       (entrada.colunasSemFiltro ?? []).length > 0 ? null : m.situacoes

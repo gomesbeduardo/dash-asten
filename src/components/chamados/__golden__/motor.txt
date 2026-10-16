@@ -1,0 +1,1399 @@
+posicoes/f0/2026-04/corrigidas 9699bf626c1413c383a2b2db1aa61cc8bb3dec3e41574f28e55014925f73467a
+posicoes/f0/2026-04/leituras 3236163bc584e3c041c3ebcc56244558f3b6960ebe4150fd75189ecd0564c34e
+posicoes/f0/2026-04/metricas 1b9462058ca8d610b150f22c14d36fba19fcdaf99e1445e468d8bfc76bf6c288
+posicoes/f0/2026-04/metricasSemAnt 1b9462058ca8d610b150f22c14d36fba19fcdaf99e1445e468d8bfc76bf6c288
+posicoes/f0/2026-05/corrigidas f52b5b231414dd4b46333ac89401ff55729682f6c1b5de0c872a2e334745f72a
+posicoes/f0/2026-05/leituras de1ec7951ee3e74f3c2db773e185fffb9fb947787d012c5a26c1fa5d0651ff22
+posicoes/f0/2026-05/metricas 16462e155440af1e8a33fbda3715a6786a0b8d234aac1e45f285a685be518302
+posicoes/f0/2026-05/metricasSemAnt d4c54c9712dffe2faec24ef270a114b4dc1bca90c0df09182e664bc0f12a0f0a
+posicoes/f0/2026-10/corrigidas f40b9742b710b41aed7376a31f101079f091506ac295e8e7662a01dc22532e9a
+posicoes/f0/2026-10/leituras 3236163bc584e3c041c3ebcc56244558f3b6960ebe4150fd75189ecd0564c34e
+posicoes/f0/2026-10/metricas 0e6f38019b2315953dbfd97372eea2527f20228368261b598cfaf7d3b16c2c6e
+posicoes/f0/2026-10/metricasSemAnt ead4bd384390545591da8d24bfb7d195f9d38eb366a11e4ece98b890f9014afe
+posicoes/f0/evolucao/2026-05 d294308935fe0ad64ac5c8089bf6f1221fd21af9bab910b8c50049f28effb66e
+posicoes/f0/evolucao/ultima 421519c7595cecf2cc38d96d4a4ddcae354d936705b2debdd4346e2a9ca6c53b
+posicoes/f1/2026-04/corrigidas d0ad3b1febc033f50d9cb8929899581e67718dfa8894370079cc8bc49040d1f0
+posicoes/f1/2026-04/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+posicoes/f1/2026-04/metricas 10dfe292f5ec705f37230b8856820fcfe081e3e01ffec025cb3daaa526231684
+posicoes/f1/2026-04/metricasSemAnt 10dfe292f5ec705f37230b8856820fcfe081e3e01ffec025cb3daaa526231684
+posicoes/f1/2026-05/corrigidas b0f82c694f5f703ebe080b77d0ec986a5e08415a44e28a7b2f31daa9a6ede2e5
+posicoes/f1/2026-05/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+posicoes/f1/2026-05/metricas 35809705c0d003f625e4816b56036d973b3f23f28d3d629e3c0228ba3e1f6c65
+posicoes/f1/2026-05/metricasSemAnt 09997914aea2a28ae10a26e8ca7dba917972beb99f1d66392c1ea52f767f3e25
+posicoes/f1/2026-10/corrigidas 47ee5ff894b27e7e52326ebd7b646d7a5723cd0f03908d1137e97e879151f009
+posicoes/f1/2026-10/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+posicoes/f1/2026-10/metricas cc13456fc09314e4f6c869f906c028eb02d1d2a2f391a5c18978d46e7ca8448e
+posicoes/f1/2026-10/metricasSemAnt 6415e6005a37ec50e9c91931b6e6bef2337d2d82080628099a575d488f27ccfe
+posicoes/f1/evolucao/2026-05 ba3937b44391a7742c0645980ee5d21d010484fe96638f557cd4b72083231293
+posicoes/f1/evolucao/ultima f8d583d0d870a2f075ab61bc8897e2f33905977395e97f1163e6ac262998089e
+posicoes/f2/2026-04/corrigidas d0ad3b1febc033f50d9cb8929899581e67718dfa8894370079cc8bc49040d1f0
+posicoes/f2/2026-04/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+posicoes/f2/2026-04/metricas 10dfe292f5ec705f37230b8856820fcfe081e3e01ffec025cb3daaa526231684
+posicoes/f2/2026-04/metricasSemAnt 10dfe292f5ec705f37230b8856820fcfe081e3e01ffec025cb3daaa526231684
+posicoes/f2/2026-05/corrigidas b0f82c694f5f703ebe080b77d0ec986a5e08415a44e28a7b2f31daa9a6ede2e5
+posicoes/f2/2026-05/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+posicoes/f2/2026-05/metricas 35809705c0d003f625e4816b56036d973b3f23f28d3d629e3c0228ba3e1f6c65
+posicoes/f2/2026-05/metricasSemAnt 09997914aea2a28ae10a26e8ca7dba917972beb99f1d66392c1ea52f767f3e25
+posicoes/f2/2026-10/corrigidas 47ee5ff894b27e7e52326ebd7b646d7a5723cd0f03908d1137e97e879151f009
+posicoes/f2/2026-10/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+posicoes/f2/2026-10/metricas cc13456fc09314e4f6c869f906c028eb02d1d2a2f391a5c18978d46e7ca8448e
+posicoes/f2/2026-10/metricasSemAnt 6415e6005a37ec50e9c91931b6e6bef2337d2d82080628099a575d488f27ccfe
+posicoes/f2/evolucao/2026-05 ba3937b44391a7742c0645980ee5d21d010484fe96638f557cd4b72083231293
+posicoes/f2/evolucao/ultima f8d583d0d870a2f075ab61bc8897e2f33905977395e97f1163e6ac262998089e
+posicoes/hook/2026-05/f0/anterior 7d46821cf863a5d3d7efb9c8090607b39ac1430ae6d4717baa902c9a5620d851
+posicoes/hook/2026-05/f0/mes:2025-12 bc043422b71ad9cca7a8a6eb1f2575a6746d9ef98dfc2df8f283b633ed9d305f
+posicoes/hook/2026-05/f0/mes:2026-04 7d46821cf863a5d3d7efb9c8090607b39ac1430ae6d4717baa902c9a5620d851
+posicoes/hook/2026-05/f0/mes:2026-05 b13123b36a332ccd5d2587a9e791c9bd4e6c146a14be17f8a98e6c24a551ac0b
+posicoes/hook/2026-05/f0/mes:2026-10 586d9a68a3c29f8d59ea04cf8b9d5aca51fcbff85039635d29f36ff9cee2d380
+posicoes/hook/2026-05/f0/versao:1 86e78f0e68caba4b1dd359be1e2cdf9371244f5b84fca3960a64c0d4e46a71b1
+posicoes/hook/2026-05/f1/anterior a8637105cfc16c40d716371e06789be70a70d86deee9db536de96032ec834acf
+posicoes/hook/2026-05/f1/mes:2025-12 3d9ac8debc91fccdb7ef207c42a773523869adcbda45c50bf6f161b44cf74ea7
+posicoes/hook/2026-05/f1/mes:2026-04 a8637105cfc16c40d716371e06789be70a70d86deee9db536de96032ec834acf
+posicoes/hook/2026-05/f1/mes:2026-05 2423e69b5e043248dd1f19c92507856502668cc233659448d019d37db58172d8
+posicoes/hook/2026-05/f1/mes:2026-10 abefa4cfd05c223223995b0e7e9703480d5fbd96c77401ec6e6fbef37792616a
+posicoes/hook/2026-05/f1/versao:1 3e9ad075a5bb732f6483db8caf5797c6209f52aead2e31e5a78719d516fe6cff
+posicoes/hook/2026-05/f2/anterior a8637105cfc16c40d716371e06789be70a70d86deee9db536de96032ec834acf
+posicoes/hook/2026-05/f2/mes:2025-12 3d9ac8debc91fccdb7ef207c42a773523869adcbda45c50bf6f161b44cf74ea7
+posicoes/hook/2026-05/f2/mes:2026-04 a8637105cfc16c40d716371e06789be70a70d86deee9db536de96032ec834acf
+posicoes/hook/2026-05/f2/mes:2026-05 2423e69b5e043248dd1f19c92507856502668cc233659448d019d37db58172d8
+posicoes/hook/2026-05/f2/mes:2026-10 abefa4cfd05c223223995b0e7e9703480d5fbd96c77401ec6e6fbef37792616a
+posicoes/hook/2026-05/f2/versao:1 3e9ad075a5bb732f6483db8caf5797c6209f52aead2e31e5a78719d516fe6cff
+posicoes/hook/2026-10/f0/anterior 068c407e4d0c1080558d74e157ca1539c3c964c02771a4801b31fbc22079c978
+posicoes/hook/2026-10/f0/mes:2025-12 9c89ddc1f34c445682d9074bc84aa1757d712efb48a0e749640f3e2b74a6050c
+posicoes/hook/2026-10/f0/mes:2026-04 7623b122186a2ffbaa3f1ad6becb8b1a0e6dc892a556f48d6d243f71623a276c
+posicoes/hook/2026-10/f0/mes:2026-05 2fbd3e469bce9d0644e7af53441539d395186e596f3b2b9c11861a8917eea702
+posicoes/hook/2026-10/f0/mes:2026-10 d13fdadd8c75731a351cc4c2bb54d6b59c7c20da24dd1108b04438b44f9dcb65
+posicoes/hook/2026-10/f0/versao:1 068c407e4d0c1080558d74e157ca1539c3c964c02771a4801b31fbc22079c978
+posicoes/hook/2026-10/f1/anterior 8ec0dca60f356e959bb671ad8a4733c1dbf0fda00a0b42b4dbb1efa98101e5dd
+posicoes/hook/2026-10/f1/mes:2025-12 d8ca1d8971a91e9cb8cf2e8bd6106ec15ee3db0a9321128a536df83c185080f3
+posicoes/hook/2026-10/f1/mes:2026-04 a5efa6ada88dec07a2d432ba0906f74b3fac054d4161aadf3e266bdc1c0bc75d
+posicoes/hook/2026-10/f1/mes:2026-05 cc5fff80be07c0b0003552b16bb32191f1d9aa613bfd34f2d7fcf2f04aaf9a7b
+posicoes/hook/2026-10/f1/mes:2026-10 4ce91c0f47cf780ac99455ee22587ce5e5c6dcda31d1d048b5006b1fe9aa2cfd
+posicoes/hook/2026-10/f1/versao:1 8ec0dca60f356e959bb671ad8a4733c1dbf0fda00a0b42b4dbb1efa98101e5dd
+posicoes/hook/2026-10/f2/anterior 8ec0dca60f356e959bb671ad8a4733c1dbf0fda00a0b42b4dbb1efa98101e5dd
+posicoes/hook/2026-10/f2/mes:2025-12 d8ca1d8971a91e9cb8cf2e8bd6106ec15ee3db0a9321128a536df83c185080f3
+posicoes/hook/2026-10/f2/mes:2026-04 a5efa6ada88dec07a2d432ba0906f74b3fac054d4161aadf3e266bdc1c0bc75d
+posicoes/hook/2026-10/f2/mes:2026-05 cc5fff80be07c0b0003552b16bb32191f1d9aa613bfd34f2d7fcf2f04aaf9a7b
+posicoes/hook/2026-10/f2/mes:2026-10 4ce91c0f47cf780ac99455ee22587ce5e5c6dcda31d1d048b5006b1fe9aa2cfd
+posicoes/hook/2026-10/f2/versao:1 8ec0dca60f356e959bb671ad8a4733c1dbf0fda00a0b42b4dbb1efa98101e5dd
+sintetico/f0/2026-01/corrigidas 08918bf06c358649181bc828e16a82f8ddd92b1dcce258277a019a89df47ce21
+sintetico/f0/2026-01/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f0/2026-01/metricas abf14eb98b2409646886271ae418253a1fe8f3a677cbbb812ebd933e7382a6a7
+sintetico/f0/2026-01/metricasSemAnt abf14eb98b2409646886271ae418253a1fe8f3a677cbbb812ebd933e7382a6a7
+sintetico/f0/2026-02/corrigidas 89536e5e0ea2f0e57e2ebda7ab70571cdbe20df4b2e60b863690757b93e65bb7
+sintetico/f0/2026-02/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f0/2026-02/metricas 83eec58c56f68c1e76cb43f3c8eff803bd14ba6d57aa2e97297dcb3d73cacaa4
+sintetico/f0/2026-02/metricasSemAnt c7fa3271b2c16723d09fb522dd98ca3845b676d6b92648aeb4dc3797aa52571e
+sintetico/f0/2026-03/corrigidas f1d246b39f09d2b096709b14ab8e072693332af9623e5a74ea12bcf690155498
+sintetico/f0/2026-03/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f0/2026-03/metricas 271e16d72c085bedc94a972f21db099bb11a9d49634325ad11070b1c093c32a7
+sintetico/f0/2026-03/metricasSemAnt 37a073867369c015d17e0b294943be5e6cfd1905c935650615663f8d858d1341
+sintetico/f0/2026-04/corrigidas 1d4fa4da82c0a60bca70e65d5ab813844fb17a03f0b8155e91a7653a162290a7
+sintetico/f0/2026-04/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f0/2026-04/metricas d831fe253b9af536f83b4db4ebc6b1f96408193b2b1acb9a6b1d63ac1d29a351
+sintetico/f0/2026-04/metricasSemAnt 1d15debbe02cd71ff758a582d9b1f461c8b1601d5a46d4e0da4bd674e1cf7cc5
+sintetico/f0/2026-05/corrigidas 79dfd4dfd72013165734ce6383f2260013ab436ddfabaaeddc01de4b21891cbf
+sintetico/f0/2026-05/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f0/2026-05/metricas 21e59b5d49d5866f6d454d7118a118c504d60f8b40cb69fba6c00d96e8956c3f
+sintetico/f0/2026-05/metricasSemAnt 14657be1166d3a14de09500589ea9d426051c7383fcfc0e9a76444588b7b9e27
+sintetico/f0/2026-06/corrigidas aae8b27067f28ab866bfd3032636f91140172ae2e4cf0b02e289b342b20f87af
+sintetico/f0/2026-06/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f0/2026-06/metricas 718431a3c6063b6e34e6be8c0e4da183e756fe6676277f87da088ff26b7c452c
+sintetico/f0/2026-06/metricasSemAnt 21f88c36f509d72f26b67d925cb29fbee0b6d20cd55d65d238fd9ded667b9e87
+sintetico/f0/evolucao/2026-05 8e7f5450e4fe207da2c1ce512610cc813fdf28fcf70fd93123282cfb2cd2e3f1
+sintetico/f0/evolucao/ultima a6bb93337d2ac570ee306a2a4a544034cd328b260d6dbc717ed7f25d38767cd0
+sintetico/f1/2026-01/corrigidas 5cfc1bf647cfd4cdcdc18faca837099f841118148219abf2df52f1cd730dece1
+sintetico/f1/2026-01/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f1/2026-01/metricas 26b1b3c33c361d5ddfd33c6b58335438e119893c6b6794fe36d1e4b1c9aa0f4d
+sintetico/f1/2026-01/metricasSemAnt 26b1b3c33c361d5ddfd33c6b58335438e119893c6b6794fe36d1e4b1c9aa0f4d
+sintetico/f1/2026-02/corrigidas 14a1e8ca6397c05a7a886dea5239404ae50576064abe0f93d61e1f1959502f8c
+sintetico/f1/2026-02/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f1/2026-02/metricas 990ebafb469c6c94a62a81d07b9c23d3478254863aa4adef252037c676e16012
+sintetico/f1/2026-02/metricasSemAnt be8c5cbaa7b90a8f59d538de2b4d48c231f9777aa5968ad91a817d9cf1f4966a
+sintetico/f1/2026-03/corrigidas 0f8b59dc41e03cb1e06b0a48752bc01cf6c55b5b2c24d9dd42d895d1d3b5e5ce
+sintetico/f1/2026-03/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f1/2026-03/metricas 9ede3906f33a2d34b7a241381de1f46225bcd98aa19d6b6d24b9523031796c8d
+sintetico/f1/2026-03/metricasSemAnt 86c4e8f85b527a9f00e3eebcf709ff63e598db5fdb45f262369a99610590058a
+sintetico/f1/2026-04/corrigidas a19a3ca270842b2581c27536c7e1b29ccc62e1064d1968a68a4619360e6ceac7
+sintetico/f1/2026-04/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f1/2026-04/metricas 19af9fc4b5ec41949e28cb2fe6f0c379c8c205a3e081f13d9e8ee1c9fe124eed
+sintetico/f1/2026-04/metricasSemAnt 9e44dfde4b05be924b96926e47a8f2250e29fc8b82a7c2b14b2fcb04201f8c74
+sintetico/f1/2026-05/corrigidas 7a43af2aab6e113511f727177d75588315fdbaf9aa23ed9f238e432d0c7350f5
+sintetico/f1/2026-05/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f1/2026-05/metricas 13b99744ca6106d58b719520726ded069b518cb85f16a7cb5f7740a33771955a
+sintetico/f1/2026-05/metricasSemAnt 4603f949b6f0dcaa8da00694edab09b2721053cd91b6d9110f6d9d7601f1ae1a
+sintetico/f1/2026-06/corrigidas c3fad8d0840e79b36c066711cd2dc691a2952a20f514189735fd55e0602689e8
+sintetico/f1/2026-06/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f1/2026-06/metricas 4266ab4dcd96aaadec466ff77af67d95cae44080ea7232007b4038d2820f764d
+sintetico/f1/2026-06/metricasSemAnt f10de62f6218df6c66e81e33a3f7830df4e6acddca4ba76299a263339c1209e6
+sintetico/f1/evolucao/2026-05 f16b08a9776750149eff47e27fc9fb19ec157dc6b41f3296b3375394cb342705
+sintetico/f1/evolucao/ultima d0da039d8b4af402b5ea8318ea560cd596d85df9fd34e408dab162eb16a0d355
+sintetico/f2/2026-01/corrigidas 1e4b7f1558720a34c7d4f9bb93ee27f8ab7a39af5f5840c9232c18d196399307
+sintetico/f2/2026-01/leituras 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+sintetico/f2/2026-01/metricas d48fb8247028d2fda3a4093bdfd13251e1853fbabf0816e7f3fdd3306c00a0b4
+sintetico/f2/2026-01/metricasSemAnt d48fb8247028d2fda3a4093bdfd13251e1853fbabf0816e7f3fdd3306c00a0b4
+sintetico/f2/2026-02/corrigidas f403645068ba67ff72f569189f0217866c3a5815f815605904fecb96fb3e85c3
+sintetico/f2/2026-02/leituras bec7f0a7d8764d66bf3230bcd4fe2ea0932a95bad1eb5128bdf9b2027a755571
+sintetico/f2/2026-02/metricas fc316ba2f6b82b53accc47c32df41b089ac7ffb411752de067123546b94eb650
+sintetico/f2/2026-02/metricasSemAnt f525665fbaa13512b352b934ca9e2899b2de0d87f645c3727a283e8ea85b86f8
+sintetico/f2/2026-03/corrigidas 8ae574529dcca70aca075c88d87e04c523e3a323d6ee1ba2b1ace1c0fc43bd33
+sintetico/f2/2026-03/leituras bec7f0a7d8764d66bf3230bcd4fe2ea0932a95bad1eb5128bdf9b2027a755571
+sintetico/f2/2026-03/metricas 68c4c68fa6365a5c5ed48a1e2b56cd4851b2958ab79df85aaa31c3da1900ca00
+sintetico/f2/2026-03/metricasSemAnt 672e83a3c22d29c91b0b41128ccf4605828e346e91ccc583205ec12a1a600826
+sintetico/f2/2026-04/corrigidas 92d1f1bea0fa83b3316e0e92e5d2ff5fc2485db946d90aa76640e8bdb49b5e86
+sintetico/f2/2026-04/leituras a3f7a7aabf431fa5bc1d8b13333a71a5cceaabe64d619249ac4848a6ae6cea69
+sintetico/f2/2026-04/metricas 80eba98d144dae05284551fe6755d1a028fa1bd8b23c9391ff6a7343356fedcd
+sintetico/f2/2026-04/metricasSemAnt 31b49b1e1750aa2dcc7312597e73ca41b588ee0fcc46d5c57f3a2055c6263550
+sintetico/f2/2026-05/corrigidas 96154c29674d51be4db7252ea85c693f57bb72b9548fd307bf03ec67f5e9f3ce
+sintetico/f2/2026-05/leituras a3f7a7aabf431fa5bc1d8b13333a71a5cceaabe64d619249ac4848a6ae6cea69
+sintetico/f2/2026-05/metricas 3a8a59c1ad1ec675e6e2ce52f430021b6fca3afea45d07feb35e9cb171f3fed1
+sintetico/f2/2026-05/metricasSemAnt eb959c507886467320122fe2967754f57bcdcb9aa0aad173ea6a2a756d007593
+sintetico/f2/2026-06/corrigidas ee86f5ab049e070690f71fba4e4cdd64062df84fa9623efca51971e5bfbd95fd
+sintetico/f2/2026-06/leituras 5ae399a973b05cdbd18a862423be4bcbe254dcded920aabeba8e77577470e221
+sintetico/f2/2026-06/metricas ef707ac77f1e5478e0cb4fee7540776d4725dccdce406eebdc64d6537cd2d775
+sintetico/f2/2026-06/metricasSemAnt f2b60fa1fa2cfc60236369134473021fd876a876b0dc5bed5684fc38a48873d2
+sintetico/f2/evolucao/2026-05 483f29a991ac51183416274dbbdbce056a18405461b3ea3349b94710de8da0d6
+sintetico/f2/evolucao/ultima 5f9888497edbfd0c98478e205402b62fa5e1b37166da39db1d4a374c3c09a80d
+sintetico/hook/2026-04/f0/anterior 30c25865216f1832e52afef660d612b3e68652aff0d66eab543ac143f91325e9
+sintetico/hook/2026-04/f0/mes:2025-12 aa5eaef60dd8f3efe24a7b65c784001769b5e961fab394c6f3a48b029d8b7008
+sintetico/hook/2026-04/f0/mes:2026-01 ed0c363778c582968ee49b1d3e493eb0fa67bfd672c3a31101fd07118e7fac97
+sintetico/hook/2026-04/f0/mes:2026-02 d32e68d1e46bb01e4b841894498fd72404f274677758e6111b2c7129fd76adf2
+sintetico/hook/2026-04/f0/mes:2026-03 30c25865216f1832e52afef660d612b3e68652aff0d66eab543ac143f91325e9
+sintetico/hook/2026-04/f0/mes:2026-04 62a97aa03ca7fb31d2b749f219781dcad78c09993b0bb8868310f26c2f8f43e3
+sintetico/hook/2026-04/f0/mes:2026-05 70b0f87f5aaa3bba45b5eead8ff3ff1cd3da836ecb8f6f66de32fa85568a645d
+sintetico/hook/2026-04/f0/mes:2026-06 6b6e73b08da5bd1d5606d1e90d43d05cac7c6ab8254b1bd0654a583c782640e5
+sintetico/hook/2026-04/f0/versao:1 f3dbcfc671662947b112ffdec1496823f613f868e4384f2766ba8a4ea42d7195
+sintetico/hook/2026-04/f1/anterior 8bec09c5dc2c10d0b5f9837300d7c0c1c4a4149baf68ce3054a49aefda14a5bd
+sintetico/hook/2026-04/f1/mes:2025-12 288d84339c7a625a5a43893c64a6247989f83490562b888f2fe05bd64e84376c
+sintetico/hook/2026-04/f1/mes:2026-01 b443b660cc8291c014befa48b0af0132b45be492774bcf8cfc0a856e4063764d
+sintetico/hook/2026-04/f1/mes:2026-02 39179992614e6ba7670f23d5b0f3dd674303c7e4f1b2507f11a7e7f7fbd7a449
+sintetico/hook/2026-04/f1/mes:2026-03 8bec09c5dc2c10d0b5f9837300d7c0c1c4a4149baf68ce3054a49aefda14a5bd
+sintetico/hook/2026-04/f1/mes:2026-04 5c90cd32bcbe77bb7f4a20027aaa4fd455e7c9d8b349ae1b165fe2f182841424
+sintetico/hook/2026-04/f1/mes:2026-05 34ed6c01c5ee1507431e661e54d0e6facbdb419465f64b526ed5e8bcd2940dbc
+sintetico/hook/2026-04/f1/mes:2026-06 26a8f8f5c1eb2531b477c9117764395e5a9de451144d5f5cf0a8461a17579cdc
+sintetico/hook/2026-04/f1/versao:1 f588436cc765597d0a8a32d8d0e5ce7c0e70e10f720fb6e91de3e45b159a04a5
+sintetico/hook/2026-04/f2/anterior 61b604b798857fcf355ec0148bb861aac2dc2526305ae1d2dcd4fbea511c1b3b
+sintetico/hook/2026-04/f2/mes:2025-12 a1bde67f852458b80f8ce8b05f3d89ae967753348eb2334d01158007329cf076
+sintetico/hook/2026-04/f2/mes:2026-01 8edbb7d0c083cebc5eb4eb53ae4aa83071fb11921e1558fac9d234e918b1bb2d
+sintetico/hook/2026-04/f2/mes:2026-02 15d3dd98c066b762a536d8c7972c4c2c9387f2b0bf3921979e33b9f583583a4e
+sintetico/hook/2026-04/f2/mes:2026-03 61b604b798857fcf355ec0148bb861aac2dc2526305ae1d2dcd4fbea511c1b3b
+sintetico/hook/2026-04/f2/mes:2026-04 0a9536d93653622b993af6ae504b67d1fd1e2ae77ad776d89a02571bd946a1e4
+sintetico/hook/2026-04/f2/mes:2026-05 f6d108db11be097d5c58547952a435e32049ceb13d5bdde92e12268485e16dd4
+sintetico/hook/2026-04/f2/mes:2026-06 bade8bc19896f3b40d5a757dea6d6bc4a6603b8247fe1898a0cad67facfaf861
+sintetico/hook/2026-04/f2/versao:1 ee0573014f5993ca10e5a5cd4c53d734be1f6d9aef130450ce80c87196d19cfb
+sintetico/hook/2026-06/f0/anterior ef90ce31105027587aaebe02da575c3651c739e065b00a9246ed2438812fa489
+sintetico/hook/2026-06/f0/mes:2025-12 cc68c539078fe0da7fd35763d7390f86ab8d1f9e5a756e6eac95888b15424d89
+sintetico/hook/2026-06/f0/mes:2026-01 ec91ae328231fae6ef6d822f84f1d406183e063118268b355d1510fb077b956e
+sintetico/hook/2026-06/f0/mes:2026-02 5145dfc8dda1a72c2f3f7d62aed55381707d5f76da07b284df88c406fb861991
+sintetico/hook/2026-06/f0/mes:2026-03 426106fc93b0e9311e3ec030184826a9ed90ddb9fe333ec44677c2039ee371ab
+sintetico/hook/2026-06/f0/mes:2026-04 3455afa3618ca4392c6940e6154ad35b0197769fd18c62b0b0459c7acf94472d
+sintetico/hook/2026-06/f0/mes:2026-05 ef90ce31105027587aaebe02da575c3651c739e065b00a9246ed2438812fa489
+sintetico/hook/2026-06/f0/mes:2026-06 8e4d2ef0c70f4532cc28e40830ceb4b63bca101837935dca96c10cca8fe8b0d9
+sintetico/hook/2026-06/f0/versao:1 1f17e321e46352124442eca769cb2fd8bf42316ec361a8ca1474a36d9feb3abe
+sintetico/hook/2026-06/f1/anterior eadcd3cbe504d178210cf642ce2cbfb9714b16a809ea15cf938eb637f5b502f4
+sintetico/hook/2026-06/f1/mes:2025-12 80eae191f6328733caab3e72ee4ce040855b9e098ba9121c042de1b5e9414bed
+sintetico/hook/2026-06/f1/mes:2026-01 5774bb7f8b76244782e170bdf1228b0c9d69cd59013aa4a2d15dfd5a6c781f6d
+sintetico/hook/2026-06/f1/mes:2026-02 98bed2bbcbece41fd973f95d01f197bac0f9b0fda8557151937d41b1d7388fd8
+sintetico/hook/2026-06/f1/mes:2026-03 8e16867fe42e00b505b96f4b8eb2d296c5deedcabf3f55fc20f13d4fcc8c88ca
+sintetico/hook/2026-06/f1/mes:2026-04 a978e5b310535c650c13639c568873c3bf41a9d69e3ba383d695369246fdf6e9
+sintetico/hook/2026-06/f1/mes:2026-05 eadcd3cbe504d178210cf642ce2cbfb9714b16a809ea15cf938eb637f5b502f4
+sintetico/hook/2026-06/f1/mes:2026-06 730ff1f6dc67c46c9c8100691f4c604aecfc507a485d35680d7e09d86044e82b
+sintetico/hook/2026-06/f1/versao:1 3f783b34900db6ffeeee4a85ed62eec2c75bf5135ca4c03c3ce0309ef850bf25
+sintetico/hook/2026-06/f2/anterior 19afbd332988259a219d41799aab0d0815aa075b82e3366f95998c2ccf3d44fb
+sintetico/hook/2026-06/f2/mes:2025-12 1f186533c232732440c739019fd0d4d730f13f3c5171b03605187b1e91f15790
+sintetico/hook/2026-06/f2/mes:2026-01 0e3a109fe5e95656c36286d7d64110f2405a66ecfa9e99edfd12cdc7d2e2c0f0
+sintetico/hook/2026-06/f2/mes:2026-02 61eaa85f00bc6dedc87c4a36980448724350728e98e19b4cb00dad98225630da
+sintetico/hook/2026-06/f2/mes:2026-03 720f12991d0c084cbf2c76e8dd7b8fed3aca65acc82750688646bcaa8219a939
+sintetico/hook/2026-06/f2/mes:2026-04 c8aad4e7457cad83543f879c70810dfc6a2a1487e8f2498d80daaa8e4bd779d4
+sintetico/hook/2026-06/f2/mes:2026-05 19afbd332988259a219d41799aab0d0815aa075b82e3366f95998c2ccf3d44fb
+sintetico/hook/2026-06/f2/mes:2026-06 8213b36743f54324c4dcb08e6a1db21a068f8ee9bb58a4c18727c6797a2de30a
+sintetico/hook/2026-06/f2/versao:1 47dd1261b384a94317b4762669b7b54d4c982f25ace9847ecdc01a6243519f9c
+
+# casos legíveis (para o diff mostrar o que mudou)
+posicoes/f0/2026-04/metricasSemAnt = {
+ "abertosDepois": 0,
+ "atrasoFaixas": [
+  {
+   "rotulo": "1",
+   "valor": 0
+  },
+  {
+   "rotulo": "2–3",
+   "valor": 1
+  },
+  {
+   "rotulo": "4–6",
+   "valor": 0
+  },
+  {
+   "rotulo": "7+",
+   "valor": 0
+  }
+ ],
+ "avisos": [],
+ "competencia": "2026-04",
+ "distribuicoes": [
+  {
+   "id": "cliente",
+   "itens": [
+    {
+     "finalizados": 2,
+     "naoFinalizados": 1,
+     "rotulo": "Cliente Delta"
+    },
+    {
+     "finalizados": 2,
+     "naoFinalizados": 1,
+     "rotulo": "Cliente Ômega"
+    }
+   ],
+   "titulo": "Por cliente"
+  },
+  {
+   "id": "areaSuperior",
+   "itens": [
+    {
+     "finalizados": 2,
+     "naoFinalizados": 1,
+     "rotulo": "Comercial"
+    },
+    {
+     "finalizados": 2,
+     "naoFinalizados": 1,
+     "rotulo": "Operações"
+    }
+   ],
+   "titulo": "Por área superior"
+  },
+  {
+   "id": "atividade",
+   "itens": [
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Correção"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Integração"
+    },
+    {
+     "finalizados": 2,
+     "naoFinalizados": 0,
+     "rotulo": "Suporte"
+    }
+   ],
+   "titulo": "Por atividade"
+  },
+  {
+   "id": "area",
+   "itens": [
+    {
+     "finalizados": 2,
+     "naoFinalizados": 1,
+     "rotulo": "Cadastro"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Armazém"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 0,
+     "rotulo": "Logística"
+    }
+   ],
+   "titulo": "Por área"
+  },
+  {
+   "id": "operador",
+   "itens": [
+    {
+     "finalizados": 3,
+     "naoFinalizados": 0,
+     "rotulo": "Operador 04"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 2,
+     "rotulo": "Operador 05"
+    }
+   ],
+   "titulo": "Por operador"
+  }
+ ],
+ "kpis": [
+  {
+   "anterior": null,
+   "definicao": "Chamados com Data de Abertura dentro do mês do Mes Ref.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "entradas",
+   "melhorQuando": "neutro",
+   "rotulo": "Entradas no mês",
+   "valor": 3
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "finalizados",
+   "melhorQuando": "maior",
+   "rotulo": "Finalizados no mês",
+   "valor": 4
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados da posição do mês com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "naoFinalizados",
+   "melhorQuando": "menor",
+   "rotulo": "Não finalizados",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "atraso",
+   "melhorQuando": "menor",
+   "rotulo": "Em atraso",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês do Mes Ref.; sem SLA não conta.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "slaVencido",
+   "melhorQuando": "menor",
+   "rotulo": "SLA vencido",
+   "valor": 0
+  },
+  {
+   "anterior": null,
+   "definicao": "Entre os finalizados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
+   "delta": null,
+   "formato": "percentual",
+   "id": "sla",
+   "melhorQuando": "maior",
+   "rotulo": "% no SLA",
+   "valor": 33.33333333333333
+  },
+  {
+   "anterior": null,
+   "definicao": "Média, em dias corridos, entre abertura e solução dos chamados finalizados no mês.",
+   "delta": null,
+   "formato": "dias",
+   "id": "tempoMedio",
+   "melhorQuando": "menor",
+   "rotulo": "Tempo médio de resolução",
+   "valor": 51.3
+  },
+  {
+   "anterior": null,
+   "definicao": "Média, em dias corridos, entre a Data de Solução e a Data de Aceite dos chamados aceitos no mês (mede quanto o cliente demora para aceitar; diferenças negativas são ignoradas).",
+   "delta": null,
+   "formato": "dias",
+   "id": "tempoAceite",
+   "melhorQuando": "menor",
+   "rotulo": "Tempo até o aceite",
+   "valor": 1.5
+  },
+  {
+   "anterior": null,
+   "definicao": "Entre os finalizados no mês, % com ao menos uma reabertura (Qtd Reabertura maior que zero).",
+   "delta": null,
+   "formato": "percentual",
+   "id": "reabertos",
+   "melhorQuando": "menor",
+   "rotulo": "% reabertos",
+   "valor": 25
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados sem SLA Previsto.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "semSla",
+   "melhorQuando": "menor",
+   "rotulo": "Sem SLA",
+   "valor": 0
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados com SLA Renegociado preenchido.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "slaRenegociado",
+   "melhorQuando": "neutro",
+   "rotulo": "SLA renegociado",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados da posição do mês com Situação contendo \"aceite\" e sem Data de Aceite até o fim do mês do Mes Ref.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "aguardandoAceite",
+   "melhorQuando": "neutro",
+   "rotulo": "Aguardando aceite",
+   "valor": 0
+  }
+ ],
+ "linhasSemAbertura": 0,
+ "situacoes": [
+  {
+   "rotulo": "Finalizado",
+   "valor": 4
+  },
+  {
+   "rotulo": "Em Análise",
+   "valor": 2
+  }
+ ],
+ "totalChamados": 6
+}
+posicoes/f0/2026-05/metricasSemAnt = {
+ "abertosDepois": 0,
+ "atrasoFaixas": [
+  {
+   "rotulo": "1",
+   "valor": 0
+  },
+  {
+   "rotulo": "2–3",
+   "valor": 0
+  },
+  {
+   "rotulo": "4–6",
+   "valor": 1
+  },
+  {
+   "rotulo": "7+",
+   "valor": 0
+  }
+ ],
+ "avisos": [],
+ "competencia": "2026-05",
+ "distribuicoes": [
+  {
+   "id": "cliente",
+   "itens": [
+    {
+     "finalizados": 0,
+     "naoFinalizados": 2,
+     "rotulo": "Cliente Ômega"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 0,
+     "rotulo": "Cliente Delta"
+    }
+   ],
+   "titulo": "Por cliente"
+  },
+  {
+   "id": "areaSuperior",
+   "itens": [
+    {
+     "finalizados": 0,
+     "naoFinalizados": 2,
+     "rotulo": "Operações"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 0,
+     "rotulo": "Comercial"
+    }
+   ],
+   "titulo": "Por área superior"
+  },
+  {
+   "id": "atividade",
+   "itens": [
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Correção"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 0,
+     "rotulo": "Integração"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Suporte"
+    }
+   ],
+   "titulo": "Por atividade"
+  },
+  {
+   "id": "area",
+   "itens": [
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Armazém"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 0,
+     "rotulo": "Cadastro"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Logística"
+    }
+   ],
+   "titulo": "Por área"
+  },
+  {
+   "id": "operador",
+   "itens": [
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Operador 05"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Operador 04"
+    }
+   ],
+   "titulo": "Por operador"
+  }
+ ],
+ "kpis": [
+  {
+   "anterior": null,
+   "definicao": "Chamados com Data de Abertura dentro do mês do Mes Ref.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "entradas",
+   "melhorQuando": "neutro",
+   "rotulo": "Entradas no mês",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "finalizados",
+   "melhorQuando": "maior",
+   "rotulo": "Finalizados no mês",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados da posição do mês com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "naoFinalizados",
+   "melhorQuando": "menor",
+   "rotulo": "Não finalizados",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "atraso",
+   "melhorQuando": "menor",
+   "rotulo": "Em atraso",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês do Mes Ref.; sem SLA não conta.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "slaVencido",
+   "melhorQuando": "menor",
+   "rotulo": "SLA vencido",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Entre os finalizados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
+   "delta": null,
+   "formato": "percentual",
+   "id": "sla",
+   "melhorQuando": "maior",
+   "rotulo": "% no SLA",
+   "valor": 100
+  },
+  {
+   "anterior": null,
+   "definicao": "Média, em dias corridos, entre abertura e solução dos chamados finalizados no mês.",
+   "delta": null,
+   "formato": "dias",
+   "id": "tempoMedio",
+   "melhorQuando": "menor",
+   "rotulo": "Tempo médio de resolução",
+   "valor": 13
+  },
+  {
+   "anterior": null,
+   "definicao": "Média, em dias corridos, entre a Data de Solução e a Data de Aceite dos chamados aceitos no mês (mede quanto o cliente demora para aceitar; diferenças negativas são ignoradas).",
+   "delta": null,
+   "formato": "dias",
+   "id": "tempoAceite",
+   "melhorQuando": "menor",
+   "rotulo": "Tempo até o aceite",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Entre os finalizados no mês, % com ao menos uma reabertura (Qtd Reabertura maior que zero).",
+   "delta": null,
+   "formato": "percentual",
+   "id": "reabertos",
+   "melhorQuando": "menor",
+   "rotulo": "% reabertos",
+   "valor": 0
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados sem SLA Previsto.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "semSla",
+   "melhorQuando": "menor",
+   "rotulo": "Sem SLA",
+   "valor": 0
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados com SLA Renegociado preenchido.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "slaRenegociado",
+   "melhorQuando": "neutro",
+   "rotulo": "SLA renegociado",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados da posição do mês com Situação contendo \"aceite\" e sem Data de Aceite até o fim do mês do Mes Ref.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "aguardandoAceite",
+   "melhorQuando": "neutro",
+   "rotulo": "Aguardando aceite",
+   "valor": 0
+  }
+ ],
+ "linhasSemAbertura": 0,
+ "situacoes": [
+  {
+   "rotulo": "Finalizado",
+   "valor": 5
+  },
+  {
+   "rotulo": "Em Análise",
+   "valor": 1
+  },
+  {
+   "rotulo": "Em Atendimento",
+   "valor": 1
+  }
+ ],
+ "totalChamados": 7
+}
+posicoes/f0/2026-10/metricasSemAnt = {
+ "abertosDepois": 1,
+ "atrasoFaixas": [
+  {
+   "rotulo": "1",
+   "valor": 0
+  },
+  {
+   "rotulo": "2–3",
+   "valor": 1
+  },
+  {
+   "rotulo": "4–6",
+   "valor": 0
+  },
+  {
+   "rotulo": "7+",
+   "valor": 0
+  }
+ ],
+ "avisos": [
+  "1 aberto depois do Mes Ref."
+ ],
+ "competencia": "2026-10",
+ "distribuicoes": [
+  {
+   "id": "cliente",
+   "itens": [
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Cliente Delta"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Cliente Ômega"
+    }
+   ],
+   "titulo": "Por cliente"
+  },
+  {
+   "id": "areaSuperior",
+   "itens": [
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Comercial"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Operações"
+    }
+   ],
+   "titulo": "Por área superior"
+  },
+  {
+   "id": "atividade",
+   "itens": [
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Correção"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Integração"
+    },
+    {
+     "finalizados": 1,
+     "naoFinalizados": 0,
+     "rotulo": "Suporte"
+    }
+   ],
+   "titulo": "Por atividade"
+  },
+  {
+   "id": "area",
+   "itens": [
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Cadastro"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Armazém"
+    }
+   ],
+   "titulo": "Por área"
+  },
+  {
+   "id": "operador",
+   "itens": [
+    {
+     "finalizados": 1,
+     "naoFinalizados": 1,
+     "rotulo": "Operador 05"
+    },
+    {
+     "finalizados": 0,
+     "naoFinalizados": 1,
+     "rotulo": "Operador 04"
+    }
+   ],
+   "titulo": "Por operador"
+  }
+ ],
+ "kpis": [
+  {
+   "anterior": null,
+   "definicao": "Chamados com Data de Abertura dentro do mês do Mes Ref.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "entradas",
+   "melhorQuando": "neutro",
+   "rotulo": "Entradas no mês",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "finalizados",
+   "melhorQuando": "maior",
+   "rotulo": "Finalizados no mês",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados da posição do mês com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "naoFinalizados",
+   "melhorQuando": "menor",
+   "rotulo": "Não finalizados",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "atraso",
+   "melhorQuando": "menor",
+   "rotulo": "Em atraso",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês do Mes Ref.; sem SLA não conta.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "slaVencido",
+   "melhorQuando": "menor",
+   "rotulo": "SLA vencido",
+   "valor": 2
+  },
+  {
+   "anterior": null,
+   "definicao": "Entre os finalizados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
+   "delta": null,
+   "formato": "percentual",
+   "id": "sla",
+   "melhorQuando": "maior",
+   "rotulo": "% no SLA",
+   "valor": 100
+  },
+  {
+   "anterior": null,
+   "definicao": "Média, em dias corridos, entre abertura e solução dos chamados finalizados no mês.",
+   "delta": null,
+   "formato": "dias",
+   "id": "tempoMedio",
+   "melhorQuando": "menor",
+   "rotulo": "Tempo médio de resolução",
+   "valor": 8
+  },
+  {
+   "anterior": null,
+   "definicao": "Média, em dias corridos, entre a Data de Solução e a Data de Aceite dos chamados aceitos no mês (mede quanto o cliente demora para aceitar; diferenças negativas são ignoradas).",
+   "delta": null,
+   "formato": "dias",
+   "id": "tempoAceite",
+   "melhorQuando": "menor",
+   "rotulo": "Tempo até o aceite",
+   "valor": 1
+  },
+  {
+   "anterior": null,
+   "definicao": "Entre os finalizados no mês, % com ao menos uma reabertura (Qtd Reabertura maior que zero).",
+   "delta": null,
+   "formato": "percentual",
+   "id": "reabertos",
+   "melhorQuando": "menor",
+   "rotulo": "% reabertos",
+   "valor": 100
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados sem SLA Previsto.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "semSla",
+   "melhorQuando": "menor",
+   "rotulo": "Sem SLA",
+   "valor": 0
+  },
+  {
+   "anterior": null,
+   "definicao": "Não finalizados com SLA Renegociado preenchido.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "slaRenegociado",
+   "melhorQuando": "neutro",
+   "rotulo": "SLA renegociado",
+   "valor": 0
+  },
+  {
+   "anterior": null,
+   "definicao": "Chamados da posição do mês com Situação contendo \"aceite\" e sem Data de Aceite até o fim do mês do Mes Ref.",
+   "delta": null,
+   "formato": "inteiro",
+   "id": "aguardandoAceite",
+   "melhorQuando": "neutro",
+   "rotulo": "Aguardando aceite",
+   "valor": 0
+  }
+ ],
+ "linhasSemAbertura": 0,
+ "situacoes": [
+  {
+   "rotulo": "Finalizado",
+   "valor": 8
+  },
+  {
+   "rotulo": "Aguardando cliente",
+   "valor": 1
+  },
+  {
+   "rotulo": "Em Análise",
+   "valor": 1
+  }
+ ],
+ "totalChamados": 10
+}
+posicoes/hook/2026-10/f0/anterior = {
+ "base": null,
+ "corrigidoPor": [],
+ "entradaAtual": {
+  "colunasSemFiltro": [],
+  "competencia": "2026-10",
+  "sheet": {
+   "columns": [
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c0",
+     "label": "Mes Ref.",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c1",
+     "label": "Data Abertura",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c2",
+     "label": "Código",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c3",
+     "label": "Cliente",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c4",
+     "label": "Área Superior",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c5",
+     "label": "Área",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c6",
+     "label": "Atividade",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c7",
+     "label": "Severidade",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c8",
+     "label": "Situação",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c9",
+     "label": "SLA Previsto",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c10",
+     "label": "SLA Renegociado",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c11",
+     "label": "Data de Solução",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c12",
+     "label": "Data de Aceite",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c13",
+     "label": "Qtd Reabertura",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c14",
+     "label": "Resumo",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c15",
+     "label": "Operador",
+     "type": "text"
+    },
+    {
+     "distinctCount": 0,
+     "filterable": false,
+     "key": "c16",
+     "label": "Responsável Cliente",
+     "type": "text"
+    }
+   ],
+   "id": "Aba",
+   "index": 0,
+   "name": "Aba",
+   "rows": "11 linhas #22389757"
+  }
+ },
+ "entradaBase": null,
+ "metricas": {
+  "abertosDepois": 1,
+  "atrasoFaixas": [
+   {
+    "rotulo": "1",
+    "valor": 0
+   },
+   {
+    "rotulo": "2–3",
+    "valor": 1
+   },
+   {
+    "rotulo": "4–6",
+    "valor": 0
+   },
+   {
+    "rotulo": "7+",
+    "valor": 0
+   }
+  ],
+  "avisos": [
+   "1 aberto depois do Mes Ref."
+  ],
+  "competencia": "2026-10",
+  "corrigidoPor": [],
+  "corrigidos": 0,
+  "distribuicoes": [
+   {
+    "id": "cliente",
+    "itens": [
+     {
+      "finalizados": 1,
+      "naoFinalizados": 1,
+      "rotulo": "Cliente Delta"
+     },
+     {
+      "finalizados": 0,
+      "naoFinalizados": 1,
+      "rotulo": "Cliente Ômega"
+     }
+    ],
+    "titulo": "Por cliente"
+   },
+   {
+    "id": "areaSuperior",
+    "itens": [
+     {
+      "finalizados": 1,
+      "naoFinalizados": 1,
+      "rotulo": "Comercial"
+     },
+     {
+      "finalizados": 0,
+      "naoFinalizados": 1,
+      "rotulo": "Operações"
+     }
+    ],
+    "titulo": "Por área superior"
+   },
+   {
+    "id": "atividade",
+    "itens": [
+     {
+      "finalizados": 0,
+      "naoFinalizados": 1,
+      "rotulo": "Correção"
+     },
+     {
+      "finalizados": 0,
+      "naoFinalizados": 1,
+      "rotulo": "Integração"
+     },
+     {
+      "finalizados": 1,
+      "naoFinalizados": 0,
+      "rotulo": "Suporte"
+     }
+    ],
+    "titulo": "Por atividade"
+   },
+   {
+    "id": "area",
+    "itens": [
+     {
+      "finalizados": 1,
+      "naoFinalizados": 1,
+      "rotulo": "Cadastro"
+     },
+     {
+      "finalizados": 0,
+      "naoFinalizados": 1,
+      "rotulo": "Armazém"
+     }
+    ],
+    "titulo": "Por área"
+   },
+   {
+    "id": "operador",
+    "itens": [
+     {
+      "finalizados": 1,
+      "naoFinalizados": 1,
+      "rotulo": "Operador 05"
+     },
+     {
+      "finalizados": 0,
+      "naoFinalizados": 1,
+      "rotulo": "Operador 04"
+     }
+    ],
+    "titulo": "Por operador"
+   }
+  ],
+  "kpis": [
+   {
+    "anterior": null,
+    "definicao": "Chamados com Data de Abertura dentro do mês do Mes Ref.",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "entradas",
+    "melhorQuando": "neutro",
+    "rotulo": "Entradas no mês",
+    "valor": 2
+   },
+   {
+    "anterior": null,
+    "definicao": "Chamados com Situação Finalizado e Data de Solução dentro do mês do Mes Ref. (Data de Solução sem Situação Finalizado não conta).",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "finalizados",
+    "melhorQuando": "maior",
+    "rotulo": "Finalizados no mês",
+    "valor": 1
+   },
+   {
+    "anterior": null,
+    "definicao": "Chamados da posição do mês com Situação diferente de Finalizado; nenhuma situação é agrupada por conta própria.",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "naoFinalizados",
+    "melhorQuando": "menor",
+    "rotulo": "Não finalizados",
+    "valor": 2
+   },
+   {
+    "anterior": null,
+    "definicao": "Não finalizados abertos antes do mês do Mes Ref., por meses entre a abertura e o Mes Ref. (1, 2–3, 4–6, 7+).",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "atraso",
+    "melhorQuando": "menor",
+    "rotulo": "Em atraso",
+    "valor": 1
+   },
+   {
+    "anterior": null,
+    "definicao": "Não finalizados cujo SLA vigente (renegociado, senão previsto) venceu antes do fim do mês do Mes Ref.; sem SLA não conta.",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "slaVencido",
+    "melhorQuando": "menor",
+    "rotulo": "SLA vencido",
+    "valor": 2
+   },
+   {
+    "anterior": null,
+    "definicao": "Entre os finalizados no mês com SLA, % com Data de Solução até o fim do dia do SLA vigente (renegociado, senão previsto).",
+    "delta": null,
+    "formato": "percentual",
+    "id": "sla",
+    "melhorQuando": "maior",
+    "rotulo": "% no SLA",
+    "valor": 100
+   },
+   {
+    "anterior": null,
+    "definicao": "Média, em dias corridos, entre abertura e solução dos chamados finalizados no mês.",
+    "delta": null,
+    "formato": "dias",
+    "id": "tempoMedio",
+    "melhorQuando": "menor",
+    "rotulo": "Tempo médio de resolução",
+    "valor": 8
+   },
+   {
+    "anterior": null,
+    "definicao": "Média, em dias corridos, entre a Data de Solução e a Data de Aceite dos chamados aceitos no mês (mede quanto o cliente demora para aceitar; diferenças negativas são ignoradas).",
+    "delta": null,
+    "formato": "dias",
+    "id": "tempoAceite",
+    "melhorQuando": "menor",
+    "rotulo": "Tempo até o aceite",
+    "valor": 1
+   },
+   {
+    "anterior": null,
+    "definicao": "Entre os finalizados no mês, % com ao menos uma reabertura (Qtd Reabertura maior que zero).",
+    "delta": null,
+    "formato": "percentual",
+    "id": "reabertos",
+    "melhorQuando": "menor",
+    "rotulo": "% reabertos",
+    "valor": 100
+   },
+   {
+    "anterior": null,
+    "definicao": "Não finalizados sem SLA Previsto.",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "semSla",
+    "melhorQuando": "menor",
+    "rotulo": "Sem SLA",
+    "valor": 0
+   },
+   {
+    "anterior": null,
+    "definicao": "Não finalizados com SLA Renegociado preenchido.",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "slaRenegociado",
+    "melhorQuando": "neutro",
+    "rotulo": "SLA renegociado",
+    "valor": 0
+   },
+   {
+    "anterior": null,
+    "definicao": "Chamados da posição do mês com Situação contendo \"aceite\" e sem Data de Aceite até o fim do mês do Mes Ref.",
+    "delta": null,
+    "formato": "inteiro",
+    "id": "aguardandoAceite",
+    "melhorQuando": "neutro",
+    "rotulo": "Aguardando aceite",
+    "valor": 0
+   }
+  ],
+  "linhasSemAbertura": 0,
+  "situacoes": [
+   {
+    "rotulo": "Finalizado",
+    "valor": 8
+   },
+   {
+    "rotulo": "Aguardando cliente",
+    "valor": 1
+   },
+   {
+    "rotulo": "Em Análise",
+    "valor": 1
+   }
+  ],
+  "totalChamados": 10
+ },
+ "opcoes": [
+  {
+   "rotulo": "Mês anterior",
+   "valor": "anterior"
+  },
+  {
+   "rotulo": "set/26 (sem posição)",
+   "valor": "mes:2026-09"
+  },
+  {
+   "rotulo": "ago/26 (sem posição)",
+   "valor": "mes:2026-08"
+  },
+  {
+   "rotulo": "jul/26 (sem posição)",
+   "valor": "mes:2026-07"
+  },
+  {
+   "rotulo": "jun/26 (sem posição)",
+   "valor": "mes:2026-06"
+  },
+  {
+   "rotulo": "mai/26",
+   "valor": "mes:2026-05"
+  },
+  {
+   "rotulo": "abr/26",
+   "valor": "mes:2026-04"
+  },
+  {
+   "rotulo": "mar/26 (sem posição)",
+   "valor": "mes:2026-03"
+  },
+  {
+   "rotulo": "fev/26 (sem posição)",
+   "valor": "mes:2026-02"
+  },
+  {
+   "rotulo": "jan/26 (sem posição)",
+   "valor": "mes:2026-01"
+  },
+  {
+   "rotulo": "dez/25 (sem posição)",
+   "valor": "mes:2025-12"
+  }
+ ],
+ "rotuloBase": null
+}

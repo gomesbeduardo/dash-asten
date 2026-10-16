@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import { formatarCompetencia, type Carga, type CargaMeta } from "@/cargas"
 import { espiarCarga } from "@/cargas/comCache"
 import {
-  calcularMetricas,
-  corrigirFoto,
+  corrigirDe,
   escolherAba,
+  metricasDe,
   metricasCorrigidas,
   metricasDoMesSemFoto,
   opcoesDeComparacao,
@@ -19,8 +19,7 @@ import type { Competencia } from "@/cargas/types"
 import type { Sheet } from "@/core"
 import { useCargasDoTipo } from "./hooks"
 import {
-  colunasAusentes,
-  filtrarSheet,
+  entradaFiltradaDe,
   metaAnterior,
   type FiltrosChamados,
 } from "./logica"
@@ -48,16 +47,6 @@ export type PainelComparado = {
   corrigidoPor: string[]
   opcoes: OpcaoSeletor[]
 }
-
-const entradaFiltrada = (
-  sheet: Sheet,
-  competencia: Competencia,
-  filtros: FiltrosChamados
-): EntradaCompetencia => ({
-  sheet: filtrarSheet(sheet, filtros, competencia),
-  competencia,
-  colunasSemFiltro: colunasAusentes(sheet, filtros),
-})
 
 /** Carga de uma versão específica: pronta no 1º render se já está no cache. `undefined` enquanto carrega; `null` sem meta. */
 function useCargaDaMeta(
@@ -128,8 +117,9 @@ export function usePainelComparado({
   )
   const cargaVersao = useCargaDaMeta(metaVersao, obterCarga)
 
-  return useMemo(() => {
-    if (!sheet || fotos === null || cargaVersao === undefined) return null
+  // Lado do mês aberto: não depende do seletor, então trocar "Comparar com" não o refaz.
+  const lado = useMemo(() => {
+    if (!sheet || fotos === null) return null
     // última versão de cada mês; o mês aberto vale com a versão aberta
     const porMes = new Map<Competencia, Sheet>()
     for (const f of fotos) porMes.set(f.meta.competencia, f.sheet)
@@ -140,8 +130,16 @@ export function usePainelComparado({
         .filter((m) => m > c)
         .map((m) => ({ sheet: porMes.get(m)!, competencia: m }))
 
-    const atual = entradaFiltrada(sheet, carga.competencia, filtros)
+    const atual = entradaFiltradaDe(sheet, carga.competencia, filtros)
     const posteriores = posterioresA(carga.competencia)
+    const corrigida = corrigirDe(atual, posteriores)
+    return { porMes, meses, posterioresA, atual, posteriores, corrigida }
+  }, [sheet, fotos, carga.competencia, filtros])
+
+  // Lado comparado e montagem final: refaz ao trocar o seletor, só com o que muda.
+  return useMemo(() => {
+    if (!lado || fotos === null || cargaVersao === undefined) return null
+    const { porMes, meses, posterioresA, atual, posteriores, corrigida } = lado
 
     let baseEntrada: EntradaCompetencia | undefined
     let rotuloBase: string | null = null
@@ -153,7 +151,7 @@ export function usePainelComparado({
     if (escolha.startsWith("versao:")) {
       const aba = cargaVersao ? escolherAba(cargaVersao.workbook) : null
       if (cargaVersao && aba) {
-        baseEntrada = entradaFiltrada(aba, carga.competencia, filtros)
+        baseEntrada = entradaFiltradaDe(aba, carga.competencia, filtros)
         rotuloBase = `${formatarCompetencia(carga.competencia)} · v${cargaVersao.versao}`
       }
     } else if (escolha.startsWith("mes:")) {
@@ -166,15 +164,15 @@ export function usePainelComparado({
     if (competenciaBase !== null) {
       const sheetBase = porMes.get(competenciaBase)
       if (sheetBase) {
-        const bruta = entradaFiltrada(sheetBase, competenciaBase, filtros)
-        baseEntrada = corrigirFoto(bruta, posterioresA(competenciaBase)).entrada
+        const bruta = entradaFiltradaDe(sheetBase, competenciaBase, filtros)
+        baseEntrada = corrigirDe(bruta, posterioresA(competenciaBase)).entrada
         rotuloBase = formatarCompetencia(competenciaBase)
       } else if (escolha.startsWith("mes:")) {
         // mês sem posição: só o que as datas dão, da posição mais atual
         const maisAtual = meses[meses.length - 1]
         parcial = metricasDoMesSemFoto(
           competenciaBase,
-          entradaFiltrada(porMes.get(maisAtual)!, maisAtual, filtros)
+          entradaFiltradaDe(porMes.get(maisAtual)!, maisAtual, filtros)
         )
         // texto da tela (o motor ainda diz "foto"): "posição" é o termo do responsável
         semFoto = `sem posição de ${rotuloCompetencia(competenciaBase)}`
@@ -187,9 +185,9 @@ export function usePainelComparado({
       baseEntrada && (baseEntrada.colunasSemFiltro ?? []).length === 0
         ? baseEntrada
         : undefined
-    const m = metricasCorrigidas(atual, posteriores, baseUsavel)
+    const m = metricasCorrigidas(atual, posteriores, baseUsavel, corrigida)
     if (baseUsavel) {
-      const bm = calcularMetricas(baseUsavel)
+      const bm = metricasDe(baseUsavel)
       if (bm.totalChamados !== null)
         base = {
           situacoes: bm.situacoes,
@@ -253,7 +251,6 @@ export function usePainelComparado({
       })),
     ]
 
-    const corrigida = corrigirFoto(atual, posteriores)
     return {
       metricas: m,
       entradaAtual: corrigida.entrada,
@@ -263,5 +260,5 @@ export function usePainelComparado({
       corrigidoPor: m.corrigidoPor.map(rotuloCompetencia),
       opcoes,
     }
-  }, [sheet, fotos, cargaVersao, carga, historico, filtros, escolha])
+  }, [lado, fotos, cargaVersao, carga, historico, filtros, escolha])
 }

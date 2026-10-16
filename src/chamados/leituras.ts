@@ -1,7 +1,7 @@
 import { mapearColunas, normalizar, type CampoChamado } from "./mapeamento"
-import { calcularMetricas } from "./metricas"
+import { metricasDe } from "./cache-metricas"
 import { classificarLinha, mesesAteCompetencia, tempo, texto } from "./situacao"
-import type { EntradaCompetencia } from "./tipos"
+import type { EntradaCompetencia, MetricasChamados } from "./tipos"
 
 export type Severidade = "critico" | "atencao" | "destaque"
 export type FiltroSugerido = {
@@ -61,9 +61,11 @@ function clientesNaoFinalizados(
 /** Leituras estratégicas do mês (D35): regras com limite numérico, sem projeção. Máx. 4, da mais grave à menos. */
 export function gerarLeituras(
   atual: EntradaCompetencia,
-  anterior?: EntradaCompetencia
+  anterior?: EntradaCompetencia,
+  /** As métricas de `atual` contra `anterior`, se já calculadas (evita calcular de novo). */
+  metricas?: MetricasChamados
 ): Leitura[] {
-  const m = calcularMetricas(atual, anterior)
+  const m = metricas ?? metricasDe(atual, anterior)
   const kpi = (id: string) => m.kpis.find((k) => k.id === id)
   const abertos = kpi("naoFinalizados")?.valor ?? null
   if (abertos === null || abertos <= 0) return []

@@ -34,3 +34,5 @@ export type {
   AreaSla,
   ClienteTempo,
 } from "./cruzamentos"
+export { idDaSheet, metricasDe } from "./cache-metricas"
+export { corrigirDe } from "./cache-correcao"
