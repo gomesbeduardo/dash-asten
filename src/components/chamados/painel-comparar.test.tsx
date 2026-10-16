@@ -207,4 +207,23 @@ describe("Painel: comparar com (D65)", () => {
     }
   })
 
+  it("(h) trocar o “Comparar com” remonta só o bloco do mês: KPIs e “Ao longo do tempo” seguem", async () => {
+    const user = userEvent.setup()
+    await abrir("2026-10", 1)
+    await screen.findByLabelText("Comparar com")
+    const finalizados = await kpi("Finalizados no mês")
+    const porCliente = await porClienteNoMes()
+    await screen.findByText(/Um ponto por mês/)
+    const tempo = screen.getByRole("region", { name: "Ao longo do tempo" })
+
+    await user.selectOptions(screen.getByLabelText("Comparar com"), "mai/26")
+
+    await waitFor(async () =>
+      expect(await porClienteNoMes()).not.toBe(porCliente)
+    )
+    expect(await kpi("Finalizados no mês")).toBe(finalizados)
+    expect(screen.getByRole("region", { name: "Ao longo do tempo" })).toBe(
+      tempo
+    )
+  })
 })
