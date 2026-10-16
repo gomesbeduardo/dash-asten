@@ -74,7 +74,10 @@ async function abrir(competencia: string, versao: number, entrada = false) {
     />
   )
   const { rerender } = render(ui(historico))
-  return { historico, trocarHistorico: (h: typeof historico) => rerender(ui(h)) }
+  return {
+    historico,
+    trocarHistorico: (h: typeof historico) => rerender(ui(h)),
+  }
 }
 
 beforeEach(() => {
@@ -88,7 +91,10 @@ beforeEach(() => {
 })
 
 /** Abre o "Comparar com" e escolhe a opção pelo nome, como uma pessoa faria. */
-async function escolher(user: ReturnType<typeof userEvent.setup>, nome: string) {
+async function escolher(
+  user: ReturnType<typeof userEvent.setup>,
+  nome: string
+) {
   await user.click(screen.getByRole("combobox", { name: "Comparar com" }))
   await user.click(await screen.findByRole("option", { name: nome }))
 }
@@ -103,6 +109,17 @@ const cruzamento = (nome: string) =>
 const kpi = (nome: string) => screen.findByRole("article", { name: nome })
 
 describe("Painel: comparar com (D65)", () => {
+  it("(spec 001) a faixa dos cruzamentos não tem o Área × SLA e fecha a linha com 3 cartões", async () => {
+    await abrir("2026-10", 1)
+    const situacao = await cruzamento("Cliente × Situação")
+    expect(screen.queryByRole("region", { name: "Área × SLA" })).toBeNull()
+    expect(screen.queryByText("Área × SLA")).toBeNull()
+    expect(document.getElementById("areaSla")).toBeNull()
+    const linha = situacao.parentElement as HTMLElement
+    expect(linha.querySelectorAll(":scope > section")).toHaveLength(3)
+    expect(linha.className).toContain("xl:grid-cols-3")
+  })
+
   it("(a) out contra mai/26: Δ contra maio corrigido pela posição de out", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
@@ -110,8 +127,14 @@ describe("Painel: comparar com (D65)", () => {
     await escolher(user, "mai/26")
     const f = await kpi("Finalizados no mês")
     expect(within(f).getByLabelText("1")).toBeInTheDocument()
-    expect(within(f).getByRole("group", { name: "−1 em relação a mai/26, pior" })).toHaveTextContent("mai/26")
-    expect(within(await kpi("Entradas no mês")).getByRole("group", { name: /^\+1 em relação a mai\/26/ })).toBeInTheDocument()
+    expect(
+      within(f).getByRole("group", { name: "−1 em relação a mai/26, pior" })
+    ).toHaveTextContent("mai/26")
+    expect(
+      within(await kpi("Entradas no mês")).getByRole("group", {
+        name: /^\+1 em relação a mai\/26/,
+      })
+    ).toBeInTheDocument()
   })
 
   it("(b) out contra jun/26 (sem posição): Δ só em entradas e finalizados", async () => {
@@ -119,13 +142,23 @@ describe("Painel: comparar com (D65)", () => {
     await abrir("2026-10", 1)
     await screen.findByRole("combobox", { name: "Comparar com" })
     await escolher(user, "jun/26 sem posição")
-    expect(within(await kpi("Entradas no mês")).getByRole("group", { name: /^\+2 em relação a jun\/26/ })).toBeInTheDocument()
-    expect(within(await kpi("Finalizados no mês")).getByRole("group", { name: /em relação a jun\/26/ })).toBeInTheDocument()
+    expect(
+      within(await kpi("Entradas no mês")).getByRole("group", {
+        name: /^\+2 em relação a jun\/26/,
+      })
+    ).toBeInTheDocument()
+    expect(
+      within(await kpi("Finalizados no mês")).getByRole("group", {
+        name: /em relação a jun\/26/,
+      })
+    ).toBeInTheDocument()
     const atraso = await kpi("Em atraso")
     expect(within(atraso).queryByRole("group")).toBeNull()
     expect(atraso).toHaveTextContent("sem posição de jun/26")
     // o aviso aparece uma vez, junto de "Comparar com", e não em cada cartão
-    expect(screen.getByText(/sem posição: só entradas e finalizados/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/sem posição: só entradas e finalizados/)
+    ).toBeInTheDocument()
     const card = screen.getByRole("listitem", { name: "Situação: Finalizado" })
     expect(within(card).queryByRole("group")).toBeNull()
   })
@@ -149,12 +182,16 @@ describe("Painel: comparar com (D65)", () => {
     const fin = await screen.findByRole("listitem", {
       name: "Situação: Finalizado",
     })
-    expect(within(fin).getByRole("group", { name: "+2 em relação a abr/26 v1" })).toHaveTextContent("abr/26 v1")
+    expect(
+      within(fin).getByRole("group", { name: "+2 em relação a abr/26 v1" })
+    ).toHaveTextContent("abr/26 v1")
     const em = screen.getByRole("listitem", {
       name: "Situação: Em Atendimento",
     })
     expect(within(em).getByLabelText("0")).toBeInTheDocument()
-    expect(within(em).getByRole("group", { name: "−1 em relação a abr/26 v1" })).toBeInTheDocument()
+    expect(
+      within(em).getByRole("group", { name: "−1 em relação a abr/26 v1" })
+    ).toBeInTheDocument()
   })
 
   it("(e) o seletor vale para os gráficos: out × mai, as barras das duas fotos por cliente", async () => {
@@ -184,7 +221,9 @@ describe("Painel: comparar com (D65)", () => {
     const card = await screen.findByRole("region", { name: "Por cliente" })
     const rotulo = within(card).getByRole("img").getAttribute("aria-label")!
     // só os finalizados vêm com o mês comparado; os não finalizados ficam sem ele (sem posição)
-    expect(rotulo).toMatch(/Cliente Ômega: Finalizados no mês 0 \(jun\/26: 1\), Não finalizados 1(;|$)/)
+    expect(rotulo).toMatch(
+      /Cliente Ômega: Finalizados no mês 0 \(jun\/26: 1\), Não finalizados 1(;|$)/
+    )
     expect(card).toHaveTextContent("sem posição de jun/26")
     // cruzamentos dependem da Situação: só o mês de referência, com a nota
     const cruz = await cruzamento("Cliente × Situação")
@@ -196,11 +235,10 @@ describe("Painel: comparar com (D65)", () => {
     await abrir("2026-10", 1)
     await screen.findByRole("combobox", { name: "Comparar com" })
     await escolher(user, "mai/26")
-    // os 4 cruzamentos seguem o "Comparar com" sem remontar o bloco
+    // os 3 cruzamentos seguem o "Comparar com" sem remontar o bloco
     for (const nome of [
       "Cliente × Situação",
       "Operador × Atraso",
-      "Área × SLA",
       "Cliente × Tempo médio",
     ]) {
       const r = await cruzamento(nome)
@@ -209,15 +247,18 @@ describe("Painel: comparar com (D65)", () => {
     }
     const kpiAntes = await kpi("Entradas no mês")
     const cardAntes = await screen.findByRole("region", { name: "Por cliente" })
-    const listras = (c: HTMLElement) =>
-      [...c.querySelectorAll<HTMLElement>("[data-fantasma]")]
+    const listras = (c: HTMLElement) => [
+      ...c.querySelectorAll<HTMLElement>("[data-fantasma]"),
+    ]
     const barraAntes = cardAntes.querySelector("[data-barra]")
     const listrasAntes = listras(cardAntes)
     const larguras = (m: HTMLElement[]) => m.map((e) => e.style.width).join("|")
     const posAntes = larguras(listrasAntes)
     expect(listrasAntes.length).toBeGreaterThan(0)
     await escolher(user, "abr/26")
-    const cardDepois = await screen.findByRole("region", { name: "Por cliente" })
+    const cardDepois = await screen.findByRole("region", {
+      name: "Por cliente",
+    })
     expect(cardDepois).toBe(cardAntes)
     expect(cardDepois.querySelector("[data-barra]")).toBe(barraAntes)
     expect(await kpi("Entradas no mês")).toBe(kpiAntes)
@@ -234,16 +275,15 @@ describe("Painel: comparar com (D65)", () => {
     trocarHistorico(
       historico.filter((m) => !(m.competencia === "2026-04" && m.versao === 1))
     )
-    expect(screen.getByRole("combobox", { name: "Comparar com" })).toHaveTextContent(/Mês anterior/)
+    expect(
+      screen.getByRole("combobox", { name: "Comparar com" })
+    ).toHaveTextContent(/Mês anterior/)
     expect(screen.queryByRole("group", { name: /abr\/26 v1/ })).toBeNull()
   })
 
-  it("(g2) a pilha por situação e a barra de vencidos transitam o valor (classe transicao-valor)", async () => {
+  it("(g2) a pilha por situação transita o valor (classe transicao-valor)", async () => {
     await abrir("2026-10", 1)
-    const area = await cruzamento("Área × SLA")
-    const vencidos = area.querySelectorAll("[data-barra-vencidos]")
-    expect(vencidos.length).toBeGreaterThan(0)
-    vencidos.forEach((b) => expect(b).toHaveClass("transicao-valor"))
+    await cruzamento("Cliente × Situação")
     const pilha = document.querySelectorAll("[data-situacao]")
     expect(pilha.length).toBeGreaterThan(0)
     pilha.forEach((s) => expect(s).toHaveClass("transicao-valor"))
@@ -271,15 +311,15 @@ describe("Painel: comparar com (D65)", () => {
     it("(h) Painel aberto por revisita (entrada=false) não anima as barras, nem depois do Comparar com", async () => {
       const user = userEvent.setup()
       await abrir("2026-10", 1, false)
-      await cruzamento("Área × SLA")
+      await cruzamento("Cliente × Situação")
       await escolher(user, "mai/26")
-      await cruzamento("Área × SLA")
+      await cruzamento("Cliente × Situação")
       expect(entradas()).toHaveLength(0)
     })
 
     it("(i) primeira visita (entrada=true) anima as barras", async () => {
       await abrir("2026-10", 1, true)
-      await cruzamento("Área × SLA")
+      await cruzamento("Cliente × Situação")
       expect(entradas().length).toBeGreaterThan(0)
     })
   })

@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { chartGrow } from "@/components/app/motion/tokens"
 import { BarrasHtml } from "./barras-html"
 import { BarrasRefinadas } from "./barras-refinadas"
-import { BarraPercentual } from "./cruzamentos-ui"
 
 let reduzido = false
 vi.mock("motion/react", async () => ({
@@ -90,20 +89,11 @@ describe("barras crescem revelando a barra pronta (sem scaleX)", () => {
     revelacao(pilha)
   })
 
-  it("barra percentual: anima o clip da barra", () => {
-    const { container } = render(<BarraPercentual rotulo="A" pct={50} animar />)
-    expect(animate.mock.instances[0]).toBe(
-      container.querySelector("[data-barra-sla]")
-    )
-    revelacao(container.querySelector("[data-barra-sla]")!)
-  })
-
   it("sem animar ou com movimento reduzido, aparece pronta, sem animação", () => {
     render(<BarrasRefinadas linhas={linhas} series={series} animar={false} />)
     render(
       <BarrasHtml grupos={grupos} colunas={[{ maximo: 3 }]} descricao="x" />
     )
-    render(<BarraPercentual rotulo="A" pct={50} />)
     reduzido = true
     render(<BarrasRefinadas linhas={linhas} series={series} animar />)
     render(
@@ -114,7 +104,6 @@ describe("barras crescem revelando a barra pronta (sem scaleX)", () => {
         animar
       />
     )
-    render(<BarraPercentual rotulo="A" pct={50} animar />)
     expect(animate).not.toHaveBeenCalled()
   })
 })

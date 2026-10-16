@@ -3,16 +3,12 @@ import { useMemo } from "react"
 
 import { formatarCompetencia } from "@/cargas"
 import {
-  areaPorSla,
   clientePorSituacao,
   clientePorTempo,
   FAIXAS_ATRASO,
   operadorPorAtraso,
   type EntradaCompetencia,
 } from "@/chamados"
-import { useCrescerBarra } from "@/components/app/motion/useCrescerBarra"
-import { useOrdemAtrasada } from "@/components/app/motion/useOrdemAtrasada"
-import { gradienteBarra, SOMBRA_BARRA } from "./barra-estilo"
 import { GraficoCartao } from "./cartoes"
 import {
   BarrasHtml,
@@ -30,14 +26,6 @@ import {
 import { BarrasRefinadas } from "./barras-refinadas"
 import { corDaFaixa, COR_FIN, coresDasSituacoes } from "./cores"
 import type { BaseAnterior } from "./painel-foto"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
 const inteiro = new Intl.NumberFormat("pt-BR")
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 })
@@ -269,163 +257,6 @@ export function OperadorAtraso(d: DadosCruzamento) {
           descricao={`Operador × Atraso: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} ${l.celulas[0].texto}`).join(", ")}`).join("; ")}`}
         />
       </div>
-    </GraficoCartao>
-  )
-}
-
-/** Barra de SLA vencido: largura proporcional ao maior da tabela, com a mesma entrada e transição das outras. */
-function BarraVencidos({
-  valor,
-  maximo,
-  animar = false,
-}: {
-  valor: number
-  maximo: number
-  animar?: boolean
-}) {
-  const crescer = useCrescerBarra<HTMLSpanElement>(animar)
-  return (
-    <span
-      data-barra-vencidos=""
-      ref={crescer}
-      className="transicao-valor block h-[1.25rem] rounded-r-[4px]"
-      style={{
-        width: `${(valor / maximo) * 100}%`,
-        minWidth: valor > 0 ? "0.25rem" : 0,
-        background: gradienteBarra("var(--vencido)"),
-        boxShadow: valor > 0 ? SOMBRA_BARRA : undefined,
-      }}
-    />
-  )
-}
-
-/** Trilha de 0 a 100% com a barra da %; sem número escrito (o valor está no tooltip e no aria-label). `meta` liga uma referência depois. */
-export function BarraPercentual({
-  rotulo,
-  pct,
-  meta,
-  animar = false,
-}: {
-  rotulo: string
-  pct: number | null
-  meta?: number
-  animar?: boolean
-}) {
-  const crescer = useCrescerBarra<HTMLSpanElement>(animar)
-  if (pct === null)
-    return (
-      <span className="text-base text-muted-foreground">
-        sem finalizados com SLA
-      </span>
-    )
-  const texto = `${decimal.format(pct)}%`
-  return (
-    <div
-      role="img"
-      aria-label={`${rotulo}: ${texto} dos finalizados dentro do SLA`}
-      title={`${rotulo}: ${texto}`}
-      className="relative h-[1.25rem] w-full rounded-r-[4px] bg-muted"
-    >
-      <span
-        data-barra-sla=""
-        ref={crescer}
-        className="transicao-valor absolute top-0 left-0 h-full rounded-r-[4px]"
-        style={{
-          width: `${Math.min(100, Math.max(0, pct))}%`,
-          background: gradienteBarra(COR_FIN),
-          boxShadow: SOMBRA_BARRA,
-        }}
-      />
-      {meta !== undefined && (
-        <span
-          data-meta=""
-          aria-hidden
-          className="transicao-valor absolute -top-0.5 h-[calc(100%+4px)] w-[3px] -translate-x-1/2 rounded-[1px] bg-foreground"
-          style={{ left: `${meta}%` }}
-        />
-      )}
-    </div>
-  )
-}
-
-/** Área × SLA: tabela com barras embutidas, uma linha por área, ordenadas por vencidos. */
-export function AreaSla(d: DadosCruzamento) {
-  const { a } = useDuas((e) => areaPorSla(e), d)
-  // Ao filtrar, as barras deslizam na ordem antiga e só depois as áreas trocam de lugar.
-  const linhas = useOrdemAtrasada(
-    [...(a ?? [])].sort(
-      (x, y) =>
-        y.slaVencido - x.slaVencido || x.rotulo.localeCompare(y.rotulo, "pt-BR")
-    ),
-    (i) => i.rotulo
-  )
-  if (!a) return null
-  const m = mesesDe(d, false)
-  const maxVenc = Math.max(1, ...linhas.map((i) => i.slaVencido))
-  return (
-    <GraficoCartao
-      id="areaSla"
-      titulo="Área × SLA"
-      subtitulo="finalizados dentro do SLA e SLA vencido, por área"
-      contexto={m.atual}
-      nota={notaBase(d.base, false)}
-      tabela={{
-        colunas: ["Área", "% no SLA", "Finalizados com SLA", "SLA vencido"],
-        linhas: linhas.map((i) => [
-          i.rotulo,
-          i.slaPct == null ? "—" : `${decimal.format(i.slaPct)}%`,
-          i.finalizadosComSla ?? 0,
-          i.slaVencido,
-        ]),
-      }}
-      className={d.className}
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[26%] text-base">Área</TableHead>
-            <TableHead className="w-[42%] text-base whitespace-normal">
-              No SLA (% dos finalizados no mês)
-            </TableHead>
-            <TableHead className="min-w-[8.5rem] text-base whitespace-normal">
-              Vencidos (nº de não finalizados)
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {linhas.map((i) => (
-            <TableRow key={i.rotulo}>
-              <TableCell className="text-lg font-medium whitespace-normal">
-                {i.rotulo}
-              </TableCell>
-              <TableCell>
-                <BarraPercentual
-                  rotulo={i.rotulo}
-                  pct={i.slaPct}
-                  animar={d.animar}
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1" aria-hidden>
-                    <BarraVencidos
-                      valor={i.slaVencido}
-                      maximo={maxVenc}
-                      animar={d.animar}
-                    />
-                  </div>
-                  <span
-                    data-vencidos-num=""
-                    className="num min-w-[3ch] shrink-0 text-right text-lg font-semibold text-foreground tabular-nums"
-                  >
-                    {inteiro.format(i.slaVencido)}
-                  </span>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </GraficoCartao>
   )
 }

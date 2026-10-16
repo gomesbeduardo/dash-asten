@@ -34,12 +34,7 @@ import {
   FaixaSituacao,
   GraficoMes,
 } from "./painel-foto"
-import {
-  AreaSla,
-  ClienteSituacao,
-  ClienteTempo,
-  OperadorAtraso,
-} from "./cruzamentos-ui"
+import { ClienteSituacao, ClienteTempo, OperadorAtraso } from "./cruzamentos-ui"
 import { LegendaSimbolos, MarcaCorrigido } from "./selos"
 
 /** Entrada do painel: mais curta que a padrão (são ~25 itens; ~110 ms cada deixaria a tela quase vazia). */
@@ -477,10 +472,9 @@ export function PainelChamados({
                 />
               }
             >
-              <div className={linha(4)}>
+              <div className={linha(3)}>
                 <ClienteSituacao {...cruz} />
                 <OperadorAtraso {...cruz} />
-                <AreaSla {...cruz} />
                 <ClienteTempo {...cruz} />
               </div>
             </MontarDepois>
