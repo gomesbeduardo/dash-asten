@@ -154,10 +154,6 @@ describe("opcoesDeComparacao", () => {
       "2026-06",
       "2026-05",
       "2026-04",
-      "2026-03",
-      "2026-02",
-      "2026-01",
-      "2025-12",
     ])
     const por = Object.fromEntries(o.meses.map((m) => [m.competencia, m]))
     expect(por["2026-06"]).toEqual({
@@ -186,7 +182,21 @@ describe("opcoesDeComparacao", () => {
     )
     expect(o.outrasVersoes).toEqual([1])
   })
+  it("uma carga só: nenhum mês anterior, só as outras versões", () => {
+    const o = opcoesDeComparacao(
+      [
+        { competencia: "2026-10", versao: 1 },
+        { competencia: "2026-10", versao: 2 },
+      ],
+      "2026-10",
+      outu,
+      2
+    )
+    expect(o.meses).toEqual([])
+    expect(o.outrasVersoes).toEqual([1])
+  })
   it("sem foto atual: 24 meses", () => {
-    expect(opcoesDeComparacao(fotos, "2026-10").meses).toHaveLength(24)
+    const antigas = [{ competencia: "2020-01", versao: 1 }, ...fotos]
+    expect(opcoesDeComparacao(antigas, "2026-10").meses).toHaveLength(24)
   })
 })

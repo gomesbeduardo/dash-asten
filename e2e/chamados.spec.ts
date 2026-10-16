@@ -145,13 +145,13 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Ao longo do tempo",
   await page.getByRole("button", { name: "Limpar filtros" }).first().click()
   const linha = page.getByRole("row", { name: /Não finalizados/ })
   await expect(linha).toContainText("+1")
-  // 2 é o mínimo; meses sem posição também podem entrar (marcados "(sem posição)", D66)
+  // 2 é o mínimo; o seletor começa na carga mais antiga (ago/26), então não há mais meses para somar
   await expect(page.getByRole("button", { name: "Remover competência 1" })).toBeDisabled()
-  await expect(page.getByRole("button", { name: "Adicionar competência" })).toBeEnabled()
+  await expect(page.getByRole("button", { name: "Adicionar competência" })).toBeDisabled()
   // a mesma competência não pode ser escolhida duas vezes
   await page.getByRole("combobox", { name: "Competência 1" }).click()
   await expect(page.getByRole("option", { name: /Setembro de 2026/ })).toHaveAttribute("aria-disabled", "true")
-  await expect(page.getByRole("option", { name: "Julho de 2026 (sem posição)" })).toBeVisible()
+  await expect(page.getByRole("option", { name: /Julho de 2026/ })).toHaveCount(0)
   await page.keyboard.press("Escape")
   // a leitura do Comparar abre o mesmo modal de detalhe; Esc devolve o foco ao cartão
   await expect(page.getByRole("heading", { level: 2, name: "Leituras de set/26 contra ago/26" })).toBeVisible()
