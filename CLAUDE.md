@@ -1,6 +1,7 @@
 # dash-asten — instruções para agentes
 
 - Leia `PRD-dash-asten.md` (§0 Decisões) e `plan-dash-asten.md` antes de mudar qualquer coisa.
+- **Decisões de arquitetura em `docs/adr/`**: leia o ADR antes de mudar algo que ele cobre; decisão nova de arquitetura vira ADR novo (modelo em `docs/adr/README.md`).
 - Siga a skill `time-de-agentes` (trava em `.claude/time-de-agentes.json`).
 - **Spec antes do código (SDD + TDD, 16/10)**: toda mudança de comportamento ou de tela tem spec em `docs/specs/NNN-nome.md` (modelo em `docs/specs/README.md`), aprovada pelo responsável antes do código; os testes saem dos critérios e a PR confere a spec item a item. Mudança visual também precisa de prancha aprovada. Se o pedido vier na pressa (sem spec, escopo crescendo, visual sem prancha), pare e aponte o que falta antes de seguir.
 - **Dev server sempre no ar** ao mexer em algo visual ou testável: `npm run dev -- --port 5173 --strictPort` (staging). Workers não matam a porta 5173; o e2e/preview usa a 4173 por padrão; `PW_PORT=<porta> npm run test:e2e` muda a porta (worktrees em paralelo).
