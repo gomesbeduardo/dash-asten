@@ -1,7 +1,7 @@
 /**
- * Barras do "No mês" (estilo refinado): pontas arredondadas, gradiente leve, sombra suave e grade
- * vertical tracejada. O mês comparado é um contorno tracejado da mesma forma, atrás da barra atual,
- * com o valor dele em cinza ao lado do atual. Em HTML/CSS para acompanhar a tipografia fluida (rem).
+ * Barras do "No mês": a barra é o mês aberto e um traço vertical marca o valor do mês comparado
+ * (valor em cinza ao lado do atual). Base reta, ponta com raio de 4 px, gradiente leve, sombra suave
+ * e grade tracejada. HTML/CSS para acompanhar a tipografia fluida (rem).
  */
 import { motion, useReducedMotion } from "motion/react"
 
@@ -13,10 +13,11 @@ export type SerieRefinada = { id: string; rotulo: string; cor: string }
 export type LinhaRefinada = {
   rotulo: string
   /** Um valor por série (mesma ordem de `series`); `base` é o mesmo valor no mês comparado. */
-  valores: { valor: number; base?: number | null }[]
+  valores: { valor: number | null; base?: number | null }[]
 }
 
 const inteiro = new Intl.NumberFormat("pt-BR")
+const padrao = (v: number) => inteiro.format(v)
 
 /** "mai/26" vira "mai"; "abr/26 v1" vira "abr v1" (o ano fica na legenda). */
 const curtoDoMes = (r: string) => r.replace(/\/\d{2}\b/, "")
@@ -30,8 +31,6 @@ function escala(maximo: number) {
   return { passo, topo }
 }
 
-const ALTURA = "1.25rem"
-
 function Barra({
   cor,
   valor,
@@ -41,44 +40,37 @@ function Barra({
   animar,
   atraso,
   titulo,
+  altura,
+  formatar,
 }: {
   cor: string
-  valor: number
+  valor: number | null
   base?: number | null
   topo: number
   rotuloBase?: string
   animar: boolean
   atraso: number
   titulo: string
+  altura: string
+  formatar: (v: number) => string
 }) {
   const reduce = useReducedMotion()
   const pct = (v: number) => `${(v / topo) * 100}%`
   const comBase =
     rotuloBase !== undefined && base !== undefined && base !== null
-  const fim = Math.max(valor, comBase ? base : 0)
+  const fim = Math.max(valor ?? 0, comBase ? base : 0)
   const anima = animar && !reduce
   return (
-    <div className="relative" style={{ height: ALTURA }} title={titulo}>
-      {comBase && base > 0 && (
-        <motion.span
-          data-contorno=""
-          aria-hidden
-          className="absolute top-0 left-0 rounded-r-full border-[1.5px] border-dashed border-muted-foreground/60"
-          style={{ width: pct(base), height: ALTURA, minWidth: ALTURA }}
-          initial={anima ? { opacity: 0 } : false}
-          animate={{ opacity: 1 }}
-          transition={{ duration: chartGrow / 1000, ease: "easeOut" }}
-        />
-      )}
-      {valor > 0 && (
+    <div className="relative" style={{ height: altura }} title={titulo}>
+      {valor !== null && valor > 0 && (
         <motion.span
           data-barra=""
           aria-hidden
-          className="absolute top-0 left-0 origin-left rounded-r-full"
+          className="absolute top-0 left-0 origin-left rounded-r-[4px]"
           style={{
             width: pct(valor),
-            height: ALTURA,
-            minWidth: ALTURA,
+            height: altura,
+            minWidth: "0.25rem",
             background: gradienteBarra(cor),
             boxShadow: SOMBRA_BARRA,
           }}
@@ -91,17 +83,36 @@ function Barra({
           }}
         />
       )}
-      {valor === 0 && <span data-barra="" aria-hidden className="hidden" />}
+      {(valor === 0 || valor === null) && (
+        <span data-barra="" aria-hidden className="hidden" />
+      )}
+      {comBase && base > 0 && (
+        <motion.span
+          data-marca=""
+          aria-hidden
+          className="absolute rounded-[1px] bg-foreground"
+          style={{
+            left: pct(base),
+            top: "-3px",
+            width: "3px",
+            height: `calc(${altura} + 6px)`,
+            transform: "translateX(-50%)",
+          }}
+          initial={anima ? { opacity: 0 } : false}
+          animate={{ opacity: 1 }}
+          transition={{ duration: chartGrow / 1000, ease: "easeOut" }}
+        />
+      )}
       <span
-        className="absolute top-1/2 flex -translate-y-1/2 items-baseline gap-1.5 whitespace-nowrap"
+        className="absolute top-1/2 flex -translate-y-1/2 items-baseline gap-2 whitespace-nowrap"
         style={{ left: `calc(${pct(fim)} + 0.6rem)` }}
       >
         <span className="num text-lg font-semibold text-foreground">
-          {inteiro.format(valor)}
+          {valor === null ? "—" : formatar(valor)}
         </span>
         {comBase && (
           <span className="num text-base text-muted-foreground">
-            {curtoDoMes(rotuloBase)} {inteiro.format(base)}
+            {curtoDoMes(rotuloBase)} {formatar(base)}
           </span>
         )}
       </span>
@@ -114,13 +125,23 @@ export function BarrasRefinadas({
   series,
   rotuloBase,
   animar,
+  formatar = padrao,
+  corDaLinha,
+  fina = false,
 }: {
   linhas: LinhaRefinada[]
   series: SerieRefinada[]
-  /** Rótulo do mês comparado ("mai/26"); sem ele não há contorno. */
+  /** Rótulo do mês comparado ("mai/26"); sem ele não há traço. */
   rotuloBase?: string
   animar: boolean
+  /** Texto do valor (ex.: dias); o padrão é o inteiro em pt-BR. */
+  formatar?: (v: number) => string
+  /** Cor própria por linha (ex.: faixa de atraso); sem ela vale a cor da série. */
+  corDaLinha?: (rotulo: string) => string
+  /** Barras mais finas, para duas ou mais séries por categoria. */
+  fina?: boolean
 }) {
+  const altura = fina ? "0.9rem" : "1.25rem"
   const { ocultas, alternar } = useSeriesOcultas(
     series.map((s) => s.id).join("|"),
     series.map((s) => s.id)
@@ -131,7 +152,9 @@ export function BarrasRefinadas({
   const todos = linhas.flatMap((l) =>
     visiveis.flatMap(({ i }) => {
       const v = l.valores[i]
-      return v ? [v.valor, rotuloBase !== undefined ? (v.base ?? 0) : 0] : []
+      return v
+        ? [v.valor ?? 0, rotuloBase !== undefined ? (v.base ?? 0) : 0]
+        : []
     })
   )
   const { passo, topo } = escala(Math.max(0, ...todos))
@@ -149,9 +172,9 @@ export function BarrasRefinadas({
               rotuloBase !== undefined &&
               v?.base !== undefined &&
               v.base !== null
-                ? ` (${rotuloBase}: ${inteiro.format(v.base)})`
+                ? ` (${rotuloBase}: ${formatar(v.base)})`
                 : ""
-            return `${rotulo} ${inteiro.format(v?.valor ?? 0)}${cmp}`
+            return `${rotulo} ${v?.valor == null ? "—" : formatar(v.valor)}${cmp}`
           })
           .join(", ")}`
     )
@@ -164,7 +187,7 @@ export function BarrasRefinadas({
           <span className="flex items-center gap-2 px-2.5 text-base text-muted-foreground">
             <span
               aria-hidden
-              className="inline-block h-3 w-6 rounded-r-full border-[1.5px] border-dashed border-muted-foreground/60"
+              className="inline-block h-4 w-[3px] rounded-[1px] bg-foreground"
             />
             {rotuloBase}
           </span>
@@ -173,7 +196,7 @@ export function BarrasRefinadas({
       <div
         role="img"
         aria-label={descricao}
-        className="relative flex flex-1 flex-col justify-center pb-8 [--rot:clamp(7rem,26%,12rem)] [--val:6.5rem]"
+        className="relative flex flex-1 flex-col justify-center pb-8 [--rot:clamp(7rem,26%,12rem)] [--val:7rem]"
       >
         {/* grade vertical tracejada, na mesma largura das trilhas */}
         <div
@@ -193,7 +216,7 @@ export function BarrasRefinadas({
               }}
             >
               <span className="num absolute top-full mt-1.5 -translate-x-1/2 text-base text-muted-foreground">
-                {inteiro.format(m)}
+                {formatar(m)}
               </span>
             </span>
           ))}
@@ -216,14 +239,16 @@ export function BarrasRefinadas({
                   return (
                     <Barra
                       key={id}
-                      cor={cor}
-                      valor={v?.valor ?? 0}
+                      cor={corDaLinha?.(l.rotulo) ?? cor}
+                      valor={v ? v.valor : 0}
                       base={v?.base}
                       topo={topo}
                       rotuloBase={rotuloBase}
                       animar={animar}
                       atraso={(r * 2 + j) * 0.04}
-                      titulo={`${l.rotulo}, ${rotulo}: ${inteiro.format(v?.valor ?? 0)}`}
+                      altura={altura}
+                      formatar={formatar}
+                      titulo={`${l.rotulo}, ${rotulo}: ${v?.valor == null ? "—" : formatar(v.valor)}`}
                     />
                   )
                 })}

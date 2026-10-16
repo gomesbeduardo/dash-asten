@@ -274,6 +274,7 @@ function Tabela({ titulo, tabela }: { titulo: string; tabela: TabelaDados }) {
 export function GraficoCartao({
   id,
   titulo,
+  conclusao,
   subtitulo,
   contexto,
   nota,
@@ -285,6 +286,8 @@ export function GraficoCartao({
 }: {
   id: string
   titulo: string
+  /** Título calculado do dado ("A lidera os finalizados..."); o nome fixo vira o 1º subtítulo. */
+  conclusao?: string
   subtitulo?: ReactNode
   /** O que está sendo comparado ("out/26 ao lado de mai/26"), em linha própria, abaixo do subtítulo. */
   contexto?: ReactNode
@@ -317,10 +320,15 @@ export function GraficoCartao({
                 <Selos tipos={selos} />
               </span>
             )}
-            <h3 className="font-display text-2xl leading-8 font-semibold text-primary">
-              {titulo}
+            <h3 className="font-display text-xl leading-8 font-semibold text-primary">
+              {conclusao ?? titulo}
             </h3>
           </div>
+          {conclusao && conclusao !== titulo && (
+            <p className="mt-0.5 text-base font-medium text-foreground/80">
+              {titulo}
+            </p>
+          )}
           {subtitulo && (
             <p className="mt-0.5 text-base text-muted-foreground">
               {subtitulo}

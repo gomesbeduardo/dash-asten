@@ -24,7 +24,8 @@ import {
 import { Toggle } from "@/components/ui/toggle"
 import { GraficoCartao } from "./cartoes"
 import { COR } from "./graficos"
-import { COR_FIN, COR_NAO, coresDasSituacoes } from "./cores"
+import { COR_FIN, COR_NAO, coresDasSituacoes, corDaFaixa } from "./cores"
+import { tituloDimensao, tituloFaixas } from "./titulos-conclusao"
 import { BarrasRefinadas, type LinhaRefinada } from "./barras-refinadas"
 import { agruparSeries, temOutros, type ItemSerie } from "./logica"
 import { MarcaCorrigido } from "./selos"
@@ -382,6 +383,14 @@ export function GraficoMes({
     <GraficoCartao
       id={dist.id}
       titulo={dist.titulo}
+      conclusao={tituloDimensao(
+        refinadas.map((r) => ({
+          rotulo: r.rotulo,
+          fin: r.valores[0].valor ?? 0,
+          nao: r.valores[1].valor ?? 0,
+        })),
+        dist.titulo
+      )}
       subtitulo={subtitulo}
       contexto={contexto}
       tabela={{
@@ -482,6 +491,10 @@ export function AtrasoMes({
     <GraficoCartao
       id="atrasoFaixas"
       titulo="Em atraso por meses desde a abertura"
+      conclusao={tituloFaixas(
+        faixas.map((f) => ({ rotulo: f.rotulo, valor: f.valor })),
+        "Em atraso por meses desde a abertura"
+      )}
       subtitulo="não finalizados abertos antes do mês do Mes Ref."
       contexto={comBase ? `${mesRef} ao lado de ${base.rotulo}` : undefined}
       nota={
@@ -511,6 +524,7 @@ export function AtrasoMes({
               : [{ valor: i.valores[0] ?? 0 }],
           }))}
           series={[{ id: "atual", rotulo: "Não finalizados", cor: SERIE_NAO }]}
+          corDaLinha={corDaFaixa}
           rotuloBase={comBase ? base.rotulo : undefined}
           animar={animar}
         />

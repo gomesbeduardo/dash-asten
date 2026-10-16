@@ -7,6 +7,8 @@ export type Segmento = {
   rotulo: string
   valor: number
   cor: string
+  /** Cor clara: o valor escrito dentro usa texto escuro. */
+  claro?: boolean
 }
 /** Uma barra: segmentos empilhados e o texto do valor na ponta. `segmentos` vazio = sem valor ("—"). */
 export type Celula = { segmentos: Segmento[]; texto: string }
@@ -59,26 +61,35 @@ function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
     >
       {celula.segmentos.length > 0 && total > 0 ? (
         <div
-          className="flex h-[1.4rem] min-w-0.5 overflow-hidden rounded-r-full"
+          className="flex h-[1.4rem] min-w-0.5 gap-0.5 overflow-hidden rounded-r-[4px]"
           style={{ width: `${pct}%`, boxShadow: SOMBRA_BARRA }}
         >
           {celula.segmentos
             .filter((s) => s.valor > 0)
-            .map((s) => (
-              <div
-                key={s.id}
-                title={`${s.rotulo}: ${s.valor}`}
-                style={{
-                  flexGrow: s.valor,
-                  flexBasis: 0,
-                  // pilha: segmentos de cor lisa e encostados; barra de um segmento só leva o gradiente
-                  background:
-                    celula.segmentos.filter((x) => x.valor > 0).length > 1
-                      ? s.cor
-                      : gradienteBarra(s.cor),
-                }}
-              />
-            ))}
+            .map((s) => {
+              const cabe = maximo > 0 && s.valor / (maximo * 1.2) >= 0.05
+              return (
+                <div
+                  key={s.id}
+                  title={`${s.rotulo}: ${s.valor}`}
+                  className={cn(
+                    "num flex items-center justify-center text-base font-semibold",
+                    s.claro ? "text-foreground" : "text-white"
+                  )}
+                  style={{
+                    flexGrow: s.valor,
+                    flexBasis: 0,
+                    // pilha: segmentos de cor lisa; barra de um segmento só leva o gradiente
+                    background:
+                      celula.segmentos.filter((x) => x.valor > 0).length > 1
+                        ? s.cor
+                        : gradienteBarra(s.cor),
+                  }}
+                >
+                  {cabe && <span aria-hidden>{s.valor}</span>}
+                </div>
+              )
+            })}
         </div>
       ) : null}
       <span className="num shrink-0 text-base font-semibold text-foreground">

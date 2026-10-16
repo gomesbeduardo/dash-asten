@@ -29,7 +29,7 @@ const linhas = [
 ]
 
 describe("BarrasRefinadas", () => {
-  it("o mês comparado aparece como contorno tracejado atrás da barra, com o valor dele ao lado do atual", () => {
+  it("o mês comparado aparece como um traço vertical sobre a barra, com o valor dele ao lado do atual", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -38,8 +38,8 @@ describe("BarrasRefinadas", () => {
         animar={false}
       />
     )
-    // um contorno por barra com base maior que zero (Beta finalizados tem base 0: sem contorno)
-    expect(container.querySelectorAll("[data-contorno]")).toHaveLength(3)
+    // um traço por barra com mês comparado (inclusive o 0 de Beta: o traço fica na base)
+    expect(container.querySelectorAll("[data-marca]")).toHaveLength(3)
     expect(screen.getByText("mai 15")).toBeInTheDocument()
     expect(screen.getByText("mai 22")).toBeInTheDocument()
     expect(screen.getByText("mai 0")).toBeInTheDocument()
@@ -48,7 +48,7 @@ describe("BarrasRefinadas", () => {
     expect(container.querySelectorAll("[data-barra]")).toHaveLength(4)
   })
 
-  it("sem comparação só há as barras atuais, sem contorno nem rótulo do outro mês", () => {
+  it("sem comparação só há as barras atuais, sem traço nem rótulo do outro mês", () => {
     const sem = linhas.map((l) => ({
       ...l,
       valores: l.valores.map((v) => ({ valor: v.valor })),
@@ -56,7 +56,7 @@ describe("BarrasRefinadas", () => {
     const { container } = render(
       <BarrasRefinadas linhas={sem} series={series} animar={false} />
     )
-    expect(container.querySelectorAll("[data-contorno]")).toHaveLength(0)
+    expect(container.querySelectorAll("[data-marca]")).toHaveLength(0)
     expect(screen.queryByText(/^mai/)).toBeNull()
     expect(container.querySelectorAll("[data-barra]")).toHaveLength(4)
     expect(
@@ -79,7 +79,7 @@ describe("BarrasRefinadas", () => {
     )
   })
 
-  it("a base (lado do eixo) é reta e só a ponta é arredondada, na barra e no contorno", () => {
+  it("a base (lado do eixo) é reta e só a ponta tem raio de 4 px", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -88,9 +88,26 @@ describe("BarrasRefinadas", () => {
         animar={false}
       />
     )
-    for (const el of container.querySelectorAll("[data-barra], [data-contorno]")) {
-      expect(el.className).toMatch(/rounded-r-full/)
-      expect(el.className).not.toMatch(/(^|\s)rounded-full/)
+    for (const el of container.querySelectorAll("[data-barra]")) {
+      expect(el.className).toMatch(/rounded-r-\[4px\]/)
+      expect(el.className).not.toMatch(/(^|\s)rounded-(full|l-)/)
     }
+  })
+
+  it("o traço fica no valor do mês comparado, na mesma escala da barra", () => {
+    const { container } = render(
+      <BarrasRefinadas
+        linhas={linhas}
+        series={series}
+        rotuloBase="mai/26"
+        animar={false}
+      />
+    )
+    // eixo até 30: a barra de 12 ocupa 40% e o traço do 15 comparado fica em 50%
+    const barra = container.querySelector("[data-barra]") as HTMLElement
+    const marca = container.querySelector("[data-marca]") as HTMLElement
+    expect(barra.style.width).toBe("40%")
+    expect(marca.style.left).toBe("50%")
+    expect(marca.getAttribute("aria-hidden")).toBe("true")
   })
 })

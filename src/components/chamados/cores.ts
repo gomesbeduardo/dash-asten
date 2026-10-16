@@ -22,3 +22,12 @@ export function corDaSituacao(rotulo: string): string {
 export function coresDasSituacoes(rotulos: string[]): Map<string, string> {
   return new Map(rotulos.map((r) => [r, corDaSituacao(r)]))
 }
+
+/** Faixa de atraso: uma cor, do claro (1 mês) ao escuro (7+); "No ciclo" é contexto. */
+export function corDaFaixa(rotulo: string): string {
+  if (rotulo === "1") return "var(--atraso-1)"
+  if (rotulo === "2–3") return "var(--atraso-2)"
+  if (rotulo === "4–6") return "var(--atraso-3)"
+  if (rotulo === "7+") return "var(--atraso-4)"
+  return "var(--contexto)"
+}
