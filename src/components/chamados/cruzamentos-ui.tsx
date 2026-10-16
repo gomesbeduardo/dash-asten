@@ -32,8 +32,6 @@ export type DadosCruzamento = {
   entradaBase: EntradaCompetencia | null
   cores: Map<string, string>
   className?: string
-  /** As barras crescem da esquerda (primeira visita ou troca do “Comparar com”). */
-  animar?: boolean
 }
 
 /** Quando o mês escolhido não dá o cruzamento: a nota para o cartão ou nada (sem base). */
@@ -148,7 +146,6 @@ export function ClienteSituacao(d: DadosCruzamento) {
           }))}
         />
         <BarrasHtml
-          animar={d.animar}
           grupos={grupos}
           colunas={[{ maximo }]}
           descricao={`Cliente × Situação: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} ${l.celulas[0].texto}`).join(", ")}`).join("; ")}`}
@@ -240,7 +237,6 @@ export function OperadorAtraso(d: DadosCruzamento) {
           }))}
         />
         <BarrasHtml
-          animar={d.animar}
           grupos={grupos}
           colunas={[{ maximo }]}
           descricao={`Operador × Atraso: ${grupos.map((g) => `${g.rotulo} ${g.linhas.map((l) => `${l.mes} ${l.celulas[0].texto}`).join(", ")}`).join("; ")}`}
@@ -334,7 +330,6 @@ export function AreaSla(d: DadosCruzamento) {
       className={d.className}
     >
       <BarrasHtml
-        animar={d.animar}
         grupos={grupos}
         colunas={[
           { titulo: "% no SLA (finalizados no mês)", maximo: 100 },
@@ -413,7 +408,6 @@ export function ClienteTempo(d: DadosCruzamento) {
       className={d.className}
     >
       <BarrasHtml
-        animar={d.animar}
         grupos={grupos}
         colunas={[
           { titulo: "Resolução", maximo: max("tempoMedio") },

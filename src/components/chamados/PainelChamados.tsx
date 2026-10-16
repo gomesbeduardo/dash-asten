@@ -1,4 +1,3 @@
-import { MontarDepois } from "@/components/app/motion/MontarDepois"
 import { useEntrada } from "@/components/app/motion/useEntrada"
 import { useMemo, useState } from "react"
 import { motion, useReducedMotion } from "motion/react"
@@ -89,8 +88,6 @@ export function PainelChamados({
   )
   const [escolhaDe, setEscolha] = useState({ carga: carga.id, valor: ANTERIOR })
   const escolha = escolhaDe.carga === carga.id ? escolhaDe.valor : ANTERIOR
-  // trocou o “Comparar com”: o bloco do mês reanima (key + entrada própria), mesmo na revisita
-  const [trocou, setTrocou] = useState(false)
   const comparado = usePainelComparado({
     carga,
     historico,
@@ -141,11 +138,6 @@ export function PainelChamados({
     )
 
   const play = entradaFixa && !reduce
-  const playMes = (entradaFixa || trocou) && !reduce
-  const bloco =
-    trocou && !reduce
-      ? { variants: entradaRapida, initial: "hidden", animate: "show" }
-      : {}
   const { metricas, entradaAtual, base, entradaBase, opcoes, corrigidoPor } =
     comparado
   // o aviso de filtro sem coluna já aparece junto dos chips
@@ -211,7 +203,6 @@ export function PainelChamados({
     base,
     entradaBase,
     cores,
-    animar: playMes,
   }
   const graficoRanking = (r: (typeof rankings)[number]) => {
     const d = dist(r.id)
@@ -225,7 +216,7 @@ export function PainelChamados({
         competencia={carga.competencia}
         sub={r.sub}
         max={r.max}
-        animar={playMes}
+        animar={play}
         corrigidoPor={corrigidoPor}
       />
     )
@@ -236,7 +227,7 @@ export function PainelChamados({
       faixas={metricas.atrasoFaixas}
       base={base}
       competencia={carga.competencia}
-      animar={playMes}
+      animar={play}
       tabelaVazia={semDados}
     />
   )
@@ -259,10 +250,9 @@ export function PainelChamados({
               Comparar com
               <select
                 value={escolha}
-                onChange={(e) => {
+                onChange={(e) =>
                   setEscolha({ carga: carga.id, valor: e.target.value })
-                  setTrocou(true)
-                }}
+                }
                 className="h-11 rounded-lg border border-input bg-card px-3 text-base font-normal text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 {opcoes.map((o) => (
@@ -350,11 +340,7 @@ export function PainelChamados({
             texto={`${mes} ao lado de ${comparado.rotuloBase ?? "outro mês (escolha em “Comparar com”)"}`}
           />
           {cliente && (
-            <motion.div
-              key={`cliente:${escolha}`}
-              {...bloco}
-              className={linha(3)}
-            >
+            <div className={linha(3)}>
               <GraficoMes
                 dist={cliente}
                 base={base}
@@ -362,55 +348,34 @@ export function PainelChamados({
                 competencia={carga.competencia}
                 sub="por cliente"
                 max={8}
-                animar={playMes}
+                animar={play}
                 corrigidoPor={corrigidoPor}
                 className="xl:col-span-2"
               />
               {atraso}
-            </motion.div>
+            </div>
           )}
           {cartoesLinha2 > 0 && (
-            <motion.div
-              key={`rankings:${escolha}`}
-              {...bloco}
-              className={linha(cartoesLinha2)}
-            >
+            <div className={linha(cartoesLinha2)}>
               {!cliente && atraso}
               {rankingsAqui.map(graficoRanking)}
-            </motion.div>
+            </div>
           )}
-          <MontarDepois
-            reservado={
-              <Carregando
-                forma="cruzamentos"
-                texto="Carregando os cruzamentos…"
-              />
-            }
-          >
-            <motion.div key={escolha} {...bloco} className={linha(4)}>
-              <ClienteSituacao {...cruz} />
-              <OperadorAtraso {...cruz} />
-              <AreaSla {...cruz} />
-              <ClienteTempo {...cruz} />
-            </motion.div>
-          </MontarDepois>
+          <div className={linha(4)}>
+            <ClienteSituacao {...cruz} />
+            <OperadorAtraso {...cruz} />
+            <AreaSla {...cruz} />
+            <ClienteTempo {...cruz} />
+          </div>
         </section>
 
         {/* 3º bloco: a Evolução, com os mesmos filtros do Painel */}
-        <MontarDepois
-          aoVisivel
-          limite={3000}
-          reservado={
-            <Carregando forma="tempo" texto="Carregando a evolução…" />
-          }
-        >
-          <BlocoTempo
-            carga={carga}
-            historico={historico}
-            obterCarga={obterCarga}
-            entrada={entrada}
-          />
-        </MontarDepois>
+        <BlocoTempo
+          carga={carga}
+          historico={historico}
+          obterCarga={obterCarga}
+          entrada={entrada}
+        />
 
         {avisosRodape.length > 0 && (
           <footer
