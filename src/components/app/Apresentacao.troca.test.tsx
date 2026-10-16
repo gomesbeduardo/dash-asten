@@ -4,14 +4,7 @@ import type { Carga } from "@/cargas"
 import { Apresentacao, type ApresentacaoProps } from "./Apresentacao"
 import { esperaTrocaAba } from "./motion/tokens"
 
-const mocks = vi.hoisted(() => ({
-  reduzido: false,
-  montadas: [] as string[],
-  // Uma entrada por instância criada (montagem de verdade, não reexecução de efeito).
-  instancias: [] as string[],
-  // Efeito rodou ("+nome") e foi limpo ("-nome"): o Activity escondido limpa.
-  efeitos: [] as string[],
-}))
+const mocks = vi.hoisted(() => ({ reduzido: false, montadas: [] as string[] }))
 
 vi.mock("motion/react", async (orig) => ({
   ...(await orig<typeof import("motion/react")>()),
@@ -20,18 +13,9 @@ vi.mock("motion/react", async (orig) => ({
 
 vi.mock("@/panels/tipos", async () => {
   const React = await import("react")
-  const visao = (nome: string) => (p: { entrada: boolean }) => {
-    const criada = React.useRef(false)
-    if (!criada.current) {
-      criada.current = true
-      mocks.instancias.push(`${nome}:${p.entrada}`)
-    }
+  const visao = (nome: string) => () => {
     React.useEffect(() => {
       mocks.montadas.push(nome)
-      mocks.efeitos.push(`+${nome}`)
-      return () => {
-        mocks.efeitos.push(`-${nome}`)
-      }
     }, [])
     return <div data-testid={`visao-${nome}`} />
   }
@@ -89,8 +73,6 @@ const abrir = async () => {
   await avancar(esperaTrocaAba)
   expect(screen.getByTestId("visao-painel")).toBeInTheDocument()
   mocks.montadas.length = 0
-  mocks.instancias.length = 0
-  mocks.efeitos.length = 0
 }
 
 beforeEach(() => {
@@ -109,8 +91,6 @@ beforeEach(() => {
   localStorage.clear()
   mocks.reduzido = false
   mocks.montadas.length = 0
-  mocks.instancias.length = 0
-  mocks.efeitos.length = 0
 })
 
 afterEach(() => {
@@ -129,8 +109,7 @@ describe("Apresentacao: troca de aba em duas fases", () => {
     // Assentou: o teto de espera passou (ou a TopBar chamou onAssentou).
     await avancar(esperaTrocaAba)
     expect(screen.getByTestId("visao-comparar")).toBeInTheDocument()
-    // Escondida (Activity), não desmontada.
-    expect(screen.getByTestId("visao-painel")).not.toBeVisible()
+    expect(screen.queryByTestId("visao-painel")).not.toBeInTheDocument()
   })
 
   it("o conteúdo antigo fica com aria-busy enquanto a troca está pendente", async () => {
@@ -155,8 +134,7 @@ describe("Apresentacao: troca de aba em duas fases", () => {
     // Sem avançar o relógio além de um flush: não há espera de troca.
     await avancar(0)
     expect(screen.getByTestId("visao-comparar")).toBeInTheDocument()
-    // Escondida (Activity), não desmontada.
-    expect(screen.getByTestId("visao-painel")).not.toBeVisible()
+    expect(screen.queryByTestId("visao-painel")).not.toBeInTheDocument()
   })
 
   it("cliques rápidos Painel, Comparar, Leituras montam só Leituras", async () => {
@@ -171,65 +149,5 @@ describe("Apresentacao: troca de aba em duas fases", () => {
     await avancar(esperaTrocaAba)
     expect(screen.getByTestId("visao-leituras")).toBeInTheDocument()
     expect(mocks.montadas).toEqual(["leituras"])
-  })
-
-  it("revisitar uma aba não remonta a visão (volta a aparecer com o estado)", async () => {
-    await abrir()
-    clicar("Comparar")
-    await avancar(esperaTrocaAba)
-    expect(mocks.instancias).toEqual(["comparar:true"])
-
-    // Revisita das duas: nenhuma instância nova; a escondida segue no DOM.
-    clicar("Painel")
-    await avancar(esperaTrocaAba)
-    clicar("Comparar")
-    await avancar(esperaTrocaAba)
-    expect(mocks.instancias).toEqual(["comparar:true"])
-    expect(screen.getByTestId("visao-comparar")).toBeVisible()
-    expect(screen.getByTestId("visao-painel")).not.toBeVisible()
-  })
-
-  it("a primeira visita anima (entrada) e a revisita não", async () => {
-    render(<Apresentacao {...props} />)
-    await avancar(esperaTrocaAba)
-    clicar("Leituras")
-    await avancar(esperaTrocaAba)
-    clicar("Painel")
-    await avancar(esperaTrocaAba)
-    clicar("Leituras")
-    await avancar(esperaTrocaAba)
-    expect(mocks.instancias).toEqual(["painel:true", "leituras:true"])
-  })
-
-  it("a aba escondida tem os efeitos desmontados; ao voltar, ligam de novo", async () => {
-    await abrir()
-    clicar("Comparar")
-    await avancar(esperaTrocaAba)
-    expect(mocks.efeitos).toEqual(["-painel", "+comparar"])
-    // Escondida, não desmontada: segue no DOM, só sem efeitos.
-    expect(screen.getByTestId("visao-painel")).not.toBeVisible()
-
-    clicar("Painel")
-    await avancar(esperaTrocaAba)
-    expect(mocks.efeitos).toEqual([
-      "-painel",
-      "+comparar",
-      "-comparar",
-      "+painel",
-    ])
-  })
-
-  it("trocar de carga descarta as visões antigas", async () => {
-    const { rerender } = render(<Apresentacao {...props} />)
-    await avancar(esperaTrocaAba)
-    clicar("Comparar")
-    await avancar(esperaTrocaAba)
-    expect(screen.getAllByTestId(/^visao-/)).toHaveLength(2)
-
-    const outra = { ...carga, id: "2" } as unknown as Carga
-    rerender(<Apresentacao {...props} carga={outra} metas={[outra]} />)
-    await avancar(0)
-    // Só a visão ativa da carga nova: a do Painel da carga antiga foi descartada.
-    expect(screen.getAllByTestId(/^visao-/)).toHaveLength(1)
   })
 })
