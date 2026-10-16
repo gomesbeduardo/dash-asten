@@ -146,14 +146,14 @@ const SEV: Record<
   atencao: {
     Icon: TriangleAlertIcon,
     rotulo: "Atenção",
-    texto: "text-[#9a4f00]",
-    borda: "border-l-[#b45f06]",
+    texto: "text-atencao",
+    borda: "border-l-atencao-borda",
   },
   destaque: {
     Icon: CircleCheckIcon,
     rotulo: "Destaque",
-    texto: "text-[#00694b]",
-    borda: "border-l-[#00805d]",
+    texto: "text-positive",
+    borda: "border-l-positive-borda",
   },
 }
 

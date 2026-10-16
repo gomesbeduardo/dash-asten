@@ -39,7 +39,7 @@ export function Selo({ tipo }: { tipo: SeloTipo }) {
         <button
           type="button"
           data-selo={tipo}
-          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#9a4f00]/60 bg-brand-soft px-2.5 py-0.5 text-sm font-medium text-[#7a3d00] focus-visible:outline-2 focus-visible:outline-ring"
+          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-atencao/60 bg-brand-soft px-2.5 py-0.5 text-sm font-medium text-atencao-ink focus-visible:outline-2 focus-visible:outline-ring"
         >
           <Icon className="size-4 shrink-0" aria-hidden />
           {texto}
@@ -53,7 +53,7 @@ export function Selo({ tipo }: { tipo: SeloTipo }) {
 }
 
 const CLASSE_SIMBOLO =
-  "inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-[#9a4f00]/60 bg-brand-soft align-middle text-[#7a3d00] focus-visible:outline-2 focus-visible:outline-ring"
+  "inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-atencao/60 bg-brand-soft align-middle text-atencao-ink focus-visible:outline-2 focus-visible:outline-ring"
 
 /**
  * Só o símbolo do selo, para lugares apertados: mesmo ícone e tom do selo com texto, nome acessível
@@ -123,7 +123,7 @@ export function LegendaSimbolos({
   return (
     <section
       aria-label="Legenda dos símbolos"
-      className="rounded-md border border-dashed border-[#9a4f00]/40 bg-card px-4 py-2"
+      className="rounded-md border border-dashed border-atencao/40 bg-card px-4 py-2"
     >
       <ul className="flex flex-wrap items-start gap-x-6 gap-y-1 text-base text-muted-foreground">
         {unicos.map((t) => {
@@ -180,7 +180,7 @@ export function MarcaCorrigido({
     <span
       data-selo="corrigido"
       className={cn(
-        "inline-flex w-fit max-w-full items-center gap-1 rounded-full border border-dashed border-[#9a4f00]/50 bg-brand-soft px-2 py-0.5 font-sans text-sm font-medium text-[#7a3d00]",
+        "inline-flex w-fit max-w-full items-center gap-1 rounded-full border border-dashed border-atencao/50 bg-brand-soft px-2 py-0.5 font-sans text-sm font-medium text-atencao-ink",
         className
       )}
     >
