@@ -29,7 +29,7 @@ const linhas = [
 ]
 
 describe("BarrasRefinadas", () => {
-  it("o mês comparado aparece como um traço vertical sobre a barra, com o valor dele ao lado do atual", () => {
+  it("o mês comparado aparece como uma barra listrada atrás da barra sólida, com o valor dele ao lado do atual", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -38,8 +38,9 @@ describe("BarrasRefinadas", () => {
         animar={false}
       />
     )
-    // um traço por barra com mês comparado (inclusive o 0 de Beta: o traço fica na base)
-    expect(container.querySelectorAll("[data-marca]")).toHaveLength(3)
+    // a camada listrada fica montada em toda barra quando há comparação (com largura 0 se a base for 0)
+    expect(container.querySelectorAll("[data-fantasma]")).toHaveLength(4)
+    expect(container.querySelectorAll("[data-marca]")).toHaveLength(0)
     expect(screen.getByText("mai 15")).toBeInTheDocument()
     expect(screen.getByText("mai 22")).toBeInTheDocument()
     expect(screen.getByText("mai 0")).toBeInTheDocument()
@@ -48,7 +49,29 @@ describe("BarrasRefinadas", () => {
     expect(container.querySelectorAll("[data-barra]")).toHaveLength(4)
   })
 
-  it("sem comparação só há as barras atuais, sem traço nem rótulo do outro mês", () => {
+  it("com comparação no gráfico toda barra sólida tem 55% da espessura, mesmo com o comparado em 0, e a camada listrada vai a largura 0", () => {
+    const { container } = render(
+      <BarrasRefinadas
+        linhas={linhas}
+        series={series}
+        rotuloBase="mai/26"
+        animar={false}
+      />
+    )
+    const barras = [...container.querySelectorAll("[data-barra]")].filter(
+      (b) => !b.classList.contains("hidden")
+    ) as HTMLElement[]
+    expect(barras).toHaveLength(4)
+    for (const b of barras) expect(b.style.height).toMatch(/0\.6875rem/)
+    // Beta, finalizados: valor 4, comparado 0
+    const fantasmas = [
+      ...container.querySelectorAll("[data-fantasma]"),
+    ] as HTMLElement[]
+    expect(fantasmas[2].style.width).toBe("0%")
+    expect(fantasmas[2].style.minWidth).toMatch(/^0(px)?$/)
+  })
+
+  it("sem comparação a barra sólida tem a espessura cheia", () => {
     const sem = linhas.map((l) => ({
       ...l,
       valores: l.valores.map((v) => ({ valor: v.valor })),
@@ -56,7 +79,20 @@ describe("BarrasRefinadas", () => {
     const { container } = render(
       <BarrasRefinadas linhas={sem} series={series} animar={false} />
     )
-    expect(container.querySelectorAll("[data-marca]")).toHaveLength(0)
+    for (const b of container.querySelectorAll("[data-barra]")) {
+      expect((b as HTMLElement).style.height).toBe("1.25rem")
+    }
+  })
+
+  it("sem comparação só há as barras atuais, sem camada listrada nem rótulo do outro mês", () => {
+    const sem = linhas.map((l) => ({
+      ...l,
+      valores: l.valores.map((v) => ({ valor: v.valor })),
+    }))
+    const { container } = render(
+      <BarrasRefinadas linhas={sem} series={series} animar={false} />
+    )
+    expect(container.querySelectorAll("[data-fantasma]")).toHaveLength(0)
     expect(screen.queryByText(/^mai/)).toBeNull()
     expect(container.querySelectorAll("[data-barra]")).toHaveLength(4)
     expect(
@@ -94,7 +130,7 @@ describe("BarrasRefinadas", () => {
     }
   })
 
-  it("o traço fica no valor do mês comparado, na mesma escala da barra", () => {
+  it("a camada listrada tem a espessura cheia e a largura do mês comparado; a sólida fica na frente, com 55% da espessura e centralizada", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -103,12 +139,35 @@ describe("BarrasRefinadas", () => {
         animar={false}
       />
     )
-    // eixo até 30: a barra de 12 ocupa 40% e o traço do 15 comparado fica em 50%
+    // eixo até 30: a barra de 12 ocupa 40% e o mês comparado (15) ocupa 50%
     const barra = container.querySelector("[data-barra]") as HTMLElement
-    const marca = container.querySelector("[data-marca]") as HTMLElement
+    const lista = container.querySelector("[data-fantasma]") as HTMLElement
     expect(barra.style.width).toBe("40%")
-    expect(marca.style.left).toBe("50%")
-    expect(marca.getAttribute("aria-hidden")).toBe("true")
+    expect(lista.style.width).toBe("50%")
+    expect(lista.getAttribute("aria-hidden")).toBe("true")
+    expect(lista.style.background).toMatch(/repeating-linear-gradient\(45deg/)
+    expect(lista.style.height).toBe("1.25rem")
+    // 55% de 1,25 rem = 0,6875 rem; folga de 22,5% (0,28125 rem) em cima: centralizada
+    expect(barra.style.height).toMatch(/0\.6875rem/)
+    expect(barra.style.top).toMatch(/0\.28125rem/)
+    // listrada atrás (vem antes no DOM), as duas com base reta e ponta de 4 px
+    expect(
+      lista.compareDocumentPosition(barra) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(lista.className).toMatch(/rounded-r-\[4px\]/)
+  })
+
+  it("sem comparação a barra sólida tem a espessura cheia", () => {
+    const sem = linhas.map((l) => ({
+      ...l,
+      valores: l.valores.map((v) => ({ valor: v.valor })),
+    }))
+    const { container } = render(
+      <BarrasRefinadas linhas={sem} series={series} animar={false} />
+    )
+    const barra = container.querySelector("[data-barra]") as HTMLElement
+    expect(barra.style.height).toBe("1.25rem")
+    expect(barra.style.top).toMatch(/^(0|0px)?$/)
   })
 
   it("o rótulo do eixo com unidade fica numa linha só ('5 d' não quebra)", () => {
@@ -124,7 +183,7 @@ describe("BarrasRefinadas", () => {
     expect(tick.className).toMatch(/whitespace-nowrap/)
   })
 
-  it("a largura e a posição do traço e do rótulo transitam do valor antigo ao novo e voltam secas com movimento reduzido", () => {
+  it("a largura das duas camadas e a posição do rótulo transitam do valor antigo ao novo e voltam secas com movimento reduzido", () => {
     const { container } = render(
       <BarrasRefinadas
         linhas={linhas}
@@ -135,7 +194,7 @@ describe("BarrasRefinadas", () => {
     )
     for (const el of [
       container.querySelector("[data-barra][style*='width']"),
-      container.querySelector("[data-marca]"),
+      container.querySelector("[data-fantasma]"),
     ]) {
       expect(el!.className).toMatch(/transicao-valor/)
     }

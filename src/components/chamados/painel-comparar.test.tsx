@@ -191,7 +191,7 @@ describe("Painel: comparar com (D65)", () => {
     expect(cruz).toHaveTextContent("sem posição de jun/26")
   })
 
-  it("(g) trocar o Comparar com não remonta o bloco do mês: os nós ficam e só o traço do mês comparado muda de posição", async () => {
+  it("(g) trocar o Comparar com não remonta o bloco do mês: os nós ficam e só a camada listrada do mês comparado muda de largura", async () => {
     const user = userEvent.setup()
     await abrir("2026-10", 1)
     await screen.findByRole("combobox", { name: "Comparar com" })
@@ -209,20 +209,20 @@ describe("Painel: comparar com (D65)", () => {
     }
     const kpiAntes = await kpi("Entradas no mês")
     const cardAntes = await screen.findByRole("region", { name: "Por cliente" })
-    const marcas = (c: HTMLElement) =>
-      [...c.querySelectorAll<HTMLElement>("[data-marca]")]
+    const listras = (c: HTMLElement) =>
+      [...c.querySelectorAll<HTMLElement>("[data-fantasma]")]
     const barraAntes = cardAntes.querySelector("[data-barra]")
-    const traçosAntes = marcas(cardAntes)
-    const lefts = (m: HTMLElement[]) => m.map((e) => e.style.left).join("|")
-    const posAntes = lefts(traçosAntes)
-    expect(traçosAntes.length).toBeGreaterThan(0)
+    const listrasAntes = listras(cardAntes)
+    const larguras = (m: HTMLElement[]) => m.map((e) => e.style.width).join("|")
+    const posAntes = larguras(listrasAntes)
+    expect(listrasAntes.length).toBeGreaterThan(0)
     await escolher(user, "abr/26")
     const cardDepois = await screen.findByRole("region", { name: "Por cliente" })
     expect(cardDepois).toBe(cardAntes)
     expect(cardDepois.querySelector("[data-barra]")).toBe(barraAntes)
     expect(await kpi("Entradas no mês")).toBe(kpiAntes)
-    expect(marcas(cardDepois)[0]).toBe(traçosAntes[0])
-    expect(lefts(marcas(cardDepois))).not.toBe(posAntes)
+    expect(listras(cardDepois)[0]).toBe(listrasAntes[0])
+    expect(larguras(listras(cardDepois))).not.toBe(posAntes)
   })
 
   it("(d2) com 'versão 2' escolhida e a versão arquivada, volta ao mês anterior (texto e seletor)", async () => {
