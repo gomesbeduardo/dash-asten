@@ -215,7 +215,7 @@ export function BarrasRefinadas({
                     : "1px dashed color-mix(in srgb, var(--muted-foreground) 28%, transparent)",
               }}
             >
-              <span className="num absolute top-full mt-1.5 -translate-x-1/2 text-base text-muted-foreground">
+              <span className="num absolute top-full mt-1.5 -translate-x-1/2 text-base whitespace-nowrap text-muted-foreground">
                 {formatar(m)}
               </span>
             </span>

@@ -110,4 +110,17 @@ describe("BarrasRefinadas", () => {
     expect(marca.style.left).toBe("50%")
     expect(marca.getAttribute("aria-hidden")).toBe("true")
   })
+
+  it("o rótulo do eixo com unidade fica numa linha só ('5 d' não quebra)", () => {
+    render(
+      <BarrasRefinadas
+        linhas={[{ rotulo: "A", valores: [{ valor: 13 }, { valor: 2 }] }]}
+        series={series}
+        animar={false}
+        formatar={(v) => `${v} d`}
+      />
+    )
+    const tick = screen.getByText("5 d")
+    expect(tick.className).toMatch(/whitespace-nowrap/)
+  })
 })
