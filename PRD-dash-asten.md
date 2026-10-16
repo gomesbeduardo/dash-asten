@@ -1,7 +1,7 @@
 # PRD — Painel de análise de planilhas (Asten)
 
-**Versão:** v3.1, 14/10/2026 (fim do dia). Alinha o PRD ao app construído (fases 2C/2D) e aos requisitos de origem (§0.1). A v2 está no histórico do Git.
-**Status:** MVP em produção (https://dash-asten.vercel.app), sem login por enquanto (D52): cargas por competência com histórico no banco, painel de Chamados com Leituras, Comparar (2 a 6 competências) e Evolução, envio em lote. Definições de Chamados aguardam o Líder (D31/D34/D35).
+**Versão:** v4, 16/10/2026. Alinha o PRD ao modelo de posição do mês (D63–D77, fase 2F do plano). A v3.1 está no histórico do Git.
+**Status:** produção (https://dash-asten.vercel.app) ainda na versão da apresentação de 14/10 (MVP com reconstrução pelas datas). Na `staging`, o modelo de posição do mês: Painel em página única de três faixas, Leituras e Comparar (2 a 6 competências ou versões), sem login (D52). Vai para produção depois da conferência à mão do responsável (D74). Pendências com o Líder no §8.
 **Escopo:** app web interno para conduzir as reuniões das coordenações da Asten, exibido em TV, a partir de planilhas `.xlsx` carregadas por competência.
 
 ## 0. Decisões (grilling 13/10 e revisões seguintes)
@@ -82,25 +82,26 @@
 | D73 | Seletor começa na primeira carga | 15/10, decidido pelo responsável. Os seletores de comparação (Painel e aba Comparar) listam meses só a partir da carga mais antiga; meses sem posição entre duas cargas continuam (só entradas e finalizados). Antes, o limite era a abertura mais antiga da posição mais atual, o que listava meses como set/25 "(sem posição)" e confundia. |
 | D74 | Ordem de fechamento e fora do ciclo | 15/10. A nova versão vai para produção **depois da conferência à mão do responsável na staging** (4 planilhas de teste), por PR staging→main que ele mergeia; deploy com CI verde, banco de produção vazio. Antes: responsividade conferida em 1366, 1920, 2560, 3440 e 3840 (com escala maior na 4K ultrawide se preciso) e medição com 12 posições sintéticas (abrir o Painel e trocar o "Comparar com" abaixo de 1 s). **Nada entra sem pedido explícito**: login (Better Auth), "+ adicionar gráfico" e o próximo conjunto de dados. Pendente com o Líder: a planilha modelo diz "ciclo Setembro" na aba e out/26 no Mes Ref.; até a resposta, vale o Mes Ref. (editável no envio). |
 | D75 | Redesenho do Painel por boas práticas | 15/10, depois de uma pesquisa de boas práticas de dashboards e gráficos (`notas-sessao/pesquisa-dashboard.md`, fora do repo, com o link de cada fonte) e de uma prancha de opções. Refina a D68 (página única) e a D72 (acabamento). O responsável escolheu: (1) **página em três faixas com título-pergunta** ("Como estamos?", "Onde está o problema?", "Estamos melhorando?"), sem atalho próprio (a rolagem basta); cada gráfico com título fixo e claro (o que mostra e a população) e o período no subtítulo. Títulos de conclusão calculados e o atalho entre faixas foram cortados pelo princípio da simplicidade (15/10); (2) os 12 KPIs ficam: **4 grandes com minigráfico de 6 meses** (Não finalizados, Finalizados no mês, Em atraso, % no SLA) e 8 compactos em "Fluxo" e "Prazo"; (3) **comparação com outro mês: barra do mês aberto e um traço do mês comparado** (substitui o contorno tracejado); (4) **Área × SLA como tabela com barras embutidas**, sem o número da % visível e **sem meta** (não existe meta de SLA; o código aceita uma depois); (5) empilhadas com 2 px de fundo entre segmentos, a situação de maior total na base em Cliente × Situação e o 7+ na base em Operador × Atraso, faixas de atraso numa cor só; (6) Cliente × Tempo médio em duas barras finas por cliente; (7) Ao longo do tempo em linha de 2 px com área a 10% e só o último valor escrito; (8) **paleta por significado**, com a cor da situação fixa pelo nome (Finalizado = azul dos finalizados) e vermelho só para SLA vencido. Barras com base reta e ponta arredondada. Escala de texto para leitura a 3 m na TV. Nada é removido (D34). |
-| D76 | Transições de valor e período sem remontar | 15–16/10, pedido do responsável ("as animações quebraram; ao mudar o filtro a barra deve encolher"). Ao mudar filtro, "Comparar com" ou competência, **barras, traço do mês comparado, pilhas e números vão do valor antigo ao novo** (600 ms, ease-out; seco com movimento reduzido), sem reanimar do zero e sem remontar o Painel (a chave da visão é `tipo:visao`; o genérico recomeça por planilha). A entrada do zero fica só na primeira visita de cada visão. Linhas que saem com o filtro desmontam secas (sem fade, por simplicidade). Chips de filtro sem empurrar seco; esqueletos com a altura do conteúdo. Texto visível usa "mês de referência" (não "Mes Ref."). Medido com 12 posições de 20.000 linhas: abrir o Painel 350 ms, trocar o "Comparar com" 111–125 ms, trocar a competência 133–167 ms, aplicar filtro 277 ms (`docs/bench-12-posicoes.md`). Pendentes com o responsável: barra listrada A2, paleta P3, Comparar em tabela, ordem das linhas durante a transição e a reserva do topo para o título. |
+| D76 | Transições de valor e período sem remontar | 15–16/10, pedido do responsável ("as animações quebraram; ao mudar o filtro a barra deve encolher"). Ao mudar filtro, "Comparar com" ou competência, **barras, traço do mês comparado, pilhas e números vão do valor antigo ao novo** (600 ms, ease-out; seco com movimento reduzido), sem reanimar do zero e sem remontar o Painel (a chave da visão é `tipo:visao`; o genérico recomeça por planilha). A entrada do zero fica só na primeira visita de cada visão. Linhas que saem com o filtro desmontam secas (sem fade, por simplicidade). Chips de filtro sem empurrar seco; esqueletos com a altura do conteúdo. Texto visível usa "mês de referência" (não "Mes Ref."). Medido com 12 posições de 20.000 linhas: abrir o Painel 350 ms, trocar o "Comparar com" 111–125 ms, trocar a competência 133–167 ms, aplicar filtro 277 ms (`docs/bench-12-posicoes.md`). As pendências visuais desta decisão foram resolvidas na D77. |
+| D77 | Decisões de 16/10 (barras, cores, sem tabelas) | 16/10, decidido pelo responsável numa prancha. Refina a D75 e a D76. (1) **Mês comparado nas barras:** quando o comparado é maior que o mês aberto, a diferença continua a barra sólida em listras a 45°, na mesma espessura, e entra depois que a sólida cresce; nunca fica atrás da sólida. Comparado menor ou igual não tem listra: o valor dele fica em cinza no rótulo. Substitui o traço da D75 (item 3). (2) **Paleta P3** (categórica equilibrada, com paleta própria nas linhas por operador e cliente), validada para daltonismo e contraste. (3) **Evitar tabelas:** o Comparar continua em cartões (a proposta em tabela foi recusada) e o **Área × SLA sai do Painel** até existir uma forma em gráfico aprovada (revisa a D75, item 4, e o "nenhum gráfico sai" da D72). Os KPIs % no SLA e SLA vencido continuam, e nenhum dado sai do cálculo (D34). (4) **Ao filtrar, as linhas ficam na ordem antiga enquanto as barras deslizam (600 ms) e só depois reordenam**; com movimento reduzido, na hora. (5) **Sem faixa fixa no topo** para o título (contrariaria a barra sobreposta da D43). (6) Confirmados: o "Comparar com" desliza do valor antigo ao novo; linhas que saem com o filtro somem secas; "Comparar período" e "Ver dados" continuam abertos ao trocar a competência. |
 | D16 | Versionamento | Git com repositório privado `gomesbeduardo/dash-asten`. `.gitignore` bloqueia `*.xlsx`/`*.csv` fora de `fixtures/`. |
 
 ## 0.1 Requisitos de origem
 
-Pedido do responsável, como chegou, e onde cada item está hoje (conferido no código em 14/10).
+Pedido do responsável, como chegou, e onde cada item está hoje (conferido no código em 14/10; revisto em 16/10 para o modelo de posição do mês).
 
 | # | Requisito | Situação | Onde |
 |---|---|---|---|
-| R1 | Upload de um `.xlsx` e, a partir dele, vários gráficos | Atende | Leitura no navegador (SheetJS); Chamados tem Painel, Leituras, Comparar e Evolução; tipo desconhecido usa o modo automático (D25) |
+| R1 | Upload de um `.xlsx` e, a partir dele, vários gráficos | Atende | Leitura no navegador (SheetJS); Chamados tem Painel (com "Ao longo do tempo", D68), Leituras e Comparar; tipo desconhecido usa o modo automático (D25) |
 | R2 | Sem autenticação, base de dados, nem nada | **Revisto** | Banco (D37) e login (D38) entraram por causa do R10 e do uso em várias máquinas. Ver D45 |
-| R3 | Muito apelo visual e facilitadores para a análise | Atende | Leituras do mês com modal (D35/D40), deltas vs mês anterior, rótulos diretos, selos de dado derivado (D41), números animados, botão "Filtrar por isto" |
-| R4 | Curto prazo (1–2 meses) + backlog | Atende | Mês da competência com delta vs anterior; backlog, atraso, envelhecimento; Evolução limitada às **6 últimas competências** |
-| R5 | Reuniões semanais (direção/coordenações) | Atende | Modo apresentação para TV, atalhos (←/→, 1–9, F, H, P, L, C, E, Esc), barra que some (D43) |
-| R6 | Habilitar/desabilitar séries | Atende | Legenda clicável na Evolução e no Comparar (gráficos com 2+ séries) e no modo automático; totais intactos |
-| R7 | Filtrar conjuntos por critérios | Atende | 7 dimensões em Chamados (D39), recalculam KPIs, gráficos, Leituras, Comparar e Evolução; chips e "Limpar filtros" |
+| R3 | Muito apelo visual e facilitadores para a análise | Atende | Leituras do mês com modal (D35/D40), Δ contra o período escolhido no "Comparar com" (D65), rótulos diretos, selo "corrigido" (D41/D65), barras e números que transitam (D76), botão "Filtrar por isto" |
+| R4 | Curto prazo (1–2 meses) + backlog | Atende | Posição do mês com Δ contra o período escolhido; não finalizados, atraso por ciclo e SLA vencido no lugar de "backlog" (D64); "Ao longo do tempo" com os **6 últimos meses** |
+| R5 | Reuniões semanais (direção/coordenações) | Atende | Modo apresentação para TV, atalhos (←/→, 1–9, F, H, T, P, L, C, Esc), barra que some (D43) |
+| R6 | Habilitar/desabilitar séries | Atende | Legenda clicável nos gráficos com 2+ séries (Painel e Comparar) e no modo automático; totais intactos |
+| R7 | Filtrar conjuntos por critérios | Atende | 7 dimensões em Chamados (D39), recalculam KPIs, gráficos, Leituras e Comparar; chips e "Limpar filtros" |
 | R8 | Biblioteca gráfica e leitura do xlsx | Atende | Recharts 3 (via shadcn charts); SheetJS 0.20.3 do CDN oficial, no navegador; o servidor recebe os dados já normalizados |
-| R9 | Carga por competência, escolhida no upload e amarrada aos dados | Atende | Competência sugerida (aba → arquivo → datas → mês anterior) e confirmada pela pessoa (D28) |
-| R10 | Guardar o passado para revisitar e comparar | Atende | Histórico no banco com versões agrupadas, seletor de competência/versão, Comparar de 2 a 6 competências, Evolução (D29/D32/D37/D53/D54) |
+| R9 | Carga por competência, escolhida no upload e amarrada aos dados | Atende | Competência sugerida pela coluna Mes Ref. (D63; reserva: aba → arquivo → títulos → datas) e confirmada pela pessoa (D28) |
+| R10 | Guardar o passado para revisitar e comparar | Atende | Histórico no banco com versões agrupadas, seletor de competência/versão, Comparar de 2 a 6 competências ou versões, "Ao longo do tempo" no Painel (D29/D37/D53/D54/D66/D68) |
 | R11 | Outros conjuntos no futuro, cada um com seu dash | Atende (estrutura) | Registro de tipos no código (D30); hoje só Chamados/OS; sem tipo reconhecido → "Outro" com modo automático |
 
 Referência visual citada: https://www.youtube.com/watch?v=en0GuyhieQk
@@ -121,11 +122,11 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 
 - Carregar um `.xlsx` informando tipo e competência; a carga fica guardada com versão (D28/D37).
 - Abrir na TV direto na competência mais recente, com o painel do tipo.
-- Painel de Chamados estratégico: KPIs com variação vs mês anterior, distribuições, envelhecimento, leituras do mês (D31/D35/D36).
-- Comparar duas competências lado a lado e ver a evolução das últimas competências (D32).
+- Painel de Chamados estratégico: posição do mês com KPIs, Δ contra o período escolhido, gráficos por cliente, área e operador, atraso por ciclo e leituras do mês (D35/D36/D63–D65/D75).
+- Comparar de 2 a 6 competências ou versões lado a lado e ver os últimos 6 meses no "Ao longo do tempo" (D65/D66/D68).
 - Filtros por dimensão que recalculam tudo, com chips e "Limpar filtros" (D39).
-- Ocultar e mostrar séries pela legenda na Evolução, no Comparar e no modo automático (R6).
-- Todo dado derivado sinalizado (D41) e números conferidos de forma independente (D42).
+- Ocultar e mostrar séries pela legenda no Painel, no Comparar e no modo automático (R6).
+- Todo dado corrigido por posição posterior sinalizado (D41/D65) e números conferidos de forma independente (D42).
 - Visual legível em TV, acessível e com a marca Asten como acento.
 
 ## 4. Não objetivos (por ora)
@@ -147,7 +148,7 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 | Facilitadora | Carregar a planilha da competência em minutos e conduzir filtros e navegação ao vivo. |
 | Líder | Aprova escopo, métricas e layout; dono das definições de negócio pendentes (§8). |
 
-**Cenário:** notebook com mouse e teclado ligado a uma TV (D20). A facilitadora abre o link, entra com o login do time (lembrado por 14 dias) e o app abre na competência mais recente. A barra fica escondida e aparece com o mouse no topo ou com H (D43).
+**Cenário:** notebook com mouse e teclado ligado a uma TV (D20). A facilitadora abre o link (sem login no MVP, D52) e o app abre na tela de envio com a lista do que existe (D53). A barra fica escondida e aparece com o mouse no topo ou com H (D43).
 
 ## 6. Fluxos
 
@@ -157,19 +158,19 @@ Hoje a planilha é projetada direto no Excel. As comparações são montadas à 
 3. Cada carga vai para o banco com a próxima versão daquele tipo + competência; o painel abre na mais recente.
 
 ### 6.2 Conduzir a reunião
-1. Painel (P) com KPIs, deltas e gráficos; Leituras (L) com o detalhe de cada uma num modal; Comparar (C) de 2 a 6 competências, com leituras clicáveis; Evolução (E).
+1. Painel (P) em três faixas ("Como estamos?", "Onde está o problema?", "Estamos melhorando?", D75) com KPIs, Δ, gráficos e "Ao longo do tempo"; Leituras (L) com o detalhe de cada uma num modal; Comparar (C) de 2 a 6 competências ou versões, com leituras clicáveis.
 2. Filtros (F) recortam as linhas antes do cálculo; os chips mostram o recorte ativo.
 3. Seletor de competência e versão na barra; Histórico (Enviados e Geral, com busca) para abrir qualquer versão.
 
 ### 6.3 Revisitar e comparar
-Qualquer competência guardada abre de qualquer máquina. Comparar põe de 2 a 6 competências lado a lado (Δ = última − primeira); Evolução mostra as últimas 6, com pontos reconstruídos pelas datas marcados (D41/D51).
+Qualquer competência guardada abre de qualquer máquina. Comparar põe de 2 a 6 competências ou versões lado a lado (Δ = última − primeira); o "Ao longo do tempo" mostra os últimos 6 meses. Mês sem posição aparece só com entradas e finalizados; mês antigo é corrigido pelas posições mais novas, com o selo "corrigido" (D65/D71).
 
 ## 7. Requisitos funcionais
 
 - Aceitar `.xlsx`; mensagem simples se não for reconhecido (cai no modo automático, D25).
 - Ler o arquivo no navegador; enviar ao servidor só os dados normalizados (e o original, para reprocessar).
-- Competência obrigatória, sugerida e confirmada; versão atribuída no servidor (D28/D37).
-- Painel por tipo registrado no código (D30); Chamados conforme D31, D34–D36, D39–D41.
+- Competência obrigatória, sugerida pelo Mes Ref. e confirmada; versão atribuída no servidor (D28/D37/D63).
+- Painel por tipo registrado no código (D30); Chamados conforme D35, D36, D39–D41 e D63–D77.
 - Filtros por dimensão com chips e "Limpar filtros", valendo entre visões e competências do tipo (D39).
 - Ocultar e mostrar séries sem alterar dados nem totais (R6).
 - Nenhuma linha excluída: todas classificadas e presentes no cálculo (D34).
@@ -181,25 +182,25 @@ Construtor de cartões; contas individuais; exportação PNG/CSV; preferências 
 
 ## 8. Pendências com o Líder
 
-1. **Definições de Chamados** (D31): backlog, entradas, saídas, % SLA, atraso, sem SLA, aguardando aceite.
-2. **Corte da competência** (D34): KPIs reconstruídos "como estava no último dia do mês".
-3. **Limiares das leituras** (D35).
-4. **Dados na nuvem** (D1/D45): aprovado pelo responsável para o MVP de testes; o Líder confirma, e o produto definitivo reavalia.
-6. **Hospedagem definitiva** (D11): seguir na Vercel ou outro lugar.
-7. **Próximos tipos de conjunto** (R11): qual vem depois de Chamados e com que planilha.
-8. **Marca:** uso do logo e das cores como estão (D12).
-9. **Mês de referência da planilha nova** (D61): a coluna "Mes Ref." diz out/26 e a aba diz "ciclo Setembro". O app segue sugerindo pela aba (setembro); confirmar qual manda.
-10. **Recorte da exportação** (D61): o modelo de 14/10 não tem chamado aberto depois de jan/2026 (entradas do mês = 0) e a aba termina em "- RH"; confirmar se a exportação mensal virá completa ou por equipe.
-11. **Reabertos não finalizados** (D61): hoje contam como resolvidos pela Data de Solução, com aviso; confirmar com o Líder.
+As definições de Chamados da D31 e o corte da competência da D34 foram revistos na reunião de 15/10 (D63–D65: posição do mês, nada é backlog, atraso por ciclo).
+
+1. **Limiares das leituras** (D35).
+2. **Dados na nuvem** (D1/D45): aprovado pelo responsável para o MVP de testes; o Líder confirma, e o produto definitivo reavalia.
+3. **Hospedagem definitiva** (D11): seguir na Vercel ou outro lugar.
+4. **Próximos tipos de conjunto** (R11): qual vem depois de Chamados e com que planilha.
+5. **Marca:** uso do logo e das cores como estão (D12).
+6. **Mês de referência da planilha nova** (D61/D74): a aba diz "ciclo Setembro" e a coluna Mes Ref. diz out/26. Até a resposta, vale o Mes Ref. (editável no envio).
+7. **Recorte da exportação** (D61): o modelo de 14/10 não tem chamado aberto depois de jan/2026 (entradas do mês = 0) e a aba termina em "- RH"; confirmar se a exportação mensal virá completa ou por equipe.
+8. **Reabertos não finalizados** (D61): hoje contam como resolvidos pela Data de Solução, com aviso; confirmar com o Líder.
 
 ## 9. Experiência visual
 
 - **Tom:** executivo, contemporâneo e calmo. Os dados vêm antes da decoração.
 - **Estrutura:** tela quase toda de informação (D20/D21); barra superior escondida até ser chamada (D43); filtros ativos sempre visíveis como chips.
-- **Hierarquia:** KPIs no topo com delta; um gráfico principal e complementares; leituras numa visão própria (D40). Nada de "muro de gráficos" nem tabela de linhas soltas (D36).
-- **Cores:** base neutra clara; a cor da Asten só como acento; paleta de séries curta e consistente; cor nunca é o único canal (D41).
+- **Hierarquia:** página em três faixas com título-pergunta (D75): KPIs no topo com Δ, depois onde está o problema, depois a tendência; leituras numa visão própria (D40). Nada de "muro de gráficos" nem tabela de linhas soltas (D36).
+- **Cores:** base neutra clara; a cor da Asten só como acento; paleta por significado (D75) com a P3 (D77); vermelho só para SLA vencido; cor nunca é o único canal (D41).
 - **Legibilidade em TV:** tipografia grande, rótulos diretos nas barras, escala e período sempre visíveis.
-- **Movimento:** Motion com regras próprias e respeito a `prefers-reduced-motion` (D26).
+- **Movimento:** Motion com regras próprias e respeito a `prefers-reduced-motion` (D26); valores transitam do antigo ao novo sem remontar (D76) e as linhas reordenam depois da transição (D77).
 
 ## 10. Acessibilidade
 
@@ -211,7 +212,7 @@ Teclado em todo o fluxo (atalhos ignorados em campos de texto); rótulos acessí
 - **Privacidade:** nenhum log com conteúdo das planilhas; planilhas reais nunca no Git.
 - **Desempenho:** abrir o app com cargas salvas em **poucos segundos** mesmo a frio (hoje ~8 s, D46); filtros respondem na hora.
 - **Compatibilidade:** Chrome, Edge, Firefox e Safari recentes, em desktop e TV.
-- **Manutenibilidade:** motor de Chamados puro e testado (métricas, leituras, comparação, evolução), separado dos componentes; repositório de cargas atrás de uma interface (memória, IndexedDB, API).
+- **Manutenibilidade:** motor de Chamados puro e testado (métricas, correção entre posições, cruzamentos, leituras, comparação), separado dos componentes; repositório de cargas atrás de uma interface (memória, IndexedDB, API).
 - **Qualidade:** lint, typecheck, testes (Vitest) e e2e (Playwright) no CI; deploy só com CI verde (D44).
 
 ## 12. Arquitetura
@@ -223,7 +224,7 @@ Reconhecer tipo + confirmar competência
    ↓  POST /api/cargas (gzip) → Vercel Function → Prisma → Neon (tabela cargas, versão max+1)
 Abertura: /api/cargas (metadados; 401 = login) → /api/cargas/:id (dados, cache imutável)
    ↓
-Motor do tipo (Chamados): mapeamento de colunas → classificação por linha → métricas, leituras, comparação, evolução
+Motor do tipo (Chamados): mapeamento de colunas → posição do mês e correção pelas posições mais novas (`fotos.ts`) → métricas, cruzamentos, leituras, comparação
    ↓
 Tela (modo apresentação, Recharts + Motion)
 ```
@@ -243,13 +244,13 @@ React 19 + TypeScript + Vite 8 · shadcn/ui (Radix, Tailwind v4) · Recharts 3 v
 
 ## 15. Critérios de aceite
 
-- Login pedido em staging e produção; "lembrar" mantém a sessão por 14 dias.
+- Sem login no MVP (D52); exclusão definitiva travada com `ADMIN_TOKEN` antes da primeira planilha real (D70).
 - Carregar a planilha de uma competência cria a carga com versão; recarregar cria nova versão.
 - Uma carga feita numa máquina aparece em outra.
-- Painel, Leituras, Comparar e Evolução de Chamados mostram os números conferidos de forma independente (D42) e os selos de dado derivado (D41).
+- Painel, Leituras e Comparar de Chamados mostram os números conferidos de forma independente (D42) e o selo "corrigido" quando uma posição posterior muda o mês (D41/D65).
 - Filtro recalcula tudo o que depende dele; chips visíveis; "limpar" restaura.
 - Ocultar uma série não altera filtros nem totais.
-- Abrir o app com cargas salvas leva poucos segundos (D46).
+- Abrir o app com cargas salvas leva poucos segundos (D46); com 12 posições, abrir o Painel e trocar o "Comparar com" levam menos de 1 s (D74).
 - O essencial funciona por teclado e não depende só de cor.
 - Lint, typecheck, testes e e2e verdes no CI antes de produção.
 - O Líder aprova as definições (§8).

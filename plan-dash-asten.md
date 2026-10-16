@@ -57,7 +57,7 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Feito:** 94 testes de unidade/componente e 1 ponta a ponta passando; CI verde na `main`.
 
-## Fase 2C — Competência, histórico e tipos de conjunto (D28–D33) ← agora, na `staging`
+## Fase 2C — Competência, histórico e tipos de conjunto (D28–D33) ✅ (13–14/10)
 
 **Modelo:**
 - `Carga` = { id, tipo, competência `AAAA-MM`, versão, importadaEm, arquivo, workbook normalizado }. Tipo + competência + versão é único; versão nova a cada recarga do mesmo mês.
@@ -73,7 +73,7 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Pronto quando:** carregar a planilha do Líder (local, nunca no git) e uma fictícia de outro mês gera duas competências; painel, comparação e evolução funcionam; recarga cria versão; testes de unidade, componente e ponta a ponta passam; tudo testado localmente na `staging` antes de ir para a `main`.
 
-## Fase 2D — Banco, autenticação e painel estratégico (D36–D38) ← feita na `staging`, falta promover para a `main`
+## Fase 2D — Banco, autenticação e painel estratégico (D36–D38) ✅ (promovida com a 2E; login desligado no MVP, D52)
 
 **Infra (Opus — área sensível):**
 1. ✅ **Neon** pelo Marketplace no projeto `g0mes/dash-asten`. Um banco só; ambientes separados por **schema Postgres** (`public` = produção, `staging` = preview e local) via `DB_SCHEMA`.
@@ -87,7 +87,7 @@ Na `main`, na raiz do repo, do zero e com testes:
 7. ✅ D36: sem tabela de linhas brutas; filtros das leituras destacam KPIs e gráficos.
 8. ✅ Painel de Chamados (KPIs com delta, leituras, distribuições, envelhecimento), Comparar (A×B), Evolução (cargas próprias + reconstruídas, com selo) e base correta do "aguardando aceite". Tela de login.
 
-**Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`. **Falta:** promover para a `main`, CI verde, deploy de produção e validar com a planilha do Líder.
+**Pronto quando:** login pedido em staging e produção; carga feita numa máquina aparece em outra; recarga cria versão no banco; comparação e evolução vêm do banco; testes e e2e verdes; validado localmente com `vercel dev` antes da `main`. **Promovida** para a `main` com a fase 2E (14/10). A validação com a planilha do Líder segue nas pendências do PRD (§8).
 
 ## Fase 2E — Fechar os requisitos do MVP (14/10) ✅ em produção
 
@@ -104,7 +104,7 @@ Na `main`, na raiz do repo, do zero e com testes:
 
 **Refinamento (depois da validação):** o leitor descarta linhas de título acima do cabeçalho ("Competência: setembro" ali não é visto); palavras soltas como "set"/"out" no nome contam como mês; legenda da Evolução ainda cita "planilha mais antiga" para buraco no meio; semear o cache com a carga recém-enviada; com a gaveta de filtros aberta a barra cobre o topo dos chips; remover `@vercel/functions` (sem uso); `vercel dev` abre em branco por causa do CSP no modo dev; JS de ~800 kB (carregar gráficos e leitor sob demanda); aviso do npm sobre scripts do Prisma; ligar o deploy automático pelo GitHub; contas individuais; hard delete; regras D31/D34/D35 com o Líder; próximo tipo de conjunto.
 
-## Fase 2F — Modelo "foto" (D63–D67) ← agora
+## Fase 2F — Modelo "foto" (D63–D77) ← agora, na `staging`
 
 Decisões no doc "Pós-reunião MVP — decisões e verificações" e no PRD. Leituras: a pergunta saiu do doc sem resposta; a fatia G assume reescrita mínima (confirmar com o responsável antes de G). Teste à mão: `docs/exemplos/LEIA-ME-testes.md`, seção "Teste do modelo foto" (abr v1/v2, mai, out). Ordem por dependência; fatias da mesma onda vão em paralelo, cada uma numa worktree com PR para a `staging`.
 
@@ -125,10 +125,30 @@ Decisões no doc "Pós-reunião MVP — decisões e verificações" e no PRD. Le
 **Onda 3 — depende de D**
 - [x] **F. Comparar e Histórico**: seletor por coluna com versões, colunas de meses sem foto ("—" onde não há dado), marca de corrigido nos cards e no modal; atalho "comparar versões" no Histórico.
 - [x] **E3. Página única (D68)**: Painel e Evolução numa página em 3 blocos, seletor "Comparar com" único, cruzamentos, faixa de situação, "Ao longo do tempo" compacto; aba Evolução removida; "posição do mês" nos textos (D69). PRs #40, #43, #45.
-- [ ] **G. Evolução e Leituras** (Evolução coberta pela E3): séries por foto com a regra do mês sem foto; Leituras reescritas sem backlog (atraso por ciclo, concentração de não finalizados, sem SLA).
-- [ ] **H. Fechamento**: porta do e2e configurável (`PW_PORT`, para worktrees em paralelo), montagem progressiva do Painel (sessão de UI), e2e atualizados, gerador do teste versionado em `docs/exemplos/`, responsividade conferida de novo com as telas novas, PR `staging`→`main` para o responsável.
+- [x] **G. Evolução e Leituras** (Evolução coberta pela E3): Leituras sem backlog, com não finalizados e atraso por ciclo (`src/chamados/leituras.ts`). Conferido em 16/10; o responsável manteve a regra "fluxo" (mês de redução de estoque) como está.
+- [ ] **H. Fechamento**:
+  - [x] porta do e2e configurável (`PW_PORT`);
+  - [x] montagem progressiva do Painel (`MontarDepois`);
+  - [x] e2e atualizados para a página única (sem aba Evolução);
+  - [x] geradores das planilhas de teste versionados em `docs/exemplos/`;
+  - [ ] responsividade conferida de novo nas 5 larguras (1366, 1920, 2560, 3440, 3840) com as telas novas;
+  - [ ] conferência à mão do responsável na `staging` e PR `staging`→`main` (D74).
+
+**Onda 4 — decisões de 16/10 (D77) e fluxo com spec**
+- [ ] **I. Barras listradas, paleta P3 e reordenação depois da transição** (PR #70).
+- [ ] **J. Retirar o Área × SLA** (`docs/specs/001-retirar-area-sla.md`, aprovada).
+- [ ] **K. Área × SLA em gráfico** (`docs/specs/002-area-sla-em-grafico.md`, aguarda prancha).
+- [ ] **L. Padrão do Painel no Comparar** (`docs/specs/003-padrao-painel-no-comparar.md`, aguarda prancha; pedido da D72).
+- [ ] **M. Padrão do Painel nas Leituras** (`docs/specs/004-padrao-painel-nas-leituras.md`, aguarda prancha; pedido da D72).
+- [ ] **N. Travar a exclusão definitiva** com `ADMIN_TOKEN` na Vercel antes da primeira planilha real (D70).
+
+Desde 16/10, toda mudança de comportamento ou de tela começa por uma spec aprovada em `docs/specs/` (SDD) e os testes saem dos critérios (TDD); as decisões de arquitetura ficam em `docs/adr/`. O trabalho a fazer está nas issues do GitHub.
 
 **Fora deste ciclo:** hard delete (D66 manteve só arquivar); contas individuais e login (avaliar biblioteca pronta como Better Auth, não autenticação própria).
+
+## Fases 3 a 8 — plano original de 13/10
+
+Estas fases são do plano de 13/10. O trabalho seguiu pelas fases 2B a 2F, que cobriram boa parte delas (leitura da planilha, filtros, layout fixo, acessibilidade e desempenho), mas elas não foram revisadas item a item. O que continua aberto está na fase 2F, no §8 do PRD e nas issues.
 
 ## Fase 3 — Planilha real e contrato de dados
 
