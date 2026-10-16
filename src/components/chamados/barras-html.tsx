@@ -74,7 +74,7 @@ function Barra({ celula, maximo }: { celula: Celula; maximo: number }) {
                   title={`${s.rotulo}: ${s.valor}`}
                   className={cn(
                     "num flex items-center justify-center text-base font-semibold",
-                    s.claro ? "text-foreground" : "text-white"
+                    s.claro ? "text-foreground" : "text-primary-foreground"
                   )}
                   style={{
                     flexGrow: s.valor,
@@ -150,7 +150,7 @@ export function BarrasHtml({
                 {comMes && (
                   <span
                     className={cn(
-                      "num text-sm",
+                      "num text-base",
                       l.destaque
                         ? "font-semibold text-foreground"
                         : "text-muted-foreground"

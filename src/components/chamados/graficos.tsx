@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { useEffect, useId, useState } from "react"
+import { useEffect, useState } from "react"
 
 import type { ItemDistribuicao, FormatoKpi } from "@/chamados"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
@@ -23,12 +23,11 @@ import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 import { formatarKpi, type ItemSerie, type LinhaSerie } from "./logica"
 
 export const COR = {
-  principal: "var(--chart-1)",
+  principal: "var(--serie-finalizados)",
   verde: "var(--chart-3)",
   roxo: "var(--chart-4)",
   cinza: "var(--chart-5)",
-  laranja: "#b45f06",
-  atraso: "var(--late)",
+  atraso: "var(--vencido)",
 } as const
 
 const EIXO = { fontSize: "1.0000rem", fill: "var(--muted-foreground)" }
@@ -301,7 +300,7 @@ export function BarrasFaixas({
                       y={Number(y) - 6}
                       textAnchor="middle"
                       style={{
-                        fontSize: ".8750rem",
+                        fontSize: "1rem",
                         fontWeight: 600,
                         fill: "var(--late)",
                       }}
@@ -326,14 +325,15 @@ export type SerieComparar = {
   cor?: string
 }
 
-// Da mais antiga à mais recente: a última (mais recente) fica sempre no azul principal e,
-// com duas séries, volta ao par cinza × azul de antes. Só fichas --chart-*, mais o laranja já usado.
+// Da mais antiga à mais recente: a última (mais recente) fica sempre no azul petróleo dos finalizados
+// e as anteriores recuam para tons de contexto e da paleta curta (sem o laranja de "não finalizados"
+// nem o vermelho de alerta).
 const PALETA_COMPARAR = [
-  COR.roxo,
-  COR.verde,
-  "var(--chart-2)",
-  COR.laranja,
-  COR.cinza,
+  "var(--contexto)",
+  "var(--chart-5)",
+  "var(--sit-atendimento)",
+  "var(--sit-aguardando-cliente)",
+  "var(--sit-aceite)",
   COR.principal,
 ] as const
 const corDaSerie = (indice: number, total: number) =>
@@ -466,7 +466,7 @@ export function BarrasComparar({
                     position="right"
                     className="num fill-foreground"
                     style={{
-                      fontSize: tv ? "1.1250rem" : ".9375rem",
+                      fontSize: tv ? "1.1250rem" : "1rem",
                       fontWeight: 600,
                     }}
                     formatter={(v) =>
@@ -506,7 +506,7 @@ export function tipoDoPonto(
   return null
 }
 
-/** Série em área: curva suave com degradê vertical (30% a 0) sob a linha; sem pontos em todos os meses. */
+/** Série em área: linha de 2 px, curva suave e área a 10% de opacidade; sem pontos em todos os meses. */
 export function LinhaMini({
   linhas,
   series,
@@ -527,9 +527,6 @@ export function LinhaMini({
     series.map((s) => s.id)
   )
   const visiveis = series.filter((s) => !ocultas.includes(s.id))
-  const idGrad = useId().replace(/:/g, "")
-  // muitas séries sobrepostas: o degradê fica mais leve para não virar mancha
-  const opacidade = visiveis.length > 3 ? 0.12 : 0.3
   // Eixo Y se ajusta às séries visíveis (escala legível; valores não mudam).
   const tudo = linhas.flatMap((l) => visiveis.map((s) => l[s.id]))
   const nums = tudo.filter((v): v is number => typeof v === "number")
@@ -562,11 +559,7 @@ export function LinhaMini({
             bottom: 0.25 * rem,
           }}
         >
-          <CartesianGrid
-            vertical={false}
-            stroke={GRADE}
-            strokeDasharray="2 4"
-          />
+          <CartesianGrid vertical={false} stroke={GRADE} />
           <XAxis
             dataKey="rotulo"
             tick={EIXO}
@@ -589,25 +582,6 @@ export function LinhaMini({
           <Tooltip
             content={<Dica formatar={(v) => formatarKpi(v, formato)} />}
           />
-          <defs>
-            {visiveis.map((s) => (
-              <linearGradient
-                key={s.id}
-                id={`${idGrad}-${s.id}`}
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0"
-                  style={{ stopColor: s.cor }}
-                  stopOpacity={opacidade}
-                />
-                <stop offset="1" style={{ stopColor: s.cor }} stopOpacity={0} />
-              </linearGradient>
-            ))}
-          </defs>
           {visiveis.map((s) => (
             <Area
               key={s.id}
@@ -615,8 +589,9 @@ export function LinhaMini({
               name={s.rotulo}
               type="monotone"
               stroke={s.cor}
-              strokeWidth={3}
-              fill={`url(#${idGrad}-${s.id})`}
+              strokeWidth={2}
+              fill={s.cor}
+              fillOpacity={0.1}
               connectNulls={false}
               dot={(p: {
                 cx?: number

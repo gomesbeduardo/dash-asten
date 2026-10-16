@@ -198,4 +198,16 @@ describe("Painel: comparar com (D65)", () => {
       expect(r).toHaveTextContent("mai/26")
     }
   })
+
+  it("(g) trocar o Comparar com remonta só o bloco dos gráficos; os indicadores mantêm o mesmo nó", async () => {
+    const user = userEvent.setup()
+    await abrir("2026-10", 1)
+    await screen.findByRole("combobox", { name: "Comparar com" })
+    const kpiAntes = await kpi("Entradas no mês")
+    const cardAntes = await screen.findByRole("region", { name: "Por cliente" })
+    await escolher(user, "mai/26")
+    const cardDepois = await screen.findByRole("region", { name: "Por cliente" })
+    expect(cardDepois).not.toBe(cardAntes)
+    expect(await kpi("Entradas no mês")).toBe(kpiAntes)
+  })
 })

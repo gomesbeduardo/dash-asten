@@ -23,6 +23,7 @@ import { KpiCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, ChipsFiltrosChamados } from "./filtros"
 import { BlocoTempo } from "./BlocoTempo"
 import { Carregando } from "./Carregando"
+import { MontarDepois } from "@/components/app/motion/MontarDepois"
 import { ANTERIOR, usePainelComparado } from "./comparar-com"
 import { useCargasDoTipo, useMesDeChamados } from "./hooks"
 import { COR_FIN, COR_NAO } from "./cores"
@@ -474,23 +475,40 @@ export function PainelChamados({
                 {rankingsAqui.map(graficoRanking)}
               </div>
             )}
-            <div className={linha(4)}>
-              <ClienteSituacao {...cruz} />
-              <OperadorAtraso {...cruz} />
-              <AreaSla {...cruz} />
-              <ClienteTempo {...cruz} />
-            </div>
+            <MontarDepois
+              reservado={
+                <Carregando
+                  forma="cruzamentos"
+                  texto="Carregando os cruzamentos…"
+                />
+              }
+            >
+              <div className={linha(4)}>
+                <ClienteSituacao {...cruz} />
+                <OperadorAtraso {...cruz} />
+                <AreaSla {...cruz} />
+                <ClienteTempo {...cruz} />
+              </div>
+            </MontarDepois>
           </motion.div>
         </section>
 
         {/* 3ª faixa: a Evolução, com os mesmos filtros do Painel */}
         <div id="faixa-melhorando" className="scroll-mt-4">
-          <BlocoTempo
-            carga={carga}
-            historico={historico}
-            obterCarga={obterCarga}
-            entrada={entrada}
-          />
+          <MontarDepois
+            aoVisivel
+            limite={1500}
+            reservado={
+              <Carregando forma="tempo" texto="Carregando a evolução…" />
+            }
+          >
+            <BlocoTempo
+              carga={carga}
+              historico={historico}
+              obterCarga={obterCarga}
+              entrada={entrada}
+            />
+          </MontarDepois>
         </div>
 
         {avisosRodape.length > 0 && (

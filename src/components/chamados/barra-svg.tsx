@@ -29,7 +29,7 @@ export function DefsGradiente({
         >
           <stop
             offset="0"
-            style={{ stopColor: `color-mix(in srgb, ${cor} 88%, white)` }}
+            style={{ stopColor: `color-mix(in srgb, ${cor} 88%, var(--card))` }}
           />
           <stop offset="1" style={{ stopColor: cor }} />
         </linearGradient>

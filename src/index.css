@@ -159,6 +159,12 @@ html {
   font-size: clamp(16px, 0.39vw + 9px, 30px);
   color-scheme: light;
 }
+/* 4K (3840×2160) e telas altas: um degrau a mais, para rótulos e valores dos gráficos chegarem a ~30 px. */
+@media (min-height: 2000px) {
+  html {
+    font-size: clamp(26px, 0.39vw + 15px, 36px);
+  }
+}
 body {
   font-size: 1rem;
   line-height: 1.5;

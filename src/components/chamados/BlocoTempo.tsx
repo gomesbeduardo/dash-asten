@@ -11,7 +11,7 @@ import type { VisaoTipoProps } from "@/panels/tipos"
 import { Carregando } from "./Carregando"
 import { GraficoCartao, TituloBloco } from "./cartoes"
 import { AvisoFiltroSemColuna, useFiltrosChamados } from "./filtros"
-import { corDaSituacao } from "./cores"
+import { COR_NAO, corDaSituacao } from "./cores"
 import { SERIE_FIN } from "./painel-foto"
 import { COR, LinhaMini, type SerieLinha } from "./graficos"
 import { useCargasDoTipo } from "./hooks"
@@ -65,8 +65,8 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     fonte: {
       tipo: "kpis",
       series: [
-        { id: "atraso", rotulo: "Em atraso", cor: COR.atraso },
-        { id: "slaVencido", rotulo: "SLA vencido", cor: COR.cinza },
+        { id: "atraso", rotulo: "Em atraso", cor: COR_NAO },
+        { id: "slaVencido", rotulo: "SLA vencido", cor: "var(--vencido)" },
       ],
     },
   },
@@ -75,7 +75,7 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
     titulo: "% no SLA",
     fonte: {
       tipo: "kpis",
-      series: [{ id: "sla", rotulo: "% no SLA", cor: COR.verde }],
+      series: [{ id: "sla", rotulo: "% no SLA", cor: SERIE_FIN }],
     },
   },
   {

@@ -15,7 +15,7 @@ export const gradienteBarra = (
   cor: string,
   orientacao: Orientacao = "horizontal"
 ) =>
-  `linear-gradient(${orientacao === "horizontal" ? "90deg" : "0deg"}, color-mix(in srgb, ${cor} 88%, white), ${cor})`
+  `linear-gradient(${orientacao === "horizontal" ? "90deg" : "0deg"}, color-mix(in srgb, ${cor} 88%, var(--card)), ${cor})`
 
 export const SOMBRA_BARRA =
   "0 3px 7px -1px color-mix(in srgb, var(--foreground) 22%, transparent)"

@@ -67,3 +67,38 @@ describe("selo de Δ dos KPIs", () => {
     expect(within(card).queryByRole("group")).toBeNull()
   })
 })
+
+describe("minigráfico nos indicadores", () => {
+  it("o indicador em destaque mostra a tendência; o compacto não", () => {
+    const serie = {
+      valores: [1, 2, 3],
+      rotulos: ["ago/26", "set/26", "out/26"],
+      cor: "var(--serie-finalizados)",
+    }
+    const { rerender } = render(
+      <TooltipProvider>
+        <KpiCartao
+          kpi={kpi({})}
+          rotuloAnterior="mai/26"
+          entrada={false}
+          destaque
+          serie={serie}
+        />
+      </TooltipProvider>
+    )
+    const card = screen.getByRole("article", { name: "% no SLA" })
+    expect(
+      within(card).getByRole("img", { name: /^Últimos meses: ago\/26 1/ })
+    ).toBeInTheDocument()
+    rerender(
+      <TooltipProvider>
+        <KpiCartao kpi={kpi({})} rotuloAnterior="mai/26" entrada={false} />
+      </TooltipProvider>
+    )
+    expect(
+      within(screen.getByRole("article", { name: "% no SLA" })).queryByRole("img", {
+        name: /Últimos meses/,
+      })
+    ).toBeNull()
+  })
+})

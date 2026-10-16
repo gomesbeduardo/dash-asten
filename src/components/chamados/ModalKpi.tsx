@@ -34,12 +34,12 @@ export type DeltaKpi = {
 } | null
 
 const TOM = {
-  bom: "text-[#00694b]",
+  bom: "text-positive",
   ruim: "text-late",
   neutro: "text-muted-foreground",
 } as const
 
-const EIXO = { fontSize: "1.1250rem", fill: "#475565" }
+const EIXO = { fontSize: "1.1250rem", fill: "var(--muted-foreground)" }
 
 export function ModalKpi({
   aberto,
@@ -186,7 +186,7 @@ export function ModalKpi({
                           {p.rotulo}
                         </span>
                         {atual && (
-                          <span className="rounded bg-brand-ink px-1.5 py-0.5 text-sm font-medium text-white">
+                          <span className="rounded bg-brand-ink px-1.5 py-0.5 text-sm font-medium text-primary-foreground">
                             atual
                           </span>
                         )}

@@ -145,7 +145,7 @@ export function FaixaSituacao({
                 key={s.rotulo}
                 data-situacao={s.rotulo}
                 title={`${s.rotulo}: ${n(s.valor)}`}
-                className="num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-white"
+                className="num flex min-w-1.5 items-center justify-center font-display text-lg font-semibold text-primary-foreground"
                 style={{
                   flexGrow: s.valor,
                   flexBasis: 0,
@@ -224,7 +224,7 @@ const SERIES_PERIODO = [
   { id: "naoFinalizados", rotulo: "Não finalizados", cor: COR_NAO },
 ]
 /** Mês escolhido em tom claro, o Mes Ref. no tom cheio (mesma cor = mesma medida). */
-const claro = (cor: string) => `color-mix(in srgb, ${cor} 38%, white)`
+const claro = (cor: string) => `color-mix(in srgb, ${cor} 38%, var(--card))`
 export const PERIODOS = [3, 6, 12] as const
 
 /** Início (UTC) do período de `meses` meses que termina no mês `competencia` ("AAAA-MM"). */
