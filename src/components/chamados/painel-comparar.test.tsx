@@ -91,6 +91,13 @@ async function escolher(user: ReturnType<typeof userEvent.setup>, nome: string) 
   await user.click(await screen.findByRole("option", { name: nome }))
 }
 
+/**
+ * Os cruzamentos montam depois (MontarDepois: fila com rAF + timeout por bloco), então
+ * aparecem tarde com a máquina carregada. Espera o bloco de verdade, sem sondar o DOM de relance.
+ */
+const cruzamento = (nome: string) =>
+  screen.findByRole("region", { name: nome }, { timeout: 10_000 })
+
 const kpi = (nome: string) => screen.findByRole("article", { name: nome })
 
 describe("Painel: comparar com (D65)", () => {
@@ -178,7 +185,7 @@ describe("Painel: comparar com (D65)", () => {
     expect(rotulo).toMatch(/Cliente Ômega: Finalizados no mês 0 \(jun\/26: 1\), Não finalizados 1(;|$)/)
     expect(card).toHaveTextContent("sem posição de jun/26")
     // cruzamentos dependem da Situação: só o Mes Ref., com a nota
-    const cruz = screen.getByRole("region", { name: "Cliente × Situação" })
+    const cruz = await cruzamento("Cliente × Situação")
     expect(cruz).toHaveTextContent("sem posição de jun/26")
   })
 
@@ -193,7 +200,7 @@ describe("Painel: comparar com (D65)", () => {
       "Área × SLA",
       "Cliente × Tempo médio",
     ]) {
-      const r = await screen.findByRole("region", { name: nome })
+      const r = await cruzamento(nome)
       expect(r).toHaveTextContent("out/26")
       expect(r).toHaveTextContent("mai/26")
     }
