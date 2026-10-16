@@ -1,7 +1,7 @@
 // Medição no navegador (D74): build de produção em modo API + preview, com as 12 posições servidas por
 // page.route (sem banco). Fora do e2e padrão (não roda no `npm run test:e2e`).
 // Uso: node scripts/bench/bench-navegador.mjs <linhas> [reps=3]   (dados: gerar-bench-12-posicoes.mjs --linhas <linhas>)
-// Porta: PW_PORT (padrão 4186). Mede: abrir o Painel, Painel>Comparar>Painel e 3 trocas do "Comparar com".
+// Porta: PW_PORT (padrão 4186). Mede: abrir o Painel, Painel>Comparar>Painel, 3 trocas do "Comparar com" (Radix Select), troca de competência (ago/26, mai/26) e aplicar/limpar filtro de Severidade.
 // Para cada ação: maior quadro (rAF) e soma de longtasks numa janela de 3 s após o clique/troca.
 import { createRequire } from "node:module"
 import { spawn, execFileSync } from "node:child_process"
@@ -100,13 +100,33 @@ try {
     await page.getByRole("tab", { name: "Painel", selected: true }).waitFor()
     await acao("Painel>Comparar", "click", () => aba("Comparar"))
     await acao("Comparar>Painel", "click", () => aba("Painel"))
-    const sel = page.getByLabel("Comparar com")
-    const opts = await sel.locator("option").evaluateAll((o) => o.map((x) => x.value))
-    if (rep === 1) console.log("opções do Comparar com:", opts.join(", "))
-    // 3 meses com posição e 1 mês sem posição (o seletor lista os dois tipos)
-    const escolhas = ["mes:2026-08", "mes:2026-03", "mes:2025-11", "mes:2025-09"].filter((v) => opts.includes(v))
-    for (const [i, v] of escolhas.entries())
-      await acao(`troca ${i + 1} (${v})`, "change", () => sel.selectOption(v))
+    // Painel: "Comparar com" (Radix Select). 3 trocas de mês; mede do pointerup no item.
+    const trig = page.locator("#comparar-com")
+    await topo(); await trig.click(); await sleep(400)
+    const rots = await page.getByRole("option").evaluateAll((o) => o.map((x) => x.textContent))
+    await page.keyboard.press("Escape"); await sleep(300)
+    if (rep === 1) console.log("opções do Comparar com:", rots.join(" | "))
+    const alvos = rots.filter((r) => /ago|mar|nov/i.test(r ?? "")).slice(0, 3)
+    for (const [i, r] of alvos.entries()) {
+      await topo(); await trig.click(); await sleep(400)
+      const it = page.getByRole("option", { name: r, exact: true })
+      await acao(`troca ${i + 1} (${r})`, "pointerup", () => it.click())
+    }
+    // volta ao Painel para os cenários de competência/filtro
+    // --- cenários novos (competência e filtro) ---
+    const abrirComp = async () => { await topo(); await page.getByRole("button", { name: "Competência" }).click(); await sleep(500) }
+    for (const alvo of ["agosto.*2026", "maio.*2026"]) {
+      await abrirComp()
+      const b = page.getByRole("button", { name: new RegExp(`^${alvo}, versão`, "i") })
+      await acao(`competência ${alvo}`, "click", () => b.click())
+      await sleep(800)
+    }
+    await topo(); await page.getByRole("button", { name: /^Filtros/ }).click(); await sleep(800)
+    await page.getByRole("combobox", { name: "Severidade" }).click(); await sleep(400)
+    const item = page.locator("[cmdk-item]").first()
+    await acao("aplicar filtro", "click", () => item.click())
+    await page.keyboard.press("Escape"); await sleep(600)
+    await acao("limpar filtro", "click", () => page.getByRole("button", { name: "Limpar filtros" }).click())
     await ctx.close()
   }
   await browser.close()
