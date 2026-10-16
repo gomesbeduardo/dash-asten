@@ -100,17 +100,8 @@ export const GRAFICOS_TEMPO: GraficoTempo[] = [
 
 const JANELAS = [6, 12] as const
 
-/** Paleta categórica (até 8 linhas), distinguível entre si e sobre o fundo claro do cartão. */
-const PALETA = [
-  "var(--chart-1)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--sit-aceite)",
-  "var(--sit-analise)",
-  "var(--chart-2)",
-  "var(--chart-5)",
-  "var(--serie-entradas)",
-]
+/** Paleta categórica própria (até 8 linhas, --cat-1..8), independente das cores de situação. */
+const PALETA = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `var(--cat-${n})`)
 
 /**
  * Grade por largura (D67): 1 / 2 / 3 / 4 colunas (4 a partir de 2200px, TV). Os breakpoints 3xl/4xl
