@@ -433,20 +433,29 @@ function calcularBruto(entrada: EntradaCompetencia): MetricasChamados {
   }
 }
 
+/** Põe em cada KPI o valor do mês anterior e o Δ. Não altera `m` (pode ser um resultado em cache). */
+export function aplicarAnterior(
+  m: MetricasChamados,
+  ant: MetricasChamados
+): MetricasChamados {
+  return {
+    ...m,
+    kpis: m.kpis.map((k) => {
+      const a = ant.kpis.find((x) => x.id === k.id)?.valor ?? null
+      return {
+        ...k,
+        anterior: a,
+        delta: k.valor !== null && a !== null ? k.valor - a : null,
+      }
+    }),
+  }
+}
+
 export function calcularMetricas(
   atual: EntradaCompetencia,
   anterior?: EntradaCompetencia
 ): MetricasChamados {
   const m = calcularBase(atual)
   if (!anterior) return m
-  const ant = calcularBase(anterior)
-  m.kpis = m.kpis.map((k) => {
-    const a = ant.kpis.find((x) => x.id === k.id)?.valor ?? null
-    return {
-      ...k,
-      anterior: a,
-      delta: k.valor !== null && a !== null ? k.valor - a : null,
-    }
-  })
-  return m
+  return aplicarAnterior(m, calcularBase(anterior))
 }

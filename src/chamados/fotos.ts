@@ -1,8 +1,8 @@
 import type { Competencia } from "@/cargas/types"
 import type { Row, Sheet } from "@/core"
+import { metricasDe } from "./cache-metricas"
 import { mapearColunas } from "./mapeamento"
 import {
-  calcularMetricas,
   distribuicoesFinalizadosNoPeriodo,
   limitesDaCompetencia,
 } from "./metricas"
@@ -145,11 +145,13 @@ export function corrigirFoto(
 export function metricasCorrigidas(
   foto: EntradaCompetencia,
   posteriores: EntradaCompetencia[],
-  anterior?: EntradaCompetencia
+  anterior?: EntradaCompetencia,
+  /** A correção já feita (`corrigirDe`): evita corrigir a mesma foto de novo. */
+  corrigida?: FotoCorrigida
 ): MetricasCorrigidas {
-  const c = corrigirFoto(foto, posteriores)
-  const base = calcularMetricas(foto, anterior)
-  const m = calcularMetricas(c.entrada, anterior)
+  const c = corrigida ?? corrigirFoto(foto, posteriores)
+  const base = metricasDe(foto, anterior)
+  const m = metricasDe(c.entrada, anterior)
   const kpis: KpiCorrigido[] = m.kpis.map((k) => {
     const o = base.kpis.find((x) => x.id === k.id)?.valor ?? null
     return o !== k.valor ? { ...k, original: o } : k
@@ -222,7 +224,7 @@ export function metricasDoMesSemFoto(
             noMes(tempo(r[mapa.solucao!]))
         ).length
       : null
-  const modelo: MetricasChamados = calcularMetricas(fotoMaisAtual)
+  const modelo: MetricasChamados = metricasDe(fotoMaisAtual)
   const kpis: KpiChamados[] = modelo.kpis.map((k) => {
     const valor =
       k.id === "entradas"

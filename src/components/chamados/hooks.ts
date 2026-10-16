@@ -3,16 +3,15 @@ import { useEffect, useMemo, useState } from "react"
 import type { Carga, CargaMeta } from "@/cargas"
 import { espiarCarga } from "@/cargas/comCache"
 import {
-  calcularMetricas,
   escolherAba,
   gerarLeituras,
+  metricasDe,
   type EntradaCompetencia,
 } from "@/chamados"
 import type { Sheet } from "@/core"
 import { useFiltrosChamados } from "./filtros"
 import {
-  colunasAusentes,
-  filtrarSheet,
+  entradaFiltradaDe,
   metaAnterior,
   ultimasVersoes,
 } from "./logica"
@@ -166,8 +165,10 @@ export function useMesDeChamados(
   const sheet = useMemo(() => escolherAba(carga.workbook), [carga.workbook])
   const bruto = useAnterior(carga, historico, obterCarga, sheet)
   const { filtros } = useFiltrosChamados()
-  const sheetFiltrada = useMemo(
-    () => (sheet ? filtrarSheet(sheet, filtros, carga.competencia) : null),
+  // entradas em cache por planilha/filtros: o mesmo objeto em todo o app, para o motor não refazer a conta
+  const atual = useMemo<EntradaCompetencia | null>(
+    () =>
+      sheet ? entradaFiltradaDe(sheet, carga.competencia, filtros) : null,
     [sheet, filtros, carga.competencia]
   )
   const anterior = useMemo(
@@ -175,38 +176,26 @@ export function useMesDeChamados(
       bruto
         ? {
             ...bruto,
-            entrada: {
-              ...bruto.entrada,
-              colunasSemFiltro: colunasAusentes(bruto.entrada.sheet, filtros),
-              sheet: filtrarSheet(
-                bruto.entrada.sheet,
-                filtros,
-                bruto.entrada.competencia
-              ),
-            },
+            entrada: entradaFiltradaDe(
+              bruto.entrada.sheet,
+              bruto.entrada.competencia,
+              filtros
+            ),
           }
         : bruto,
     [bruto, filtros]
   )
-  const atual = useMemo<EntradaCompetencia | null>(
-    () =>
-      sheetFiltrada
-        ? {
-            sheet: sheetFiltrada,
-            competencia: carga.competencia,
-            colunasSemFiltro: sheet ? colunasAusentes(sheet, filtros) : [],
-          }
-        : null,
-    [sheetFiltrada, sheet, filtros, carga.competencia]
-  )
   const pronto = atual !== null && anterior !== undefined
   const metricas = useMemo(
-    () => (pronto ? calcularMetricas(atual, anterior?.entrada) : null),
+    () => (pronto ? metricasDe(atual, anterior?.entrada) : null),
     [pronto, atual, anterior]
   )
   const leituras = useMemo(
-    () => (pronto ? gerarLeituras(atual, anterior?.entrada) : []),
-    [pronto, atual, anterior]
+    () =>
+      pronto && metricas
+        ? gerarLeituras(atual, anterior?.entrada, metricas)
+        : [],
+    [pronto, atual, anterior, metricas]
   )
   const semColuna = atual?.colunasSemFiltro ?? []
   return { sheet, filtros, metricas, leituras, anterior, semColuna }
