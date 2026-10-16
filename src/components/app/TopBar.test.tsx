@@ -191,5 +191,12 @@ describe("TopBar", () => {
       comTela({})
       expect(screen.getByText(/T tela cheia/)).toBeInTheDocument()
     })
+
+    it("a linha de dicas é legível na TV (text-base, não text-sm)", () => {
+      comTela({})
+      const dica = screen.getByText(/T tela cheia/)
+      expect(dica.className).toMatch(/\btext-base\b/)
+      expect(dica.className).not.toMatch(/\btext-sm\b/)
+    })
   })
 })

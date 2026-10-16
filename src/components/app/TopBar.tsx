@@ -210,7 +210,7 @@ export function TopBar({ onSlot, barRef, ...p }: TopBarProps) {
         <div ref={onSlot} className="contents" />
       </div>
       <div className="border-t">
-        <p className="mx-auto w-full max-w-[200rem] px-[clamp(1.5rem,3vw,6rem)] py-1 text-sm text-muted-foreground">
+        <p className="mx-auto w-full max-w-[200rem] px-[clamp(1.5rem,3vw,6rem)] py-1 text-base text-muted-foreground">
           {p.dica && `${p.dica} · `}
           {p.fixa ? "H soltar barra" : "H fixar barra"} · T tela cheia
           {p.visoes.length > 1 && " · P painel · C comparar · L leituras"}

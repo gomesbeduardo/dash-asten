@@ -1,10 +1,15 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { useEffect } from "react"
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import type { Carga } from "@/cargas"
 import { Apresentacao, type ApresentacaoProps } from "./Apresentacao"
 import { useBarra } from "./BarraContext"
+import { AnimatedNumber } from "./motion/AnimatedNumber"
 import { useEntrada } from "./motion/useEntrada"
+
+// Conta quantas vezes a visão montou (a identidade do nó também prova, mas o contador é direto).
+const mocks = vi.hoisted(() => ({ montagens: 0 }))
 
 vi.mock("@/panels/tipos", () => {
   const Painel = () => {
@@ -18,10 +23,24 @@ vi.mock("@/panels/tipos", () => {
   // Painel que expõe a `entrada` travada na montagem, como os reais.
   const PainelEntrada = ({ entrada, carga }: { entrada: boolean; carga: Carga }) => {
     const play = useEntrada(entrada)
+    useEffect(() => {
+      mocks.montagens++
+    }, [])
     return <div data-testid={`visao-${carga.id}`} data-entrada={play ? "" : undefined} />
   }
+  // Painel com um número como o KPI real: nasce do zero só com `entrada`.
+  const PainelNumero = ({ entrada, carga }: { entrada: boolean; carga: Carga }) => {
+    const play = useEntrada(entrada)
+    return (
+      <div data-testid="visao-numero">
+        <AnimatedNumber value={carga.linhas} format="integer" fromZero={play} />
+      </div>
+    )
+  }
   return {
-    visoesDoTipo: (tipo: string) => ({ Painel: tipo === "entrada" ? PainelEntrada : Painel }),
+    visoesDoTipo: (tipo: string) => ({
+      Painel: tipo === "entrada" ? PainelEntrada : tipo === "numero" ? PainelNumero : Painel,
+    }),
   }
 })
 
@@ -106,15 +125,57 @@ describe("Apresentacao: entrada animada na primeira visita", () => {
     onDismissErro: () => {},
   })
 
-  it("toca na primeira visita, mesmo montando após o esqueleto, e não na revisita", async () => {
-    const { rerender } = render(<Apresentacao {...props(cargaA)} />)
+  it("toca na primeira visita, mesmo montando após o esqueleto", async () => {
+    render(<Apresentacao {...props(cargaA)} />)
     expect(await screen.findByTestId("visao-1")).toHaveAttribute("data-entrada")
+  })
+
+  it("trocar a competência na mesma visão não remonta a visão nem toca a entrada de novo", async () => {
+    mocks.montagens = 0
+    const { rerender } = render(<Apresentacao {...props(cargaA)} />)
+    const no = await screen.findByTestId("visao-1")
+    expect(mocks.montagens).toBe(1)
 
     rerender(<Apresentacao {...props(cargaB)} />)
-    expect(await screen.findByTestId("visao-2")).toHaveAttribute("data-entrada")
-
+    // Mesmo nó, mesma montagem: a visão recebe a carga nova e transita.
+    expect(await screen.findByTestId("visao-2")).toBe(no)
     rerender(<Apresentacao {...props(cargaA)} />)
-    expect(await screen.findByTestId("visao-1")).not.toHaveAttribute("data-entrada")
+    expect(await screen.findByTestId("visao-1")).toBe(no)
+    expect(mocks.montagens).toBe(1)
+  })
+})
+
+describe("Apresentacao: números na troca de competência", () => {
+  const com = (id: string, linhas: number) =>
+    ({ ...carga, id, tipo: "numero", linhas }) as unknown as Carga
+  const props = (c: Carga): ApresentacaoProps => ({
+    carga: c,
+    metas: [c],
+    metasTodas: [c],
+    onAlterar: async () => {},
+    obterCarga: async () => c,
+    onAbrir: () => {},
+    onNovaCarga: () => {},
+    onFecharCarga: () => {},
+    erro: null,
+    onDismissErro: () => {},
+  })
+
+  it("o número vai do valor antigo ao novo, não do zero", async () => {
+    const { rerender } = render(<Apresentacao {...props(com("1", 100))} />)
+    const numero = () => screen.getByTestId("visao-numero").textContent
+    await waitFor(() => expect(numero()).toBe("100"), { timeout: 4000 })
+
+    rerender(<Apresentacao {...props(com("2", 300))} />)
+    // Espera o conteúdo trocar para a carga nova (o rótulo acessível já é o final).
+    await waitFor(
+      () =>
+        expect(screen.getByRole("img", { name: "300" })).toBeInTheDocument(),
+      { timeout: 4000 }
+    )
+    // Nunca passou por zero: o primeiro texto visível já é um valor entre 100 e 300.
+    expect(Number(numero()!.replace(/\D/g, ""))).toBeGreaterThanOrEqual(100)
+    await waitFor(() => expect(numero()).toBe("300"), { timeout: 4000 })
   })
 })
 
