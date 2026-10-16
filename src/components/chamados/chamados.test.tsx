@@ -578,7 +578,7 @@ describe("CompararChamados", () => {
     await waitFor(() => expect(cartao).toHaveFocus())
   })
 
-  it("com uma só carga a única foto é a própria; os outros meses aparecem marcados '(sem posição)' e nada é reconstruído", async () => {
+  it("com uma só carga a única foto é a própria; nenhum mês anterior à carga é listado e nada é reconstruído", async () => {
     render(<CompararChamados {...await cenario(false)} />)
     const user = userEvent.setup()
     const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
@@ -586,11 +586,11 @@ describe("CompararChamados", () => {
     const opcoes = await screen.findAllByRole("option")
     expect(opcoes.filter((o) => !/\(sem posição\)/.test(o.textContent ?? ""))).toHaveLength(1)
     expect(screen.getByRole("option", { name: "Setembro de 2026" })).toBeInTheDocument()
-    expect(screen.getByRole("option", { name: "Agosto de 2026 (sem posição)" })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Agosto de 2026/ })).toBeNull()
     await user.keyboard("{Escape}")
     expect(screen.queryByText(/reconstru|backlog/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
-    expect(cabecalhos()).toEqual(["Indicador", "ago/26", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "set/26", "Δ"])
   })
 })
 

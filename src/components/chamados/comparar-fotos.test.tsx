@@ -154,6 +154,19 @@ describe("Comparar com fotos (D65/D66)", () => {
     expect(screen.queryByText(/backlog|reconstru/i)).toBeNull()
   })
 
+  it("o seletor não lista meses anteriores à carga mais antiga", async () => {
+    render(ui(await cenario([ABR1, MAI, OUT])))
+    const user = userEvent.setup()
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(seletores()[0])
+    await screen.findByRole("option", { name: "Maio de 2026" })
+    expect(
+      screen.getByRole("option", { name: "Abril de 2026" })
+    ).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /Março de 2026/ })).toBeNull()
+    expect(screen.queryByRole("option", { name: /Setembro de 2025/ })).toBeNull()
+  })
+
   it("(d) o pedido do Histórico abre as duas versões do mês", async () => {
     const p = await cenario([ABR1, ABR2])
     pedirComparacao({ competencia: "2026-04", versoes: [1, 2] })

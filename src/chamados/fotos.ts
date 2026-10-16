@@ -276,6 +276,8 @@ const somar = (c: Competencia, n: number): Competencia => {
 /**
  * Opções do seletor "comparar com": meses anteriores à atual até o mês da abertura mais antiga
  * da foto mais atual (no máximo 24), marcados com foto ou não, mais as outras versões do mês atual.
+ * A carga mais antiga é o piso: nada antes da menor competência de `fotos` é listado. Meses sem
+ * posição entre duas cargas continuam aparecendo.
  */
 export function opcoesDeComparacao(
   fotos: { competencia: Competencia; versao: number }[],
@@ -296,6 +298,13 @@ export function opcoesDeComparacao(
         if (c > limite) limite = c
       }
     }
+  }
+  if (fotos.length) {
+    const maisAntiga = fotos.reduce(
+      (m, f) => (f.competencia < m ? f.competencia : m),
+      fotos[0].competencia
+    )
+    if (maisAntiga > limite) limite = maisAntiga
   }
   const versoesDe = (c: Competencia) =>
     fotos
