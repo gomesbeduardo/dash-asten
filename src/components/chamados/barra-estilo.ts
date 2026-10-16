@@ -4,9 +4,10 @@ export type Orientacao = "horizontal" | "vertical"
 /** Raio das barras do Recharts: a base (no eixo) fica reta e só a ponta é arredondada (meia espessura). */
 export function raioBarra(
   espessura: number,
-  orientacao: Orientacao = "horizontal"
+  orientacao: Orientacao = "horizontal",
+  raio?: number
 ): [number, number, number, number] {
-  const r = espessura / 2
+  const r = raio ?? espessura / 2
   return orientacao === "horizontal" ? [0, r, r, 0] : [r, r, 0, 0]
 }
 

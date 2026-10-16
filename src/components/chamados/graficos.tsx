@@ -19,6 +19,7 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { chartGrow } from "@/components/app/motion/tokens"
 import { raioBarra, SOMBRA_BARRA_SVG, TRACEJADO_GRADE } from "./barra-estilo"
 import { DefsGradiente, urlGradiente } from "./barra-svg"
+import { corCronologica } from "./proto-padrao"
 import { LegendaSeries, useSeriesOcultas } from "./LegendaSeries"
 import { formatarKpi, type ItemSerie, type LinhaSerie } from "./logica"
 
@@ -145,11 +146,14 @@ export function BarrasRanking({
   nome = "Chamados",
   corDoItem,
   animar,
+  ponta,
 }: {
   itens: ItemDistribuicao[]
   nome?: string
   corDoItem?: (item: ItemDistribuicao) => string
   animar: boolean
+  /** Raio da ponta em px (padrão do Painel: 4); sem ele a ponta é meia espessura. */
+  ponta?: number
 }) {
   const altura = Math.max(200, itens.length * 40 + 24)
   return (
@@ -190,7 +194,7 @@ export function BarrasRanking({
         <Bar
           dataKey="valor"
           name={nome}
-          radius={raioBarra(24)}
+          radius={raioBarra(24, "horizontal", ponta)}
           barSize={24}
           fill={COR.principal}
           {...animacao(animar)}
@@ -346,10 +350,13 @@ export function BarrasComparar({
   animar,
   tv = false,
   itensParaAltura,
+  padrao = false,
 }: {
   itens: ItemSerie[]
   series: SerieComparar[]
   animar: boolean
+  /** Acabamento do Painel: ponta de 4 px e competências em tons cronológicos. */
+  padrao?: boolean
   /** Painel/TV: altura proporcional à viewport, barras e rótulos em rem (acompanham a tipografia fluida). */
   tv?: boolean
   /** Dimensiona a altura como se houvesse este número de itens (cartões lado a lado ficam com a mesma altura). */
@@ -359,7 +366,7 @@ export function BarrasComparar({
   const { rem, vh } = useEscalaTv()
   const coloridas = series.map((s, i) => ({
     ...s,
-    cor: s.cor ?? corDaSerie(i, n),
+    cor: s.cor ?? (padrao ? corCronologica(i, n) : corDaSerie(i, n)),
   }))
   const dados = itens.map((i) => ({
     rotulo: i.rotulo,
@@ -457,7 +464,7 @@ export function BarrasComparar({
                   dataKey={s.id}
                   name={s.rotulo}
                   fill={urlGradiente(s.cor)}
-                  radius={raioBarra(barra)}
+                  radius={raioBarra(barra, "horizontal", padrao ? 4 : undefined)}
                   barSize={barra}
                   {...animacao(animar)}
                 >

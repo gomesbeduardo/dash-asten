@@ -25,6 +25,9 @@ import type { Sheet } from "@/core"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao } from "./cartoes"
 import { BarrasComparar } from "./graficos"
+import { BarrasRefinadas } from "./barras-refinadas"
+import { SeloDelta } from "./selo-delta"
+import { corCronologica, varianteComparar } from "./proto-padrao"
 import { ListaLeituras } from "./ListaLeituras"
 import { ModalKpi } from "./ModalKpi"
 import {
@@ -257,13 +260,14 @@ function CartaoComparacao({
   rotulos: string[]
   onAbrir: () => void
 }) {
+  const variante = varianteComparar()
   const d = descreverDelta(
     {
       delta: cartao.delta,
       formato: cartao.formato,
       melhorQuando: cartao.melhorQuando,
     },
-    ""
+    variante === "atual" ? "" : rotulos[0]
   )
   return (
     <article
@@ -281,6 +285,15 @@ function CartaoComparacao({
         <span>{cartao.rotulo}</span>
       </h3>
       <ValoresDoCartao cartao={cartao} rotulos={rotulos} />
+      {variante !== "atual" ? (
+        <div className="mt-auto border-t pt-3">
+          {d ? (
+            <SeloDelta delta={d} grande />
+          ) : (
+            <p className="text-xl text-muted-foreground">—</p>
+          )}
+        </div>
+      ) : (
       <p
         className={cn(
           "num mt-auto border-t pt-3 text-xl font-medium",
@@ -303,6 +316,7 @@ function CartaoComparacao({
           "—"
         )}
       </p>
+      )}
     </article>
   )
 }
@@ -521,6 +535,7 @@ function ComparacaoVisao({
       itens: agruparSeries(d.itens, maxItens),
     })),
   ]
+  const variante = varianteComparar()
   const abrir = (id: string) => () => {
     ultimoKpi.current = id
     setCartaoAberto(id)
@@ -723,13 +738,29 @@ function ComparacaoVisao({
                 tabela={tabelaSeries(g.dados)}
                 selos={selosCmp(g.itens)}
               >
-                <BarrasComparar
-                  itens={g.itens}
-                  series={series}
-                  animar={play}
-                  tv
-                  itensParaAltura={itensParaAltura}
-                />
+                {variante === "B" ? (
+                  <BarrasRefinadas
+                    linhas={g.itens.map((i) => ({
+                      rotulo: i.rotulo,
+                      valores: i.valores.map((valor) => ({ valor })),
+                    }))}
+                    series={series.map((x, k) => ({
+                      ...x,
+                      cor: corCronologica(k, series.length),
+                    }))}
+                    animar={play}
+                    fina
+                  />
+                ) : (
+                  <BarrasComparar
+                    itens={g.itens}
+                    series={series}
+                    animar={play}
+                    tv
+                    padrao={variante === "A"}
+                    itensParaAltura={itensParaAltura}
+                  />
+                )}
               </GraficoCartao>
             )
           })}

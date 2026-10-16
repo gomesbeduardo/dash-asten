@@ -23,6 +23,8 @@ import {
   temOutros,
   type SeloTipo,
 } from "./logica"
+import { BarrasRefinadas } from "./barras-refinadas"
+import { corDaEvidencia, varianteLeituras } from "./proto-padrao"
 import { LegendaSimbolos, Selos } from "./selos"
 
 const SEV_ROTULO = {
@@ -148,17 +150,47 @@ export function ListaLeituras({
                   </h3>
                 </div>
                 <LegendaSimbolos tipos={selosGrafico} />
-                <BarrasRanking
-                  itens={evidencia.itens}
-                  corDoItem={(i) =>
-                    evidencia.destaque.includes(i.rotulo)
-                      ? leitura.severidade === "critico" || i.rotulo === "7+"
-                        ? COR.atraso
-                        : "var(--serie-nao-finalizados)"
-                      : COR.cinza
-                  }
-                  animar={false}
-                />
+                {(() => {
+                  const v = varianteLeituras()
+                  const cor = (rotulo: string) =>
+                    corDaEvidencia(
+                      leitura.id,
+                      rotulo,
+                      evidencia.destaque.includes(rotulo)
+                    )
+                  if (v === "A")
+                    return (
+                      <BarrasRefinadas
+                        linhas={evidencia.itens.map((i) => ({
+                          rotulo: i.rotulo,
+                          valores: [{ valor: i.valor }],
+                        }))}
+                        series={[
+                          { id: "valor", rotulo: "Chamados", cor: cor("") },
+                        ]}
+                        corDaLinha={cor}
+                        animar={false}
+                      />
+                    )
+                  return (
+                    <BarrasRanking
+                      itens={evidencia.itens}
+                      corDoItem={
+                        v === "B"
+                          ? (i) => cor(i.rotulo)
+                          : (i) =>
+                              evidencia.destaque.includes(i.rotulo)
+                                ? leitura.severidade === "critico" ||
+                                  i.rotulo === "7+"
+                                  ? COR.atraso
+                                  : "var(--serie-nao-finalizados)"
+                                : COR.cinza
+                      }
+                      ponta={v === "B" ? 4 : undefined}
+                      animar={false}
+                    />
+                  )
+                })()}
                 <p className="text-base text-muted-foreground">
                   Em destaque: {evidencia.destaque.join(", ") || "—"}.
                 </p>
