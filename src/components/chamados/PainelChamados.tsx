@@ -35,7 +35,8 @@ import {
   GraficoMes,
 } from "./painel-foto"
 import {
-  AreaSla,
+  AreaSlaGrafico,
+  opcaoAreaSla,
   ClienteSituacao,
   ClienteTempo,
   OperadorAtraso,
@@ -477,11 +478,20 @@ export function PainelChamados({
                 />
               }
             >
-              <div className={linha(4)}>
+              <div className={linha(3)}>
                 <ClienteSituacao {...cruz} />
                 <OperadorAtraso {...cruz} />
-                <AreaSla {...cruz} />
                 <ClienteTempo {...cruz} />
+              </div>
+              <div
+                className={linha(
+                  opcaoAreaSla(window.location.search) === "B" ? 2 : 1
+                )}
+              >
+                <AreaSlaGrafico
+                  {...cruz}
+                  opcao={opcaoAreaSla(window.location.search)}
+                />
               </div>
             </MontarDepois>
           </motion.div>

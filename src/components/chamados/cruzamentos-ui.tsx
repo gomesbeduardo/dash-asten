@@ -1,5 +1,6 @@
 /** Cruzamentos do bloco "No mês" (decisão 25): Mes Ref. ao lado do mês escolhido, quando há foto dele. */
 import { useMemo } from "react"
+import type { AreaSla as AreaSlaDado } from "@/chamados/cruzamentos"
 
 import { formatarCompetencia } from "@/cargas"
 import {
@@ -501,6 +502,180 @@ export function ClienteTempo(d: DadosCruzamento) {
         formatar={(v) => `${decimal.format(v)} d`}
         fina
       />
+    </GraficoCartao>
+  )
+}
+
+/** Protótipo (prancha 002): as opções de Área × SLA em gráfico, escolhidas por `?areasla=A|B|C`. */
+export type OpcaoAreaSla = "A" | "B" | "C"
+
+export function opcaoAreaSla(busca: string): OpcaoAreaSla {
+  const v = new URLSearchParams(busca).get("areasla")?.toUpperCase()
+  return v === "B" || v === "C" ? v : "A"
+}
+
+const pctTexto = (v: number) => `${Math.round(v)}%`
+
+export function AreaSlaGrafico({
+  opcao,
+  ...d
+}: DadosCruzamento & { opcao: OpcaoAreaSla }) {
+  const { a, b } = useDuas((e) => areaPorSla(e), d)
+  if (!a) return null
+  const m = mesesDe(d, !!b)
+  const ordem = (
+    x: { rotulo: string; slaVencido: number },
+    y: { rotulo: string; slaVencido: number }
+  ) =>
+    y.slaVencido - x.slaVencido || x.rotulo.localeCompare(y.rotulo, "pt-BR")
+  const ativos = [...a].sort(ordem)
+  // áreas que só existem no mês comparado vêm depois, em ordem alfabética
+  const extras = [...(b ?? [])]
+    .filter((i) => !a.some((x) => x.rotulo === i.rotulo))
+    .sort((x, y) => x.rotulo.localeCompare(y.rotulo, "pt-BR"))
+  const rotulos = [...ativos, ...extras].map((i) => i.rotulo)
+  const de = (lista: typeof a | null, r: string) =>
+    lista?.find((i) => i.rotulo === r)
+  const n = (i: AreaSlaDado | undefined) =>
+    i?.slaPct == null
+      ? undefined
+      : Math.round((i.slaPct / 100) * i.finalizadosComSla)
+
+  const linhasPct = rotulos.map((r) => {
+    const x = de(a, r)
+    const y = de(b, r)
+    return {
+      rotulo: r,
+      valores: [
+        {
+          valor: x?.slaPct ?? null,
+          base: b ? (y?.slaPct ?? null) : undefined,
+          texto:
+            x?.slaPct == null
+              ? undefined
+              : `${pctTexto(x.slaPct)} (${n(x)} de ${x.finalizadosComSla})`,
+          textoBase: y?.slaPct == null ? "—" : pctTexto(y.slaPct),
+        },
+      ],
+    }
+  })
+  const linhasVenc = rotulos.map((r) => ({
+    rotulo: r,
+    valores: [
+      {
+        valor: de(a, r)?.slaVencido ?? 0,
+        base: b ? (de(b, r)?.slaVencido ?? 0) : undefined,
+      },
+    ],
+  }))
+  const animar = d.animar ?? false
+  const rotuloBase = b ? m.base : undefined
+  const graficoPct = (
+    <BarrasRefinadas
+      linhas={linhasPct}
+      series={[{ id: "pct", rotulo: "% no SLA", cor: COR_FIN }]}
+      rotuloBase={rotuloBase}
+      animar={animar}
+      formatar={pctTexto}
+      escalaFixa={{ topo: 100, passo: 25 }}
+      larguraValor={b ? "15rem" : "10rem"}
+    />
+  )
+  const graficoVenc = (semRotulos: boolean) => (
+    <BarrasRefinadas
+      linhas={linhasVenc}
+      series={[{ id: "venc", rotulo: "SLA vencido", cor: "var(--vencido)" }]}
+      rotuloBase={rotuloBase}
+      animar={animar}
+      semRotulos={semRotulos}
+      larguraValor={b ? "9rem" : "5rem"}
+    />
+  )
+  const contexto = b ? `${m.atual} ao lado de ${m.base}` : m.atual
+  const nota = notaBase(d.base, !!b)
+  const tabela = {
+    colunas: ["Área", "% no SLA", "Finalizados com SLA", "SLA vencido"],
+    linhas: rotulos.map((r) => {
+      const x = de(a, r)
+      return [
+        r,
+        x?.slaPct == null ? "—" : pctTexto(x.slaPct),
+        x?.finalizadosComSla ?? 0,
+        x?.slaVencido ?? 0,
+      ]
+    }),
+  }
+  if (opcao === "B")
+    return (
+      <>
+        <GraficoCartao
+          id="areaSlaPct"
+          titulo="No SLA por área"
+          subtitulo="% dos finalizados no mês com SLA que ficaram dentro do prazo"
+          contexto={contexto}
+          nota={nota}
+          tabela={tabela}
+          className={d.className}
+        >
+          {graficoPct}
+        </GraficoCartao>
+        <GraficoCartao
+          id="areaSlaVenc"
+          titulo="SLA vencido por área"
+          subtitulo="não finalizados com o SLA vencido"
+          contexto={contexto}
+          nota={nota}
+          tabela={tabela}
+          className={d.className}
+        >
+          {graficoVenc(false)}
+        </GraficoCartao>
+      </>
+    )
+  if (opcao === "C")
+    return (
+      <GraficoCartao
+        id="areaSlaVenc"
+        titulo="SLA vencido por área"
+        subtitulo="não finalizados com o SLA vencido"
+        contexto={contexto}
+        nota={nota}
+        tabela={tabela}
+        className={d.className}
+      >
+        {graficoVenc(false)}
+      </GraficoCartao>
+    )
+  return (
+    <GraficoCartao
+      id="areaSla"
+      titulo="Área × SLA"
+      subtitulo="no SLA e SLA vencido, com as mesmas áreas nas linhas"
+      contexto={contexto}
+      nota={nota}
+      tabela={tabela}
+      className={d.className}
+    >
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-[3fr_2fr]">
+        <div className="flex min-w-0 flex-col gap-3">
+          <h4 className="text-lg font-semibold text-foreground">
+            % no SLA{" "}
+            <span className="font-normal text-muted-foreground">
+              · finalizados no mês
+            </span>
+          </h4>
+          {graficoPct}
+        </div>
+        <div className="flex min-w-0 flex-col gap-3">
+          <h4 className="text-lg font-semibold text-foreground">
+            SLA vencido{" "}
+            <span className="font-normal text-muted-foreground">
+              · não finalizados
+            </span>
+          </h4>
+          {graficoVenc(true)}
+        </div>
+      </div>
     </GraficoCartao>
   )
 }

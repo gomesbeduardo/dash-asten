@@ -16,7 +16,14 @@ export type SerieRefinada = { id: string; rotulo: string; cor: string }
 export type LinhaRefinada = {
   rotulo: string
   /** Um valor por série (mesma ordem de `series`); `base` é o mesmo valor no mês comparado. */
-  valores: { valor: number | null; base?: number | null }[]
+  valores: {
+    valor: number | null
+    base?: number | null
+    /** Texto próprio do valor no rótulo (ex.: "67% (2 de 3)"); sem ele vale `formatar`. */
+    texto?: string
+    /** Texto próprio do valor comparado, em cinza. */
+    textoBase?: string
+  }[]
 }
 
 /** Listras a 45° (0,09375 rem de traço a cada 0,3125 rem, escalam com a fonte) na cor cheia da série. */
@@ -49,6 +56,8 @@ function Barra({
   titulo,
   altura,
   formatar,
+  texto,
+  textoBase,
 }: {
   cor: string
   valor: number | null
@@ -60,6 +69,8 @@ function Barra({
   titulo: string
   altura: string
   formatar: (v: number) => string
+  texto?: string
+  textoBase?: string
 }) {
   const pct = (v: number) => `${(v / topo) * 100}%`
   const comBase =
@@ -116,11 +127,11 @@ function Barra({
         style={{ left: `calc(${pct(fim)} + 0.6rem)` }}
       >
         <span className="num text-lg font-semibold text-foreground">
-          {valor === null ? "—" : formatar(valor)}
+          {valor === null ? "—" : (texto ?? formatar(valor))}
         </span>
         {comBase && (
           <span className="num text-base text-muted-foreground">
-            {curtoDoMes(rotuloBase)} {formatar(base)}
+            {curtoDoMes(rotuloBase)} {textoBase ?? formatar(base)}
           </span>
         )}
       </span>
@@ -136,6 +147,9 @@ export function BarrasRefinadas({
   formatar = padrao,
   corDaLinha,
   fina = false,
+  escalaFixa,
+  semRotulos = false,
+  larguraValor = "7rem",
 }: {
   linhas: LinhaRefinada[]
   series: SerieRefinada[]
@@ -148,6 +162,12 @@ export function BarrasRefinadas({
   corDaLinha?: (rotulo: string) => string
   /** Barras mais finas, para duas ou mais séries por categoria. */
   fina?: boolean
+  /** Escala própria (ex.: 0–100%): ignora o teto calculado pelos dados. */
+  escalaFixa?: { topo: number; passo: number }
+  /** Esconde os nomes das linhas (o gráfico vizinho já os mostra). */
+  semRotulos?: boolean
+  /** Espaço reservado à direita da trilha para o rótulo do valor. */
+  larguraValor?: string
 }) {
   const altura = fina ? "0.9rem" : "1.25rem"
   // Ao filtrar, as barras deslizam na ordem antiga e só depois as linhas trocam de lugar.
@@ -175,7 +195,7 @@ export function BarrasRefinadas({
         : []
     })
   )
-  const { passo, topo } = escala(Math.max(0, ...todos))
+  const { passo, topo } = escalaFixa ?? escala(Math.max(0, ...todos))
   const marcas = Array.from(
     { length: Math.round(topo / passo) + 1 },
     (_, k) => k * passo
@@ -192,7 +212,7 @@ export function BarrasRefinadas({
               v.base !== null
                 ? ` (${rotuloBase}: ${formatar(v.base)})`
                 : ""
-            return `${rotulo} ${v?.valor == null ? "—" : formatar(v.valor)}${cmp}`
+            return `${rotulo} ${v?.valor == null ? "—" : (v.texto ?? formatar(v.valor))}${cmp}`
           })
           .join(", ")}`
     )
@@ -215,7 +235,8 @@ export function BarrasRefinadas({
       <div
         role="img"
         aria-label={descricao}
-        className="relative flex flex-1 flex-col justify-center pb-8 [--rot:clamp(7rem,26%,12rem)] [--val:7rem]"
+        className={`relative flex flex-1 flex-col justify-center pb-8 ${semRotulos ? "[--rot:0rem]" : "[--rot:clamp(7rem,26%,12rem)]"}`}
+        style={{ "--val": larguraValor } as React.CSSProperties}
       >
         {/* grade vertical tracejada, na mesma largura das trilhas */}
         <div
@@ -249,8 +270,9 @@ export function BarrasRefinadas({
               <span
                 className="truncate text-right text-lg font-medium text-foreground"
                 title={l.rotulo}
+                aria-hidden={semRotulos || undefined}
               >
-                {l.rotulo}
+                {semRotulos ? "\u00a0" : l.rotulo}
               </span>
               <div className="mr-[var(--val)] flex flex-col gap-2">
                 {visiveis.map(({ id, cor, rotulo, i }, j) => {
@@ -267,7 +289,9 @@ export function BarrasRefinadas({
                       atraso={(r * 2 + j) * 0.04}
                       altura={altura}
                       formatar={formatar}
-                      titulo={`${l.rotulo}, ${rotulo}: ${v?.valor == null ? "—" : formatar(v.valor)}`}
+                      texto={v?.texto}
+                      textoBase={v?.textoBase}
+                      titulo={`${l.rotulo}, ${rotulo}: ${v?.valor == null ? "—" : (v.texto ?? formatar(v.valor))}`}
                     />
                   )
                 })}
