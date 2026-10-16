@@ -98,10 +98,10 @@
     /* Paleta de séries (Okabe-Ito ajustada), separada da marca: mesma série = mesma cor em todo lugar. */
     --chart-1: #0072b2; /* realizado / em andamento */
     --chart-2: #3b4753; /* meta */
-    --chart-3: #00805d; /* concluído */
-    --chart-4: #7a5ea8; /* pausado */
+    --chart-3: #1b9a7e; /* concluído */
+    --chart-4: #7a52c4; /* pausado */
     --chart-5: #7b8794; /* não iniciado */
-    --late: #b42318;
+    --late: var(--vencido);
     /* Texto de variação favorável (verde com contraste AA sobre o cartão). */
     --positive: #00694b;
     --positive-borda: #00805d; /* filete do cartão "Destaque" */
@@ -110,23 +110,32 @@
     --atencao-borda: #b45f06;
     --atencao-ink: #7a3d00;
     /* Séries "No mês" e "Ao longo do tempo": finalizados × não finalizados (laranja = --brand; sem tema escuro no projeto). */
-    --serie-finalizados: #0b5c8a;
+    --serie-finalizados: #0f5f94;
     --serie-nao-finalizados: #d4650c; /* laranja da marca escurecido: 3,27:1 contra --card */
     /* Paleta curta por significado (validada com o verificador de paleta, modo claro). */
-    --vencido: #b42318; /* só alerta: SLA vencido */
-    --contexto: #9fb3c4; /* dentro da referência, "no ciclo" e outros contextos */
-    --serie-entradas: #5a2fc0; /* índigo: Entradas, distinto do petróleo, do laranja e das situações */
+    --vencido: #9e1b32; /* só alerta: SLA vencido */
+    --contexto: #b0bfce; /* dentro da referência, "no ciclo" e outros contextos */
+    --serie-entradas: #4a5b6b; /* ardósia escura: Entradas, fora do laranja e das situações */
     /* Situações não finalizadas, por nome (nunca pela posição no ranking). */
-    --sit-aguardando-cliente: #159a72;
-    --sit-analise: #d4650c;
-    --sit-atendimento: #7d5fc4;
-    --sit-aceite: #c2416b;
+    --sit-aguardando-cliente: #1b9a7e;
+    --sit-analise: #7a52c4;
+    --sit-atendimento: #c24a82;
+    --sit-aceite: #a67c00; /* dourado: matiz próprio, não se confunde com a situação desconhecida (cinza) */
     --sit-outra: #7b8794; /* situação desconhecida: cinza com rótulo, nunca escondida */
-    /* Faixas de atraso: uma cor, do claro (1 mês) ao escuro (7+). */
-    --atraso-1: #f2b48a;
-    --atraso-2: #e3803f;
-    --atraso-3: #c05515;
-    --atraso-4: #7f2e06;
+    /* Faixas de atraso: uma cor, do claro (1 mês) ao escuro (7+); a mais clara tem 3,09:1 contra --card (listra incluída). */
+    --atraso-1: #cc7215;
+    --atraso-2: #b95d0c;
+    --atraso-3: #94430a;
+    --atraso-4: #5f2705;
+    /* Linhas de "Não finalizados por operador/cliente": paleta categórica própria (verificada, sem vermelho), fora das cores de série e de situação. */
+    --cat-1: #297cef;
+    --cat-2: #7e5d07;
+    --cat-3: #96549c;
+    --cat-4: #057918;
+    --cat-5: #4c42aa;
+    --cat-6: #7574cb;
+    --cat-7: #940672;
+    --cat-8: #637c37;
     --radius: 0.5rem;
     /* Tokens de movimento (D26), espelhados em src/components/app/motion/tokens.ts */
     --motion-fast: 150ms;
