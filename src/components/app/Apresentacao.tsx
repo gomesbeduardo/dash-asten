@@ -254,7 +254,9 @@ export function Apresentacao(p: ApresentacaoProps) {
 
   // Troca pendente: o conteúdo antigo ainda está na tela; atenua, sem mexer no layout.
   const pendente = visaoVista !== visao || cargaVista !== carga
-  const chave = `${cargaVista.id}:${visaoVista}`
+  // A chave é o tipo e a visão: trocar só a competência não remonta (a visão recebe a carga
+  // nova e as barras e os números transitam); cada visão toca a entrada na 1ª visita.
+  const chave = `${cargaVista.tipo}:${visaoVista}`
   const entrada = !vistas.includes(chave)
   // A aba só vira "vista" quando monta na tela.
   const marcarVista = useCallback(

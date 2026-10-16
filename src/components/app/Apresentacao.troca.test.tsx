@@ -150,4 +150,20 @@ describe("Apresentacao: troca de aba em duas fases", () => {
     expect(screen.getByTestId("visao-leituras")).toBeInTheDocument()
     expect(mocks.montadas).toEqual(["leituras"])
   })
+
+  it("trocar a competência não monta a visão de novo; trocar a visão continua montando", async () => {
+    const outra = { ...carga, id: "2", competencia: "2026-10" } as unknown as Carga
+    const { rerender } = render(<Apresentacao {...props} />)
+    await avancar(esperaTrocaAba)
+    mocks.montadas.length = 0
+
+    rerender(<Apresentacao {...props} carga={outra} metas={[carga, outra]} />)
+    await avancar(esperaTrocaAba)
+    expect(screen.getByTestId("visao-painel")).toBeInTheDocument()
+    expect(mocks.montadas).toEqual([])
+
+    clicar("Comparar")
+    await avancar(esperaTrocaAba)
+    expect(mocks.montadas).toEqual(["comparar"])
+  })
 })

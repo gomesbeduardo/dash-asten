@@ -1,3 +1,4 @@
+import { createElement } from "react"
 import type { ComponentType, ReactNode } from "react"
 import type { Carga, CargaMeta } from "@/cargas"
 import type { Visao } from "@/app/navegacao"
@@ -40,7 +41,12 @@ const visoes: Record<string, VisoesDoTipo> = {
   },
 }
 
-const OUTRO: VisoesDoTipo = { Painel: PainelOutro }
+// A Apresentacao não remonta a visão ao trocar a competência; abas, ocultas e filtros do
+// genérico são por planilha, então ele recomeça a cada carga.
+const PainelOutroDaCarga = (p: VisaoTipoProps) =>
+  createElement(PainelOutro, { ...p, key: p.carga.id })
+
+const OUTRO: VisoesDoTipo = { Painel: PainelOutroDaCarga }
 
 /** Tipo sem visões próprias cai na experiência genérica (abas + modo automático). */
 export function visoesDoTipo(tipoId: string): VisoesDoTipo {
