@@ -29,3 +29,6 @@ skills-lock.json
 
 # Handoff entre sessões (rascunho, não versionar)
 HANDOFF.md
+
+# Bench de 12 posições (gerado por docs/exemplos/gerar-bench-12-posicoes.mjs)
+docs/exemplos/bench/
