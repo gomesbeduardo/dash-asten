@@ -74,3 +74,23 @@ node scripts/bench/bench-navegador.mjs 20000 3
 ```
 
 O script do navegador sobe e derruba o próprio servidor de preview; os resultados ficam em `docs/exemplos/bench/resultado-navegador-<N>.json`. Ele fica fora do `npm run test:e2e` (a pasta `e2e/` não o inclui).
+
+## Depois da otimização (branch `perf/motor-linhas`)
+
+Mudanças, todas em `src/chamados/` (e `texto` em `logica.ts`): `limitesDaCompetencia` memorizada por competência; `lerFoto` normaliza cada Situação uma vez e lê `slaPrevisto` uma vez por linha; `texto`/`textoDe` com atalho para strings; `agrupar` dos cruzamentos passou a acrescentar no grupo (antes copiava o vetor a cada linha, custo quadrático, o maior ganho); os quatro cruzamentos têm cache por entrada (`WeakMap`), então a troca do "Comparar com" não refaz o mês aberto (teste `cruzamentos-cache.test.ts`). Números inalterados (`motor-caracterizacao.test.tsx` sem regenerar a referência). `reviver`/`paraData` e `opcoesDoFiltro` ficaram como estavam.
+
+Medido com o mesmo método (melhor de 3), load average de 1,5 a 3 antes e de 0,9 a 2,5 depois.
+
+| Medida (20.000 linhas) | Antes | Depois |
+|---|---|---|
+| Abrir o Painel: maior quadro | 1.250 ms | **667 ms** |
+| Abrir o Painel: soma de longtasks | 1.469 ms | **788 ms** |
+| Painel > Comparar: maior quadro / longtasks | 317 / 655 ms | 200 / 443 ms |
+| Comparar > Painel: maior quadro / longtasks | 200 / 623 ms | 167 / 166 ms |
+| Troca do "Comparar com" (3 meses): maior quadro | 322 a 388 ms | 208 a 231 ms |
+| Troca do "Comparar com": longtasks | 336 a 390 ms | 223 a 235 ms |
+| Motor: montagem | 694 ms | 563 ms |
+| Motor: evolução (6 meses) | 605 ms | 373 ms |
+| Motor: troca do seletor | 51 a 62 ms | 36 a 39 ms |
+
+Com 3.000 linhas: abrir o Painel 417 ms (antes ~600 ms); troca do "Comparar com" ~170 ms; motor: montagem 119 ms, evolução 54 ms. (A medição "antes" de 20.000 desta tabela foi refeita na sessão; a da seção "Tempos" acima é a original.) Meta de 1 s atingida.

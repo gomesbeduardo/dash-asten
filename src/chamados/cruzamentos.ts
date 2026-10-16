@@ -97,7 +97,9 @@ function agrupar<T extends { rotulo: string }>(
   const grupos = new Map<string, Chamado[]>()
   for (const c of ctx.chamados) {
     const k = ctx.chave(c)
-    grupos.set(k, [...(grupos.get(k) ?? []), c])
+    const g = grupos.get(k)
+    if (g) g.push(c)
+    else grupos.set(k, [c])
   }
   const itens = [...grupos.entries()]
     .map(([rotulo, cs]) => ({ cs, t: calc(rotulo, cs) }))
@@ -111,7 +113,7 @@ function agrupar<T extends { rotulo: string }>(
 }
 
 /** Não finalizados por cliente, divididos pela Situação literal. Clientes sem não finalizados são omitidos. */
-export function clientePorSituacao(
+function clientePorSituacaoCalc(
   entrada: EntradaCompetencia | undefined,
   maxItens = MAX_ITENS_CRUZAMENTO
 ): { itens: ClienteSituacao[]; situacoes: string[] } | null {
@@ -143,7 +145,7 @@ export function clientePorSituacao(
 }
 
 /** Não finalizados por operador: "No ciclo" (aberto no mês do Mes Ref.) e faixas de atraso. */
-export function operadorPorAtraso(
+function operadorPorAtrasoCalc(
   entrada: EntradaCompetencia | undefined,
   maxItens = MAX_ITENS_CRUZAMENTO
 ): OperadorAtraso[] | null {
@@ -171,7 +173,7 @@ export function operadorPorAtraso(
 }
 
 /** Por Área (módulo): % no SLA dos finalizados no mês e SLA vencido dos não finalizados. */
-export function areaPorSla(
+function areaPorSlaCalc(
   entrada: EntradaCompetencia | undefined,
   maxItens = MAX_ITENS_CRUZAMENTO
 ): AreaSla[] | null {
@@ -201,7 +203,7 @@ export function areaPorSla(
 }
 
 /** Por cliente: tempo médio de resolução (finalizados no mês) e tempo até o aceite (aceitos no mês). */
-export function clientePorTempo(
+function clientePorTempoCalc(
   entrada: EntradaCompetencia | undefined,
   maxItens = MAX_ITENS_CRUZAMENTO
 ): ClienteTempo[] | null {
@@ -234,3 +236,29 @@ export function clientePorTempo(
     (t) => t.finalizados + (t.tempoAceite !== null ? 1 : 0)
   )
 }
+
+/**
+ * Cache por identidade da entrada (WeakMap, como em `cache-metricas`): o mês aberto não é
+ * recalculado ao trocar o "Comparar com". As entradas são imutáveis; o resultado é compartilhado
+ * e quem recebe não deve alterá-lo. A chave interna é o `maxItens` (poucos valores).
+ */
+function comCache<T>(
+  calc: (entrada: EntradaCompetencia | undefined, maxItens: number) => T | null
+) {
+  const caches = new WeakMap<EntradaCompetencia, Map<number, T | null>>()
+  return (
+    entrada: EntradaCompetencia | undefined,
+    maxItens = MAX_ITENS_CRUZAMENTO
+  ): T | null => {
+    if (!entrada) return calc(entrada, maxItens)
+    let porMax = caches.get(entrada)
+    if (!porMax) caches.set(entrada, (porMax = new Map()))
+    if (!porMax.has(maxItens)) porMax.set(maxItens, calc(entrada, maxItens))
+    return porMax.get(maxItens) as T | null
+  }
+}
+
+export const clientePorSituacao = comCache(clientePorSituacaoCalc)
+export const operadorPorAtraso = comCache(operadorPorAtrasoCalc)
+export const areaPorSla = comCache(areaPorSlaCalc)
+export const clientePorTempo = comCache(clientePorTempoCalc)

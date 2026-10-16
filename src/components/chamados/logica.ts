@@ -696,6 +696,10 @@ const SEM_INFO = "(sem informação)"
 
 function textoDe(v: CellValue | undefined): string {
   if (v === null || v === undefined) return SEM_INFO
+  if (typeof v === "string") {
+    const t = v.trim()
+    return t === "" ? SEM_INFO : t
+  }
   const t = v instanceof Date ? v.toISOString().slice(0, 10) : String(v).trim()
   return t === "" ? SEM_INFO : t
 }
