@@ -462,7 +462,8 @@ describe("filtros de Chamados", () => {
       { key: "cliente", label: "Cliente", text: "PMC, Ouro" },
       { key: "atividade", label: "Atividade", text: "Suporte" },
     ])
-    expect(recorteTexto(f)).toBe("Cliente: PMC, Ouro · Atividade: Suporte")
+    expect(recorteTexto(f)).toBe("Cliente: PMC, Ouro; Atividade: Suporte")
+    expect(recorteTexto(f)).not.toContain(" · ")
     expect(definirFiltro(f, "cliente", [])).toEqual({ atividade: ["Suporte"] })
     expect(recorteTexto({})).toBe("")
   })

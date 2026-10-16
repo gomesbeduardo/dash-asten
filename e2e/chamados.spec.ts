@@ -113,7 +113,7 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Ao longo do tempo",
   // Leituras: visão própria; o clique abre um modal e a página não rola
   await page.keyboard.press("l")
   await expect(
-    page.getByRole("heading", { level: 1, name: /^Leituras · setembro/ })
+    page.getByRole("heading", { level: 1, name: /^Leituras setembro/ })
   ).toBeVisible()
   const antes = await page.evaluate(() => window.scrollY)
   await page.getByRole("button", { name: /Crítico.*7 meses/ }).click()
@@ -134,11 +134,10 @@ test("Chamados: KPIs, leituras em modal, filtros, Comparar e Ao longo do tempo",
   await page.keyboard.press("Escape") // fecha o painel
   await expect(filtros).toBeHidden()
   await page.keyboard.press("p")
-  await expect(
-    page.getByRole("heading", { level: 1, name: /Cliente: Cli B/ })
-  ).toBeVisible()
+  const ativos = page.getByRole("list", { name: "Filtros ativos" })
+  await expect(ativos).toBeVisible()
+  await expect(ativos).toContainText("Cliente: Cli B")
   await expect(kpi(page, "Não finalizados")).toContainText("2")
-  await expect(page.getByRole("list", { name: "Filtros ativos" })).toBeVisible()
 
   // O filtro persiste em Comparar; trocar os meses mostra o Δ
   await page.keyboard.press("c")

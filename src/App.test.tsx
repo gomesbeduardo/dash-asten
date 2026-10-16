@@ -186,7 +186,7 @@ describe("nova carga", () => {
     // a Evolução virou o bloco "Ao longo do tempo" do Painel (decisão 27)
     expect(screen.queryByRole("tab", { name: "Evolução" })).toBeNull()
     await user.keyboard("l")
-    await tituloVisivel(/^Leituras · /)
+    await tituloVisivel(/^Leituras /)
     await user.keyboard("c")
     await tituloVisivel("Comparar competências")
     await user.keyboard("p")

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils"
 import { descreverDelta, idAlvo, motivoSemDelta, type SeloTipo } from "./logica"
 import { Selos } from "./selos"
 import { Minigrafico } from "./minigrafico"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SeloDelta } from "./selo-delta"
 
@@ -128,33 +129,49 @@ export function KpiCartao({
   )
 }
 
-const SEV: Record<
+const GRAVIDADE: Record<
   Severidade,
-  {
-    Icon: typeof OctagonAlertIcon
-    rotulo: string
-    texto: string
-    borda: string
-  }
+  { Icon: typeof OctagonAlertIcon; rotulo: string; tom: string }
 > = {
   critico: {
     Icon: OctagonAlertIcon,
     rotulo: "Crítico",
-    texto: "text-late",
-    borda: "border-l-late",
+    tom: "bg-[color-mix(in_srgb,var(--late)_11%,var(--card))] text-late",
   },
   atencao: {
     Icon: TriangleAlertIcon,
     rotulo: "Atenção",
-    texto: "text-atencao",
-    borda: "border-l-atencao-borda",
+    tom: "bg-[color-mix(in_srgb,var(--atencao-borda)_13%,var(--card))] text-atencao",
   },
   destaque: {
     Icon: CircleCheckIcon,
     rotulo: "Destaque",
-    texto: "text-positive",
-    borda: "border-l-positive-borda",
+    tom: "bg-[color-mix(in_srgb,var(--chart-3)_13%,var(--card))] text-positive",
   },
+}
+
+/** Selo de severidade: ícone e rótulo, na cor de status; a cor nunca é a única pista. */
+export function SeloSeveridade({
+  severidade,
+  className,
+}: {
+  severidade: Severidade
+  className?: string
+}) {
+  const s = GRAVIDADE[severidade]
+  return (
+    <Badge
+      variant="ghost"
+      data-severidade={severidade}
+      className={cn(
+        "h-auto gap-1 px-2.5 py-0.5 text-base leading-snug font-semibold [&>svg]:size-4!",
+        s.tom,
+        className
+      )}
+    >
+      <s.Icon aria-hidden /> {s.rotulo}
+    </Badge>
+  )
 }
 
 export function LeituraCartao({
@@ -170,27 +187,22 @@ export function LeituraCartao({
   grande?: boolean
 }) {
   const reduce = useReducedMotion()
-  const s = SEV[leitura.severidade]
   const corpo = (
     <>
-      <span
-        className={cn("flex items-center gap-2 text-lg font-semibold", s.texto)}
-      >
-        <s.Icon className="size-6" aria-hidden /> {s.rotulo}
-      </span>
+      <SeloSeveridade severidade={leitura.severidade} />
       <span
         className={cn(
           "font-display leading-snug font-semibold text-primary",
-          grande ? "text-3xl" : "text-2xl"
+          grande ? "text-2xl" : "text-xl"
         )}
       >
         {leitura.titulo}
       </span>
-      <span className={cn("text-foreground", grande ? "text-xl" : "text-lg")}>
+      <span className={cn("text-foreground", grande ? "text-lg" : "text-base")}>
         {leitura.texto}
       </span>
       {leitura.acao && (
-        <span className="text-lg font-medium text-foreground">
+        <span className="text-base font-medium text-foreground">
           Ação sugerida: {leitura.acao}
         </span>
       )}
@@ -201,10 +213,8 @@ export function LeituraCartao({
       )}
     </>
   )
-  const base = cn(
-    "flex h-full w-full flex-col items-start gap-2 rounded-lg border border-l-8 bg-card p-5 text-left shadow-(--shadow-card)",
-    s.borda
-  )
+  const base =
+    "flex h-full w-full flex-col items-start gap-2 rounded-lg bg-card p-5 text-left shadow-(--shadow-card)"
   return (
     <motion.li
       variants={reduce ? undefined : entryItem}

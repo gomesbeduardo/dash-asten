@@ -27,6 +27,7 @@ import { MontarDepois } from "@/components/app/motion/MontarDepois"
 import { ANTERIOR, escolhaEfetiva, usePainelComparado } from "./comparar-com"
 import { useCargasDoTipo, useMesDeChamados } from "./hooks"
 import { COR_FIN, COR_NAO } from "./cores"
+import { DESTAQUES, GRUPOS_KPI } from "./kpis-grupos"
 import { pontosDaEvolucao, temOutros, type SeloTipo } from "./logica"
 import {
   AtrasoMes,
@@ -54,7 +55,6 @@ const GRUPOS_COMPARAR = [
   { grupo: "semPosicao", titulo: "Meses sem posição" },
   { grupo: "versao", titulo: "Outras versões deste mês" },
 ] as const
-const DESTAQUES = ["naoFinalizados", "finalizados", "atraso", "sla"] as const
 /** Cor do ponto do mês atual no minigráfico de cada indicador em destaque. */
 const COR_SERIE: Record<string, string> = {
   naoFinalizados: COR_NAO,
@@ -62,17 +62,6 @@ const COR_SERIE: Record<string, string> = {
   atraso: COR_NAO,
   sla: COR_FIN,
 }
-/** Os 8 indicadores compactos, em dois grupos com rótulo. */
-const GRUPOS_KPI = [
-  {
-    titulo: "Fluxo",
-    ids: ["entradas", "reabertos", "aguardandoAceite", "semSla"],
-  },
-  {
-    titulo: "Prazo",
-    ids: ["slaVencido", "slaRenegociado", "tempoMedio", "tempoAceite"],
-  },
-] as const
 const inteiro = new Intl.NumberFormat("pt-BR")
 const n = (v: number) => inteiro.format(v)
 

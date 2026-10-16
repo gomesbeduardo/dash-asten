@@ -78,12 +78,12 @@ describe("Comparar com fotos (D65/D66)", () => {
   it("(a) abr v1 × abr v2 lado a lado, sem correção entre si", async () => {
     render(ui(await cenario([ABR1, ABR2])))
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
-    await escolher(0, /Abril de 2026 · v1/)
-    expect(seletores()[1]).toHaveTextContent("Abril de 2026 · v2 (atual)")
+    await escolher(0, /Abril de 2026, v1/)
+    expect(seletores()[1]).toHaveTextContent("Abril de 2026, v2 (atual)")
     expect(cabecalhos()).toEqual([
       "Indicador",
-      "abr/26 · v1",
-      "abr/26 · v2",
+      "abr/26 v1",
+      "abr/26 v2 aberta",
       "Δ",
     ])
     expect(celulas(/^Entradas/).slice(0, 2)).toEqual(["2", "3"])
@@ -97,19 +97,22 @@ describe("Comparar com fotos (D65/D66)", () => {
   it("(b) com mai e out carregados, a coluna de maio mostra finalizados 2 com a marca 'era 1'", async () => {
     render(ui(await cenario([MAI, OUT])))
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
-    expect(cabecalhos()).toEqual(["Indicador", "mai/26", "out/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "mai/26", "out/26 aberta", "Δ"])
     const secao = screen.getByRole("region", {
       name: "Indicadores lado a lado",
     })
-    const card = within(secao).getByRole("article", {
+    const linha = within(secao).getByRole("row", {
       name: /^Finalizados no mês/,
     })
-    expect(card).toHaveTextContent("corrigido pela posição de out/26")
-    expect(card).toHaveTextContent("era 1")
+    // ícone ao lado do número; o texto completo está no aria-label
+    const marca = within(linha).getByRole("button", {
+      name: "corrigido pela posição de out/26, era 1",
+    })
+    expect(marca).toHaveAttribute("data-selo", "corrigido")
     expect(celulas(/^Finalizados no mês/).slice(0, 2)[0]).toContain("2")
     // indicador que não mudou fica sem marca
-    const atraso = within(secao).getByRole("article", { name: /^Em atraso/ })
-    expect(atraso).not.toHaveTextContent("corrigido")
+    const atraso = within(secao).getByRole("row", { name: /^Em atraso/ })
+    expect(within(atraso).queryByRole("button", { name: /corrigido/ })).toBeNull()
     // legenda do símbolo "corrigido"
     expect(
       within(
@@ -122,7 +125,8 @@ describe("Comparar com fotos (D65/D66)", () => {
     render(ui(await cenario([MAI, OUT])))
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await escolher(0, /Junho de 2026 \(sem posição\)/)
-    expect(cabecalhos()).toEqual(["Indicador", "jun/26", "out/26", "Δ"])
+    // a nota do mês sem posição fica no cabeçalho da coluna
+    expect(cabecalhos()).toEqual(["Indicador", "jun/26 sem posição", "out/26 aberta", "Δ"])
     expect(celulas(/^Entradas/)[0]).toBe("0")
     expect(celulas(/^Finalizados no mês/)[0]).toBe("1")
     const nao = celulas(/^Não finalizados/)[0]
@@ -130,6 +134,20 @@ describe("Comparar com fotos (D65/D66)", () => {
     expect(nao).toContain("sem posição de jun/26")
     // cards por Situação também ficam "—" na coluna sem posição
     expect(celulas(/^Em Análise/)[0]).toContain("—")
+  })
+
+  it("as notas 'sem posição' e 'aberta' aparecem no cabeçalho para quem enxerga (não só no leitor de tela) e todo cabeçalho de coluna tem scope=col", async () => {
+    render(ui(await cenario([MAI, OUT])))
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await escolher(0, /Junho de 2026 \(sem posição\)/)
+    const visivel = (el: HTMLElement) => el.closest(".sr-only") === null
+    const jun = screen.getByRole("columnheader", { name: /jun\/26/ })
+    expect(visivel(within(jun).getByText("sem posição"))).toBe(true)
+    const aberta = screen.getByRole("columnheader", { name: /out\/26/ })
+    expect(visivel(within(aberta).getByText("aberta"))).toBe(true)
+    for (const h of screen.getAllByRole("columnheader")) {
+      expect(h).toHaveAttribute("scope", "col")
+    }
   })
 
   it("lista os meses sem posição marcados e desdobra as versões do mês", async () => {
@@ -143,10 +161,10 @@ describe("Comparar com fotos (D65/D66)", () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole("option", { name: "Abril de 2026 · v2 (atual)" })
+      screen.getByRole("option", { name: "Abril de 2026, v2 (atual)" })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole("option", { name: "Abril de 2026 · v1" })
+      screen.getByRole("option", { name: "Abril de 2026, v1" })
     ).toBeInTheDocument()
     expect(
       screen.getByRole("option", { name: "Maio de 2026" })
@@ -174,8 +192,8 @@ describe("Comparar com fotos (D65/D66)", () => {
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     expect(cabecalhos()).toEqual([
       "Indicador",
-      "abr/26 · v1",
-      "abr/26 · v2",
+      "abr/26 v1",
+      "abr/26 v2 aberta",
       "Δ",
     ])
     expect(celulas(/^Entradas/).slice(0, 2)).toEqual(["2", "3"])
@@ -186,11 +204,11 @@ describe("Comparar com fotos (D65/D66)", () => {
     const { rerender } = render(ui(p))
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await escolher(0, /^Abril de 2026/)
-    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "out/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "out/26 aberta", "Δ"])
     const meta = p.historico.find((m) => m.competencia === "2026-05")!
     const cargaMai = (await p.obterCarga(meta.id)) as Carga
     rerender(ui({ ...p, carga: cargaMai }))
     await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
-    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "mai/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "mai/26 aberta", "Δ"])
   })
 })

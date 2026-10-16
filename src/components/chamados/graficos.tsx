@@ -326,14 +326,15 @@ export type SerieComparar = {
 }
 
 // Da mais antiga à mais recente: a última (mais recente) fica sempre no azul petróleo dos finalizados
-// e as anteriores recuam para tons de contexto e da paleta curta (sem o laranja de "não finalizados"
-// nem o vermelho de alerta).
+// e as anteriores recuam numa rampa de cinza-azulado, do mais claro (3,03:1 contra o cartão) ao mais
+// escuro (rampa verificada: L monotônico, passos ≥ 0,06): nunca as cores das situações, que têm
+// significado próprio, nem o laranja de "não finalizados" ou o vermelho de alerta.
 const PALETA_COMPARAR = [
-  "var(--contexto)",
-  "var(--chart-5)",
-  "var(--sit-atendimento)",
-  "var(--sit-aguardando-cliente)",
-  "var(--sit-aceite)",
+  "#7d8c9d",
+  "#6b7a89",
+  "#596777",
+  "#485665",
+  "#374553",
   COR.principal,
 ] as const
 const corDaSerie = (indice: number, total: number) =>
@@ -457,7 +458,7 @@ export function BarrasComparar({
                   dataKey={s.id}
                   name={s.rotulo}
                   fill={urlGradiente(s.cor)}
-                  radius={raioBarra(barra)}
+                  radius={[0, 4, 4, 0]}
                   barSize={barra}
                   {...animacao(animar)}
                 >

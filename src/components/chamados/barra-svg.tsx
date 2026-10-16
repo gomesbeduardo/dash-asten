@@ -38,7 +38,7 @@ export function DefsGradiente({
   )
 }
 
-/** Coluna vertical: reta embaixo (base), arredondada em cima. */
+/** Coluna vertical: reta embaixo (base), ponta de 4 px em cima (o mesmo raio das barras do Painel). */
 export function ColunaTopoArredondada({
   x = 0,
   y = 0,
@@ -53,7 +53,7 @@ export function ColunaTopoArredondada({
   fill: string
 }) {
   if (height <= 0 || width <= 0) return null
-  const r = Math.min(width / 2, height)
+  const r = Math.min(4, width / 2, height)
   return (
     <path
       data-coluna=""

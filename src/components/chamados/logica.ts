@@ -774,7 +774,7 @@ export function chipsDosFiltros(
 export function recorteTexto(filtros: FiltrosChamados): string {
   return chipsDosFiltros(filtros)
     .map((c) => `${c.label}: ${c.text}`)
-    .join(" · ")
+    .join("; ")
 }
 
 /** Filtro de linhas sugerido por uma leitura; "idade" só destaca o gráfico, não filtra. */

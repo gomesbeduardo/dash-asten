@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/dialog"
 import { ChartContainer } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
-import { raioBarra, SOMBRA_BARRA_SVG, TRACEJADO_GRADE } from "./barra-estilo"
+import { SOMBRA_BARRA_SVG, TRACEJADO_GRADE } from "./barra-estilo"
 import { ColunaTopoArredondada, DefsGradiente, urlGradiente } from "./barra-svg"
 import { animacao, COR } from "./graficos"
 import { formatarKpi } from "./logica"
 import { MarcaCorrigido } from "./selos"
+import { SeloDelta } from "./selo-delta"
 
 export type PontoKpi = {
   competencia: string
@@ -29,15 +30,11 @@ export type PontoKpi = {
 export type DeltaKpi = {
   texto: string
   tom: "bom" | "ruim" | "neutro"
-  rotuloTom?: string
-  sentido?: "alta" | "queda" | "igual"
+  /** Base da comparação ("jul/26"). */
+  periodo: string
+  aria: string
+  sentido: "alta" | "queda" | "igual"
 } | null
-
-const TOM = {
-  bom: "text-positive",
-  ruim: "text-late",
-  neutro: "text-muted-foreground",
-} as const
 
 const EIXO = { fontSize: "1.1250rem", fill: "var(--muted-foreground)" }
 
@@ -125,7 +122,7 @@ export function ModalKpi({
                 />
                 <Bar
                   dataKey="barra"
-                  radius={raioBarra(56, "vertical")}
+                  radius={[4, 4, 0, 0]}
                   maxBarSize={96}
                   {...animacao(animar)}
                   shape={(p: {
@@ -186,7 +183,7 @@ export function ModalKpi({
                           {p.rotulo}
                         </span>
                         {atual && (
-                          <span className="rounded bg-brand-ink px-1.5 py-0.5 text-sm font-medium text-primary-foreground">
+                          <span className="rounded bg-brand-ink px-1.5 py-0.5 text-base font-medium text-primary-foreground">
                             atual
                           </span>
                         )}
@@ -201,7 +198,7 @@ export function ModalKpi({
                       >
                         {fmt(p.valor)}
                         {p.nota && (
-                          <span className="block text-right font-sans text-sm font-normal text-muted-foreground">
+                          <span className="block text-right font-sans text-base font-normal text-muted-foreground">
                             {p.nota}
                           </span>
                         )}
@@ -217,28 +214,14 @@ export function ModalKpi({
                   )
                 })}
               </ul>
-              <p
-                className={cn(
-                  "num text-2xl font-semibold",
-                  delta ? TOM[delta.tom] : "text-muted-foreground"
-                )}
-              >
-                <span className="mr-2 text-base font-normal text-muted-foreground">
-                  Δ
-                </span>
-                {delta ? (
-                  <>
-                    {delta.texto.replace(/ vs\s*/, " ").trim()}
-                    {delta.rotuloTom && (
-                      <span className="ml-2 text-lg font-normal">
-                        {delta.sentido === "alta" ? "↑" : "↓"} {delta.rotuloTom}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  "—"
-                )}
-              </p>
+              {delta ? (
+                <SeloDelta delta={delta} grande />
+              ) : (
+                <p className="text-lg text-muted-foreground/70">
+                  <span aria-hidden>—</span>
+                  <span className="sr-only">sem comparação</span>
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>

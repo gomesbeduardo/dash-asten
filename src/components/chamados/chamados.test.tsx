@@ -395,6 +395,20 @@ describe("LeiturasChamados", () => {
     expect(await screen.findByText(/Cli A concentra 100%/)).toBeInTheDocument()
   })
 
+  it("a severidade é um selo com ícone e rótulo, sem borda colorida na lateral", async () => {
+    const props = await cenario(true)
+    render(<LeiturasChamados {...props} />)
+    const crit = await screen.findByRole("button", { name: /Crítico/ })
+    const selo = crit.querySelector('[data-slot="badge"]')
+    expect(selo).not.toBeNull()
+    expect(selo).toHaveTextContent("Crítico")
+    expect(selo!.querySelector("svg")).not.toBeNull()
+    expect(crit.className).not.toMatch(/border-l-/)
+    expect(
+      screen.getByRole("heading", { level: 1 }).textContent
+    ).not.toContain(" · ")
+  })
+
   it("nenhuma leitura leva selo de origem (a Situação é a da foto)", async () => {
     const props = await cenario(true)
     render(<LeiturasChamados {...props} />)
@@ -445,10 +459,10 @@ describe("CompararChamados", () => {
     expect(um).toHaveAccessibleName("Competência 1")
     expect(um).toHaveTextContent("Agosto de 2026")
     expect(dois).toHaveTextContent("Setembro de 2026")
-    expect(cabecalhos()).toEqual(["Indicador", "ago/26", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "ago/26", "set/26 aberta", "Δ"])
     const linha = screen.getByRole("row", { name: /Não finalizados/ })
     expect(linha).toHaveTextContent("+1")
-    expect(linha).toHaveTextContent("pior")
+    expect(within(linha).getByRole("group", { name: /pior/ })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Adicionar competência" })).toBeEnabled()
     for (const r of screen.getAllByRole("button", { name: /^Remover competência/ }))
       expect(r).toBeDisabled()
@@ -457,7 +471,7 @@ describe("CompararChamados", () => {
     ).toBeInTheDocument()
   })
 
-  it("mostra um card por indicador com os valores de cada competência e o Δ com o tom", async () => {
+  it("mostra uma linha por indicador, agrupada como no Painel, com os valores de cada competência e o Δ com o tom", async () => {
     const user = userEvent.setup()
     render(
       <CompararChamados
@@ -471,16 +485,41 @@ describe("CompararChamados", () => {
     const secao = screen.getByRole("region", {
       name: "Indicadores lado a lado",
     })
-    const cards = within(secao).getAllByRole("article")
-    expect(cards).toHaveLength(12)
-    const backlog = within(secao).getByRole("article", {
-      name: /Não finalizados/,
-    })
-    for (const r of ["jul/26", "ago/26", "set/26"])
-      expect(within(backlog).getByText(r)).toBeInTheDocument()
-    expect(backlog).toHaveTextContent(/jul\/26\s*4.*ago\/26\s*6.*set\/26\s*7/s)
-    expect(within(backlog).getByText(/\+3/)).toBeInTheDocument()
-    expect(within(backlog).getByText(/pior/)).toBeInTheDocument()
+    // 3 situações + 12 indicadores, uma linha cada
+    expect(
+      within(secao)
+        .getAllByRole("rowheader")
+        .filter((h) => !h.hasAttribute("colspan"))
+    ).toHaveLength(15)
+    const grupos = within(secao)
+      .getAllByRole("rowheader")
+      .filter((h) => h.hasAttribute("colspan"))
+      .map((h) => h.textContent)
+    expect(grupos).toEqual(["Situações", "Como estamos", "Fluxo", "Prazo"])
+    const backlog = within(secao).getByRole("row", { name: /Não finalizados/ })
+    // um valor por competência (4, 6 e 7) e o selo do Δ (+3), cada um na sua célula
+    const celulasBacklog = within(backlog).getAllByRole("cell")
+    expect(celulasBacklog.slice(0, 3).map((c) => c.textContent?.trim())).toEqual(["4", "6", "7"])
+    expect(celulasBacklog.at(-1)).toHaveTextContent("+3")
+    expect(within(backlog).getByRole("group", { name: /pior/ })).toBeInTheDocument()
+  })
+
+  it("o Δ da linha é o selo do Painel (pílula com seta e a base da comparação), e o subtítulo dos gráficos não usa ' · '", async () => {
+    const user = userEvent.setup()
+    render(
+      <CompararChamados
+        {...await cenarioN(["2026-07", "2026-08", "2026-09"])}
+      />
+    )
+    await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar competência" })
+    )
+    const secao = screen.getByRole("region", { name: "Indicadores lado a lado" })
+    const backlog = within(secao).getByRole("row", { name: /Não finalizados/ })
+    const selo = within(backlog).getByRole("group", { name: /^\+3 em relação a jul\/26, pior$/ })
+    expect(selo).toHaveAttribute("data-tom", "ruim")
+    expect(secao.parentElement!.textContent).not.toContain(" · ")
   })
 
   it("adiciona a próxima mais antiga, em ordem cronológica, com Δ = última − primeira e setas vs anterior", async () => {
@@ -490,9 +529,10 @@ describe("CompararChamados", () => {
     await user.click(screen.getByRole("button", { name: "Adicionar competência" }))
     const tres = seletores()
     expect(tres).toHaveLength(3)
-    expect(tres[2]).toHaveTextContent("Julho de 2026")
+    // seletores também em ordem cronológica: a nova (julho) entra à esquerda
+    expect(tres[0]).toHaveTextContent("Julho de 2026")
     // colunas cronológicas, independente da ordem dos seletores
-    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26 aberta", "Δ"])
     const linha = screen.getByRole("row", { name: /Não finalizados/ })
     expect(linha).toHaveTextContent(/4\s*6\s*7\s*\+3/) // Δ = set (7) − jul (4)
     const celulas = within(linha).getAllByRole("cell")
@@ -517,7 +557,7 @@ describe("CompararChamados", () => {
     for (let k = 0; k < 4; k++) await user.click(adicionar)
     expect(seletores()).toHaveLength(6)
     expect(adicionar).toBeDisabled()
-    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "mai/26", "jun/26", "jul/26", "ago/26", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "abr/26", "mai/26", "jun/26", "jul/26", "ago/26", "set/26 aberta", "Δ"])
     await user.click(screen.getByRole("button", { name: "Remover competência 6" }))
     expect(seletores()).toHaveLength(5)
     expect(adicionar).toBeEnabled()
@@ -535,23 +575,23 @@ describe("CompararChamados", () => {
     expect(await screen.findByRole("option", { name: /Setembro de 2026/ })).toHaveAttribute("aria-disabled", "true")
     expect(screen.getByRole("option", { name: /Julho de 2026/ })).not.toHaveAttribute("aria-disabled", "true")
     await user.click(screen.getByRole("option", { name: /Julho de 2026/ }))
-    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "set/26 aberta", "Δ"])
   })
 
-  it("as colunas seguem a ordem cronológica mesmo com o seletor fora de ordem", async () => {
+  it("os seletores e as colunas seguem a ordem cronológica mesmo com a escolha fora de ordem", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
     const [um] = await screen.findAllByRole("combobox", { name: /^Competência \d$/ })
     await user.click(um)
     await user.click(await screen.findByRole("option", { name: /Julho de 2026/ }))
     await user.click(screen.getByRole("button", { name: "Adicionar competência" }))
-    // seletores: jul, set, ago (a sugerida é a mais recente livre)
+    // seletores em ordem cronológica: jul, ago, set (a sugerida, ago, entra no lugar certo)
     expect(seletores().map((x) => x.textContent)).toEqual([
       expect.stringContaining("Julho"),
-      expect.stringContaining("Setembro"),
       expect.stringContaining("Agosto"),
+      expect.stringContaining("Setembro"),
     ])
-    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "jul/26", "ago/26", "set/26 aberta", "Δ"])
   })
 
   it("leitura do Comparar abre o mesmo modal de detalhe e o Esc devolve o foco ao cartão", async () => {
@@ -571,7 +611,7 @@ describe("CompararChamados", () => {
   it("clicar no cartão do indicador abre o modal com os valores por competência e o Esc devolve o foco", async () => {
     const user = userEvent.setup()
     render(<CompararChamados {...await cenarioN(["2026-07", "2026-08", "2026-09"])} />)
-    const cartao = await screen.findByRole("button", { name: /Ver gráfico de Não finalizados/ })
+    const cartao = await screen.findByRole("button", { name: "Não finalizados, ver gráfico" })
     await user.click(cartao)
     const modal = await screen.findByRole("dialog", { name: "Não finalizados" })
     const lista = within(modal).getByRole("list", { name: "Valores por competência" })
@@ -603,7 +643,7 @@ describe("CompararChamados", () => {
     await user.keyboard("{Escape}")
     expect(screen.queryByText(/reconstru|backlog/i)).toBeNull()
     expect(screen.queryByRole("region", { name: "Legenda dos símbolos" })).toBeNull()
-    expect(cabecalhos()).toEqual(["Indicador", "set/26", "Δ"])
+    expect(cabecalhos()).toEqual(["Indicador", "set/26 aberta", "Δ"])
   })
 })
 

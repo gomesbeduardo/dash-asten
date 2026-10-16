@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { LeituraCartao } from "./cartoes"
+import { LeituraCartao, SeloSeveridade } from "./cartoes"
 import { useFiltrosChamados } from "./filtros"
 import { BarrasRanking, COR } from "./graficos"
 import {
@@ -24,12 +24,6 @@ import {
   type SeloTipo,
 } from "./logica"
 import { LegendaSimbolos, Selos } from "./selos"
-
-const SEV_ROTULO = {
-  critico: "Crítico",
-  atencao: "Atenção",
-  destaque: "Destaque",
-}
 
 /**
  * Cartões clicáveis das leituras + o modal de detalhe (regra, números, evidência, ação).
@@ -99,13 +93,11 @@ export function ListaLeituras({
             }}
           >
             <DialogHeader>
-              <p className="text-lg font-semibold text-muted-foreground">
-                {SEV_ROTULO[leitura.severidade]}
-              </p>
-              <DialogTitle className="text-3xl leading-snug text-primary">
+              <SeloSeveridade severidade={leitura.severidade} />
+              <DialogTitle className="text-2xl leading-snug text-primary">
                 {leitura.titulo}
               </DialogTitle>
-              <DialogDescription className="text-xl text-foreground">
+              <DialogDescription className="text-lg text-foreground">
                 {leitura.texto}
               </DialogDescription>
             </DialogHeader>

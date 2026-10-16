@@ -10,6 +10,7 @@ import {
   type EntradaCompetencia,
   avisoColunasSemFiltro,
 } from "@/chamados"
+import { DESTAQUES, GRUPOS_KPI } from "./kpis-grupos"
 import { entryContainer } from "@/components/app/motion/variants"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,11 +20,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { Sheet } from "@/core"
 import type { VisaoTipoProps } from "@/panels/tipos"
 import { GraficoCartao } from "./cartoes"
+import { SeloDelta } from "./selo-delta"
 import { BarrasComparar } from "./graficos"
 import { ListaLeituras } from "./ListaLeituras"
 import { ModalKpi } from "./ModalKpi"
@@ -32,7 +47,7 @@ import {
   ChipsFiltrosChamados,
   useFiltrosChamados,
 } from "./filtros"
-import { LegendaSimbolos, MarcaCorrigido } from "./selos"
+import { LegendaSimbolos, SELOS } from "./selos"
 import { Carregando } from "./Carregando"
 import { useVersoesDoTipo } from "./hooks"
 import {
@@ -59,11 +74,6 @@ import {
 } from "./comparar"
 import { limparPedido, lerPedido, ouvirPedido } from "./pedidoComparar"
 
-const TOM = {
-  bom: "text-positive",
-  ruim: "text-late",
-  neutro: "text-muted-foreground",
-} as const
 const MAX_ITENS = 8
 const MIN_COMPETENCIAS = 2
 const MAX_COMPETENCIAS = 6
@@ -190,71 +200,86 @@ function SetaVs({
 
 const idSerie = (o: ColunaOpcao) => o.chave.replace("@", "-v")
 
-function ValoresDoCartao({
-  cartao,
-  rotulos,
-}: {
-  cartao: Cartao
-  rotulos: string[]
-}) {
-  const n = rotulos.length
+/** Mesmos grupos do Painel; o que não estiver aqui cai em "Outros indicadores". */
+const GRUPOS_COMPARAR = [
+  { titulo: "Como estamos", ids: DESTAQUES },
+  ...GRUPOS_KPI,
+]
+
+const textoCorrigido = (m: NonNullable<Cartao["marcas"][number]>, c: Cartao) =>
+  `corrigido pela posição de ${m.por.join(" e ")}, era ${formatarKpi(m.original, c.formato)}`
+
+/** Ícone pequeno ao lado do número; o texto completo está no tooltip e no aria-label. */
+function IconeCorrigido({ texto }: { texto: string }) {
+  const { Icon } = SELOS.corrigido
   return (
-    <ul className="flex flex-wrap items-end gap-x-6 gap-y-3">
-      {cartao.valores.map((v, i) => {
-        const ultimo = i === n - 1
-        const marca = cartao.marcas[i]
-        return (
-          <li
-            key={i}
-            className={cn(
-              "flex min-w-0 flex-col",
-              ultimo && "order-first basis-full",
-              marca && !ultimo && "max-w-60"
-            )}
-          >
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <span>{rotulos[i]}</span>
-            </span>
-            <span
-              className={cn(
-                "num flex items-center gap-1.5 font-display text-primary",
-                ultimo
-                  ? "text-6xl leading-none font-bold"
-                  : "text-3xl leading-none font-semibold opacity-80"
-              )}
-            >
-              <SetaVs
-                sentido={cartao.setas[i]}
-                rotuloAnterior={rotulos[i - 1] ?? ""}
-              />
-              <span>{formatarKpi(v, cartao.formato)}</span>
-            </span>
-            {cartao.notas[i] && (
-              <span className="max-w-40 font-sans text-sm text-muted-foreground">
-                {cartao.notas[i]}
-              </span>
-            )}
-            {marca && (
-              <MarcaCorrigido
-                por={marca.por}
-                original={formatarKpi(marca.original, cartao.formato)}
-                className="mt-1.5"
-              />
-            )}
-          </li>
-        )
-      })}
-    </ul>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          data-selo="corrigido"
+          aria-label={texto}
+          onClick={(e) => e.stopPropagation()}
+          className="size-5 rounded-full border border-dashed border-atencao/60 bg-brand-soft text-atencao-ink hover:bg-brand-soft hover:text-atencao-ink"
+        >
+          <Icon className="size-3.5" aria-hidden />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-md text-base">{texto}</TooltipContent>
+    </Tooltip>
   )
 }
 
-function CartaoComparacao({
+function CelulaValor({
+  cartao,
+  i,
+  rotulos,
+  referencia,
+}: {
+  cartao: Cartao
+  i: number
+  rotulos: string[]
+  referencia: boolean
+}) {
+  const v = cartao.valores[i]
+  const marca = cartao.marcas[i]
+  return (
+    <TableCell
+      className={cn(
+        "px-4 py-3 text-right align-middle whitespace-nowrap",
+        referencia && "bg-primary/5"
+      )}
+    >
+      <span className="num inline-flex items-center justify-end gap-1.5 font-display text-3xl leading-none font-semibold text-primary">
+        <SetaVs
+          sentido={cartao.setas[i]}
+          rotuloAnterior={rotulos[i - 1] ?? ""}
+        />
+        {v === null ? (
+          <>
+            <span aria-hidden>—</span>
+            <span className="sr-only">{cartao.notas[i] ?? "sem dado"}</span>
+          </>
+        ) : (
+          <span>{formatarKpi(v, cartao.formato)}</span>
+        )}
+        {marca && <IconeCorrigido texto={textoCorrigido(marca, cartao)} />}
+      </span>
+    </TableCell>
+  )
+}
+
+function LinhaComparacao({
   cartao,
   rotulos,
+  referencias,
   onAbrir,
 }: {
   cartao: Cartao
   rotulos: string[]
+  referencias: boolean[]
   onAbrir: () => void
 }) {
   const d = descreverDelta(
@@ -263,124 +288,135 @@ function CartaoComparacao({
       formato: cartao.formato,
       melhorQuando: cartao.melhorQuando,
     },
-    ""
+    rotulos[0]
   )
   return (
-    <article
-      aria-label={cartao.rotulo}
-      className="relative flex min-w-0 flex-col gap-4 rounded-lg bg-card p-6 shadow-(--shadow-card) transition-shadow has-[button:hover]:shadow-(--shadow-card-hover)"
-    >
-      <button
-        type="button"
-        data-kpi-cartao={cartao.id}
-        aria-label={`Ver gráfico de ${cartao.rotulo}`}
-        className="absolute inset-0 z-10 cursor-pointer rounded-lg focus-visible:ring-4 focus-visible:ring-ring/60 focus-visible:outline-none"
-        onClick={onAbrir}
-      />
-      <h3 className="flex items-start gap-2 font-sans text-xl leading-tight font-medium text-muted-foreground">
-        <span>{cartao.rotulo}</span>
-      </h3>
-      <ValoresDoCartao cartao={cartao} rotulos={rotulos} />
-      <p
-        className={cn(
-          "num mt-auto border-t pt-3 text-xl font-medium",
-          d ? TOM[d.tom] : "text-muted-foreground"
-        )}
+    <TableRow className="cursor-pointer" onClick={onAbrir}>
+      <TableHead
+        scope="row"
+        className="h-auto px-4 py-3 text-xl font-medium whitespace-normal text-foreground"
       >
-        <span className="mr-2 text-sm font-normal text-muted-foreground">
-          Δ
-        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          data-kpi-cartao={cartao.id}
+          className="h-auto justify-start px-0 py-0 text-left text-xl font-medium whitespace-normal text-foreground hover:bg-transparent hover:text-foreground"
+        >
+          {cartao.rotulo}
+          <span className="sr-only">, ver gráfico</span>
+        </Button>
+      </TableHead>
+      {cartao.valores.map((_, i) => (
+        <CelulaValor
+          key={i}
+          cartao={cartao}
+          i={i}
+          rotulos={rotulos}
+          referencia={referencias[i]}
+        />
+      ))}
+      <TableCell className="px-4 py-3 text-right align-middle">
         {d ? (
-          <>
-            {d.texto.replace(/ vs\s*/, " ").trim()}
-            {d.rotuloTom && (
-              <span className="ml-2 text-base font-normal">
-                {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
-              </span>
-            )}
-          </>
+          <SeloDelta
+            delta={{ ...d, periodo: "" }}
+            className="justify-end gap-x-0"
+          />
         ) : (
-          "—"
+          <span className="text-muted-foreground/70">
+            <span aria-hidden>—</span>
+            <span className="sr-only">sem comparação</span>
+          </span>
         )}
-      </p>
-    </article>
+      </TableCell>
+    </TableRow>
   )
 }
 
-/** Linha da tabela de leitura por tecnologia assistiva (cartões são a versão visual). */
-function LinhaDoCartao({
-  cartao,
+function TabelaComparacao({
+  grupos,
+  ordenadas,
   rotulos,
+  chaveAberta,
+  onAbrir,
 }: {
-  cartao: Cartao
+  grupos: { titulo: string; cartoes: Cartao[] }[]
+  ordenadas: ColunaOpcao[]
   rotulos: string[]
+  chaveAberta: string
+  onAbrir: (id: string) => () => void
 }) {
-  const d = descreverDelta(
-    {
-      delta: cartao.delta,
-      formato: cartao.formato,
-      melhorQuando: cartao.melhorQuando,
-    },
-    ""
-  )
+  const referencias = ordenadas.map((o) => o.chave === chaveAberta)
+  const colunas = ordenadas.length + 2
   return (
-    <tr className="border-b bg-card">
-      <th scope="row" className="px-3 py-3 font-medium">
-        {cartao.rotulo}
-      </th>
-      {cartao.valores.map((v, i) => {
-        const marca = cartao.marcas[i]
-        return (
-          <td
-            key={i}
-            className="num px-3 py-3 text-right font-display font-semibold whitespace-nowrap text-primary"
+    <Table className="text-xl">
+      <caption className="sr-only">
+        Indicadores e situações de {rotulos.join(", ")}
+      </caption>
+      <TableHeader>
+        <TableRow className="border-b-2 border-primary/30 hover:bg-transparent">
+          <TableHead
+            scope="col"
+            className="h-auto px-4 py-3 font-display text-xl text-primary"
           >
-            <div className="flex items-center justify-end gap-1.5">
-              <SetaVs
-                sentido={cartao.setas[i]}
-                rotuloAnterior={rotulos[i - 1] ?? ""}
-              />
-              <span>{formatarKpi(v, cartao.formato)}</span>
-            </div>
-            {cartao.notas[i] && (
-              <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
-                {cartao.notas[i]}
-              </span>
-            )}
-            {marca && (
-              <span className="block font-sans text-sm font-normal whitespace-normal text-muted-foreground">
-                corrigido pela posição de {marca.por.join(" e ")} · era{" "}
-                {formatarKpi(marca.original, cartao.formato)}
-              </span>
-            )}
-          </td>
-        )
-      })}
-      <td
-        className={cn(
-          "num px-3 py-3 text-right font-medium whitespace-nowrap",
-          d ? TOM[d.tom] : "text-muted-foreground"
-        )}
-      >
-        {d ? (
-          <>
-            {d.texto.replace(/ vs\s*/, " ").trim()}
-            {d.rotuloTom && (
-              <span className="ml-2 text-base font-normal">
-                {d.sentido === "alta" ? "↑" : "↓"} {d.rotuloTom}
-              </span>
-            )}
-          </>
-        ) : (
-          "—"
-        )}
-      </td>
-    </tr>
+            Indicador
+          </TableHead>
+          {ordenadas.map((o, i) => (
+            <TableHead
+              key={o.chave}
+              scope="col"
+              aria-current={referencias[i] ? "true" : undefined}
+              className={cn(
+                "h-auto px-4 py-3 text-right align-bottom font-display text-xl text-primary",
+                referencias[i] && "bg-primary/5"
+              )}
+            >
+              <span className="whitespace-nowrap">{rotulos[i]}</span>{" "}
+              {referencias[i] && (
+                <span className="block font-sans text-base font-normal whitespace-normal text-muted-foreground">
+                  aberta
+                </span>
+              )}
+              {!o.temFoto && (
+                <span className="block font-sans text-base font-normal whitespace-normal text-muted-foreground">
+                  sem posição
+                </span>
+              )}
+            </TableHead>
+          ))}
+          <TableHead
+            scope="col"
+            className="h-auto px-4 py-3 text-right align-bottom font-display text-xl text-primary"
+          >
+            Δ
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      {grupos.map((g) => (
+        <TableBody key={g.titulo}>
+          <TableRow className="border-b-0 bg-muted/40 hover:bg-muted/40">
+            <TableHead
+              scope="rowgroup"
+              colSpan={colunas}
+              className="h-auto px-4 py-2 text-lg font-medium text-muted-foreground"
+            >
+              {g.titulo}
+            </TableHead>
+          </TableRow>
+          {g.cartoes.map((c) => (
+            <LinhaComparacao
+              key={c.id}
+              cartao={c}
+              rotulos={rotulos}
+              referencias={referencias}
+              onAbrir={onAbrir(c.id)}
+            />
+          ))}
+        </TableBody>
+      ))}
+    </Table>
   )
 }
-
-const GRADE_CARTOES =
-  "grid grid-cols-1 gap-4 min-[768px]:grid-cols-2 min-[1280px]:grid-cols-3 min-[2200px]:grid-cols-4 min-[3000px]:grid-cols-6"
 
 function ComparacaoVisao({
   cabecalho,
@@ -416,7 +452,14 @@ function ComparacaoVisao({
   const validas = (escolha ?? padrao).filter((c) =>
     opcoes.some((o) => o.chave === c)
   )
-  const selecao = validas.length >= minimo ? validas : padrao
+  const escolhidas = validas.length >= minimo ? validas : padrao
+  // seletores e colunas em ordem cronológica, qualquer que seja a ordem da escolha
+  const ordenadas = useMemo(
+    () =>
+      ordenarOpcoes(escolhidas.map((c) => opcoes.find((o) => o.chave === c)!)),
+    [escolhidas, opcoes]
+  )
+  const selecao = ordenadas.map((o) => o.chave)
   const alterar = (nova: string[]) => {
     limparPedido()
     setEscolha(nova)
@@ -432,11 +475,6 @@ function ComparacaoVisao({
   const podeAdicionar =
     selecao.length < MAX_COMPETENCIAS && proximaChave(opcoes, selecao) !== null
 
-  // colunas em ordem cronológica, independente da ordem dos seletores
-  const ordenadas = useMemo(
-    () => ordenarOpcoes(selecao.map((c) => opcoes.find((o) => o.chave === c)!)),
-    [selecao, opcoes]
-  )
   const colunas = useMemo(
     () => ordenadas.map((o) => calcularColuna(o, opcoes, sheets, filtros)),
     [ordenadas, opcoes, sheets, filtros]
@@ -472,6 +510,20 @@ function ComparacaoVisao({
     [comLeitura, recente, anterior]
   )
 
+  const grupos = useMemo(() => {
+    const usados = new Set<string>(GRUPOS_COMPARAR.flatMap((g) => g.ids))
+    const doKpi = (ids: readonly string[]) =>
+      ids
+        .map((id) => cartoesKpi.find((c) => c.id === id))
+        .filter((c): c is Cartao => !!c)
+    const resto = cartoesKpi.filter((c) => !usados.has(c.id))
+    return [
+      { titulo: "Situações", cartoes: cartoesSit },
+      ...GRUPOS_COMPARAR.map((g) => ({ titulo: g.titulo, cartoes: doKpi(g.ids) })),
+      { titulo: "Outros indicadores", cartoes: resto },
+    ].filter((g) => g.cartoes.length > 0)
+  }, [cartoesKpi, cartoesSit])
+
   const selosCmp = (itens: { rotulo: string }[]): SeloTipo[] =>
     temOutros(itens) ? ["outros"] : []
   const [cartaoAberto, setCartaoAberto] = useState<string | null>(null)
@@ -482,7 +534,7 @@ function ComparacaoVisao({
   const deltaDe = (k: Cartao) =>
     descreverDelta(
       { delta: k.delta, formato: k.formato, melhorQuando: k.melhorQuando },
-      ""
+      rotulos[0]
     )
   const maxItens = n > 3 ? 6 : MAX_ITENS
   const dists = cmp.distribuicoes.filter((d) => d.id !== "operador")
@@ -592,7 +644,8 @@ function ComparacaoVisao({
           <p className="text-base text-muted-foreground">
             De {MIN_COMPETENCIAS} a {MAX_COMPETENCIAS} colunas, em ordem
             cronológica. Δ = {rotulos[n - 1]} menos {rotulos[0]}; a setinha de
-            cada valor compara com a coluna anterior.
+            cada valor compara com a coluna anterior; a coluna marcada
+            “aberta” é a competência aberta.
             {semFotoNaTela &&
               " Mês sem posição mostra só entradas e finalizados, pelas datas da posição mais atual; o resto fica “—”."}
           </p>
@@ -631,65 +684,17 @@ function ComparacaoVisao({
           }}
         />
 
-        {cartoesSit.length > 0 && (
-          <section aria-label="Situações lado a lado" className="min-w-0">
-            <div className={GRADE_CARTOES}>
-              {cartoesSit.map((c) => (
-                <CartaoComparacao
-                  key={c.id}
-                  cartao={c}
-                  rotulos={rotulos}
-                  onAbrir={abrir(c.id)}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section aria-label="Indicadores lado a lado" className="min-w-0">
-          <div className={GRADE_CARTOES}>
-            {cartoesKpi.map((k) => (
-              <CartaoComparacao
-                key={k.id}
-                cartao={k}
-                rotulos={rotulos}
-                onAbrir={abrir(k.id)}
-              />
-            ))}
-          </div>
-          <div className="sr-only">
-            <table className="w-full text-left text-xl">
-              <caption className="sr-only">
-                Indicadores e situações de {rotulos.join(", ")}
-              </caption>
-              <thead>
-                <tr className="border-b-2 border-primary/30 text-primary">
-                  <th scope="col" className="px-3 py-3 font-display">
-                    Indicador
-                  </th>
-                  {ordenadas.map((o, i) => (
-                    <th
-                      key={o.chave}
-                      scope="col"
-                      className="px-3 py-3 text-right font-display"
-                    >
-                      <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
-                        <span>{rotulos[i]}</span>
-                      </span>
-                    </th>
-                  ))}
-                  <th scope="col" className="px-3 py-3 text-right font-display">
-                    Δ
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...cartoesKpi, ...cartoesSit].map((k) => (
-                  <LinhaDoCartao key={k.id} cartao={k} rotulos={rotulos} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <section
+          aria-label="Indicadores lado a lado"
+          className="min-w-0 rounded-lg bg-card p-2 shadow-(--shadow-card)"
+        >
+          <TabelaComparacao
+            grupos={grupos}
+            ordenadas={ordenadas}
+            rotulos={rotulos}
+            chaveAberta={chaveAberta}
+            onAbrir={abrir}
+          />
         </section>
 
         {comLeitura && metricasLeitura && (
@@ -719,7 +724,7 @@ function ComparacaoVisao({
                 key={g.id}
                 id={g.id}
                 titulo={g.titulo}
-                subtitulo={nomes.join(" · ")}
+                subtitulo={nomes.join(", ")}
                 tabela={tabelaSeries(g.dados)}
                 selos={selosCmp(g.itens)}
               >

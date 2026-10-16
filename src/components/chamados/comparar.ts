@@ -36,9 +36,9 @@ export type ColunaOpcao = {
   temFoto: boolean
   /** A versão mais atual do mês (a de maior número). */
   maisAtual: boolean
-  /** Texto do seletor: "Setembro de 2026 · v2 (atual)", "Junho de 2026 (sem posição)". */
+  /** Texto do seletor: "Setembro de 2026, v2 (atual)", "Junho de 2026 (sem posição)". */
   rotulo: string
-  /** Rótulo da coluna: "abr/26", ou "abr/26 · v1" quando o mês tem 2+ versões. */
+  /** Rótulo da coluna: "abr/26", ou "abr/26 v1" quando o mês tem 2+ versões. */
   curto: string
 }
 
@@ -110,9 +110,9 @@ export function opcoesDeColuna(
         maisAtual: i === 0,
         rotulo:
           vs.length > 1
-            ? `${longo(c)} · v${v}${i === 0 ? " (atual)" : ""}`
+            ? `${longo(c)}, v${v}${i === 0 ? " (atual)" : ""}`
             : longo(c),
-        curto: vs.length > 1 ? `${curto} · v${v}` : curto,
+        curto: vs.length > 1 ? `${curto} v${v}` : curto,
       }))
     })
 }

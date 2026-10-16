@@ -27,10 +27,14 @@ export function LeiturasChamados({
   )
 
   const recorte = recorteTexto(filtros)
-  const titulo = `Leituras · ${formatarCompetencia(carga.competencia, "longo")}${recorte ? ` · ${recorte}` : ""}`
   const cabecalho = (
     <header className="flex flex-col gap-1">
-      <h1 className="text-6xl leading-none text-primary">{titulo}</h1>
+      <h1 className="text-6xl leading-none text-primary">
+        Leituras{" "}
+        <span className="font-normal text-primary/65">
+          {formatarCompetencia(carga.competencia, "longo")}
+        </span>
+      </h1>
       <ChipsFiltrosChamados />
     </header>
   )
