@@ -67,6 +67,17 @@ describe("BlocoTempo (Ao longo do tempo)", () => {
     ])
   })
 
+  it("cartões alinhados ao topo (sem vazio embaixo) e botões de janela com texto legível", async () => {
+    const { container } = await renderBloco()
+    await screen.findByRole("region", { name: "% no SLA" })
+    const grade = container.querySelector(
+      "section[aria-label='Ao longo do tempo'] > div.grid"
+    ) as HTMLElement
+    expect(grade.className).toMatch(/items-start/)
+    const botao = screen.getByRole("button", { name: "6 meses" })
+    expect(botao.className).toMatch(/text-base/)
+  })
+
   it("título do bloco e os gráficos compactos, sem os cartões extras", async () => {
     await renderBloco()
     for (const g of GRAFICOS_TEMPO)

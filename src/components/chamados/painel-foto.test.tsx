@@ -165,7 +165,7 @@ describe("Painel: faixa do topo por Situação (decisão 26)", () => {
     expect(total).toHaveTextContent("10")
     // o aberto depois do Mes Ref. fica só na nota
     expect(screen.getByLabelText("Avisos")).toHaveTextContent(
-      "1 aberto depois do Mes Ref."
+      "1 aberto depois do mês de referência"
     )
   })
 })

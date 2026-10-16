@@ -506,6 +506,22 @@ export function tipoDoPonto(
   return null
 }
 
+/**
+ * Rótulo do valor final: com duas séries visíveis, a de valor menor (ou a segunda, em empate) vai
+ * abaixo do ponto e a outra acima, para os números não se sobreporem.
+ */
+export function rotuloFinalAbaixo(
+  finais: (number | null)[],
+  indice: number
+): boolean {
+  const v = finais[indice]
+  if (v === null || v === undefined) return false
+  return finais.some(
+    (o, k) =>
+      k !== indice && o !== null && (o > v || (o === v && k < indice))
+  )
+}
+
 /** Série em área: linha de 2 px, curva suave e área a 10% de opacidade; sem pontos em todos os meses. */
 export function LinhaMini({
   linhas,
@@ -531,6 +547,10 @@ export function LinhaMini({
   const tudo = linhas.flatMap((l) => visiveis.map((s) => l[s.id]))
   const nums = tudo.filter((v): v is number => typeof v === "number")
   const max = nums.length ? Math.max(...nums) : 1
+  const finais = visiveis.map((s) => {
+    const v = linhas[linhas.length - 1]?.[s.id]
+    return typeof v === "number" ? v : null
+  })
   const topo =
     formato === "percentual" ? 100 : Math.max(1, Math.ceil(max * 1.15))
   return (
@@ -582,7 +602,7 @@ export function LinhaMini({
           <Tooltip
             content={<Dica formatar={(v) => formatarKpi(v, formato)} />}
           />
-          {visiveis.map((s) => (
+          {visiveis.map((s, indiceSerie) => (
             <Area
               key={s.id}
               dataKey={s.id}
@@ -625,7 +645,12 @@ export function LinhaMini({
                       {visiveis.length <= 2 && (
                         <text
                           x={(p.cx ?? 0) - 0.8 * rem}
-                          y={(p.cy ?? 0) - 0.9 * rem}
+                          y={
+                            (p.cy ?? 0) +
+                            (rotuloFinalAbaixo(finais, indiceSerie)
+                              ? 1.9 * rem
+                              : -0.9 * rem)
+                          }
                           textAnchor="end"
                           className="num fill-foreground"
                           style={{ fontSize: "1.125rem", fontWeight: 600 }}

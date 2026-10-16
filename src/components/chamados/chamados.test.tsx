@@ -156,6 +156,14 @@ describe("PainelChamados", () => {
     expect(within(sla).getByLabelText("50,0%")).toBeInTheDocument()
   })
 
+  it("as grades de 'Onde está o problema' alinham os cartões ao topo, sem esticar até a altura da linha", async () => {
+    const { container } = render(<PainelChamados {...await cenario(true)} />)
+    await screen.findByRole("article", { name: "Não finalizados" })
+    const grades = container.querySelectorAll("#faixa-onde > div > div.grid")
+    expect(grades.length).toBeGreaterThan(0)
+    for (const g of grades) expect(g.className).toMatch(/items-start/)
+  })
+
   it("mostra os KPIs Tempo até o aceite e SLA renegociado", async () => {
     render(<PainelChamados {...await cenario(true)} />)
     await screen.findByRole("article", { name: "Não finalizados" })
@@ -328,7 +336,7 @@ describe("PainelChamados", () => {
     expect(valor("Situação: Finalizado").getByLabelText("2")).toBeInTheDocument()
     // nenhuma linha é excluída: as duas que ficam de fora dos números viram notas
     const avisos = screen.getByRole("contentinfo", { name: "Avisos" })
-    expect(avisos).toHaveTextContent("1 aberto depois do Mes Ref.")
+    expect(avisos).toHaveTextContent("1 aberto depois do mês de referência")
     expect(avisos).toHaveTextContent("1 chamado(s) sem Data de Abertura")
   })
 

@@ -84,7 +84,7 @@ const COLUNAS: Record<number, string> = {
   4: "grid-cols-1 xl:max-[2199px]:grid-cols-2 min-[2200px]:grid-cols-4",
 }
 const linha = (n: number) =>
-  `grid items-stretch gap-5 ${COLUNAS[Math.min(Math.max(n, 1), 4)]}`
+  `grid items-start gap-5 ${COLUNAS[Math.min(Math.max(n, 1), 4)]}`
 
 /** Painel estratégico do mês (D31–D36): KPIs com delta e gráficos. Sem tabela de linhas soltas. */
 export function PainelChamados({
@@ -408,7 +408,7 @@ export function PainelChamados({
                   <h3 className="text-lg font-medium text-muted-foreground">
                     {g.titulo}
                   </h3>
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div className="grid flex-1 grid-cols-2 gap-4 md:grid-cols-4">
                     {g.kpis.map((k) => (
                       <KpiCartao
                         key={k.id}

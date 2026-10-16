@@ -134,7 +134,7 @@ export function BarrasHtml({
     >
       {cabecalho && (
         <div className="flex gap-3 pb-1" aria-hidden>
-          <span className="w-[clamp(7rem,26%,12rem)] shrink-0" />
+          <span className="w-[clamp(7rem,26%,16rem)] shrink-0" />
           <div
             className="grid min-w-0 flex-1 gap-3 text-base font-medium text-muted-foreground"
             style={{ gridTemplateColumns: grade }}
@@ -149,8 +149,9 @@ export function BarrasHtml({
       {grupos.map((g) => (
         <div key={g.rotulo} className="flex flex-1 items-center gap-3 py-3">
           <span
-            className="w-[clamp(7rem,26%,12rem)] shrink-0 truncate text-lg font-medium text-foreground"
+            className="w-[clamp(7rem,26%,16rem)] shrink-0 text-lg font-medium [overflow-wrap:anywhere] text-foreground"
             title={g.rotulo}
+            aria-label={g.rotulo}
           >
             {g.rotulo}
           </span>

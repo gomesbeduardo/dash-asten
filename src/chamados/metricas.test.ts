@@ -84,6 +84,12 @@ const dist = (m: ReturnType<typeof calcularMetricas>, id: string) =>
 describe("calcularMetricas (foto no Mes Ref., D63/D64)", () => {
   const m = calcularMetricas({ sheet: sheetChamados(LINHAS), ...SET })
 
+  it("o texto visível diz 'mês de referência', nunca 'Mes Ref.' (nome da coluna da planilha)", () => {
+    const textos = [...m.kpis.map((k) => k.definicao), ...m.avisos].join(" | ")
+    expect(textos).not.toMatch(/Mes Ref/)
+    expect(textos).toMatch(/mês de referência/)
+  })
+
   it("nenhuma linha é excluída: abertos depois e sem abertura ficam à parte, com aviso", () => {
     expect(m.totalChamados).toBe(10)
     expect(m.abertosDepois).toBe(1)
@@ -91,7 +97,7 @@ describe("calcularMetricas (foto no Mes Ref., D63/D64)", () => {
     expect(m.totalChamados! + m.abertosDepois! + m.linhasSemAbertura!).toBe(
       LINHAS.length
     )
-    expect(m.avisos).toContain("1 aberto depois do Mes Ref.")
+    expect(m.avisos).toContain("1 aberto depois do mês de referência")
     expect(m.avisos).toContain(
       "1 chamado(s) sem Data de Abertura — mostrados à parte"
     )
@@ -106,7 +112,7 @@ describe("calcularMetricas (foto no Mes Ref., D63/D64)", () => {
       ]),
       ...SET,
     })
-    expect(r.avisos).toContain("2 abertos depois do Mes Ref.")
+    expect(r.avisos).toContain("2 abertos depois do mês de referência")
   })
 
   it("cards por Situação: valor literal, por frequência, e o total bate", () => {

@@ -118,7 +118,7 @@ const PALETA = [
  * que sobra da linha em cada largura, para a grade fechar sempre (sem buraco).
  */
 const GRADE =
-  "grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3 min-[137.5rem]:grid-cols-4"
+  "grid grid-cols-1 items-start gap-5 lg:grid-cols-2 2xl:grid-cols-3 min-[137.5rem]:grid-cols-4"
 const SPAN_ULTIMO: Record<2 | 3 | 4, string[]> = {
   2: ["", "lg:col-span-2"],
   3: ["", "2xl:col-span-2", "2xl:col-span-3"],
@@ -321,6 +321,7 @@ export function BlocoTempo({
               key={n}
               type="button"
               size="sm"
+              className="h-10 px-4 text-base"
               variant={n === meses ? "default" : "outline"}
               aria-pressed={n === meses}
               onClick={() => setMeses(n)}

@@ -128,7 +128,7 @@ export function gerarLeituras(
       id: "envelhecimento",
       severidade: velhos / abertos > 0.4 ? "critico" : "atencao",
       titulo: `${inteiro(velhos)} ${plural(velhos, "chamado", "chamados")} (${pct(velhos / abertos)}) ${plural(velhos, "está", "estão")} em atraso há ${MESES_ANTIGO} meses ou mais`,
-      texto: `Dos ${inteiro(abertos)} chamados não finalizados, ${pct(velhos / abertos)} foram abertos há ${MESES_ANTIGO} meses ou mais do Mes Ref.`,
+      texto: `Dos ${inteiro(abertos)} chamados não finalizados, ${pct(velhos / abertos)} foram abertos há ${MESES_ANTIGO} meses ou mais do mês de referência.`,
       evidencia: ["atrasoFaixas", "naoFinalizados"],
       filtro: { campo: "idade", valores: [FAIXA_ANTIGA] },
     })

@@ -71,7 +71,7 @@ export function KpiCartao({
         <h3
           className={cn(
             "font-sans leading-tight font-medium text-muted-foreground",
-            destaque ? "text-xl" : "text-lg"
+            destaque ? "text-xl" : "min-h-[2.5em] text-lg"
           )}
         >
           {kpi.rotulo}
